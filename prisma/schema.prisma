@@ -1,0 +1,128 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  name         String
+  passwordHash String
+  role         String   @default("CANDIDATE") // CANDIDATE, HEADHUNTER, HIRING_MANAGER, ADMIN
+  createdAt    DateTime @default(now())
+
+  candidateProfile  CandidateProfile?
+  headhunterProfile HeadhunterProfile?
+  company           Company?            @relation(fields: [companyId], references: [id])
+  companyId         String?
+  createdRoles      JobRole[]           @relation("CreatedByHM")
+}
+
+model Company {
+  id                String    @id @default(cuid())
+  name              String
+  industry          String?
+  cultureAttributes String?
+  members           User[]
+  roles             JobRole[] @relation("CompanyRoles")
+  subscription      Subscription? @relation("CompanySubscription")
+}
+
+model JobRole {
+  id          String   @id @default(cuid())
+  title       String
+  description String
+  hardSkills  String   @default("[]")
+  softSkills  String   @default("[]")
+  weights     String   @default("{\"hardSkills\":40,\"softSkills\":25,\"experience\":25,\"education\":10}")
+  threshold   Int      @default(70)
+  status      String   @default("DRAFT") // DRAFT, PUBLISHED, CLOSED
+  company     Company  @relation("CompanyRoles", fields: [companyId], references: [id])
+  companyId   String
+  createdBy   User     @relation("CreatedByHM", fields: [createdById], references: [id])
+  createdById String
+
+  claimedBy   HeadhunterProfile? @relation(fields: [claimedById], references: [id])
+  claimedById String?
+
+  applications Application[]
+  createdAt    DateTime        @default(now())
+}
+
+model CandidateProfile {
+  id          String @id @default(cuid())
+  user        User   @relation(fields: [userId], references: [id])
+  userId      String @unique
+  bio         String?
+  resumeUrl   String?
+  skills      String @default("[]")
+  experience  String @default("[]")
+  education   String @default("[]")
+  preferences String @default("{}")
+  visibility  String @default("ACTIVE") // ACTIVE, PASSIVE, HIDDEN
+
+  applications Application[]
+}
+
+model HeadhunterProfile {
+  id                    String @id @default(cuid())
+  user                  User   @relation(fields: [userId], references: [id])
+  userId                String @unique
+  domainSpecializations String @default("[]")
+  performanceMetrics    String @default("{}")
+
+  claimedRoles JobRole[]
+  applications Application[]
+  subscription Subscription? @relation("HeadhunterSubscription")
+}
+
+model Application {
+  id             String  @id @default(cuid())
+  candidate      CandidateProfile @relation(fields: [candidateId], references: [id])
+  candidateId    String
+  role           JobRole @relation(fields: [roleId], references: [id])
+  roleId         String
+  headhunter     HeadhunterProfile? @relation(fields: [headhunterId], references: [id])
+  headhunterId   String?
+  matchScore     Int?
+  scoreBreakdown String?
+  stage          String  @default("APPLIED") // APPLIED, SCREENING, SHORTLISTED, INTERVIEW, OFFER, HIRED, REJECTED
+  auditLog       String  @default("[]")
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  skillGaps SkillGap[]
+
+  @@unique([candidateId, roleId])
+}
+
+model SkillGap {
+  id              String      @id @default(cuid())
+  application     Application @relation(fields: [applicationId], references: [id])
+  applicationId   String
+  skill           String
+  category        String      // HARD, SOFT
+  currentLevel    Int
+  requiredLevel   Int
+  status          String      // MET, PARTIAL, MISSING
+  recommendations String      @default("[]")
+}
+
+model Subscription {
+  id                   String             @id @default(cuid())
+  plan                 String             // HM: STARTER, PROFESSIONAL, ENTERPRISE; HH: FREE, PRO
+  billingPeriod        String             @default("MONTHLY") // MONTHLY, YEARLY
+  status               String             @default("ACTIVE") // ACTIVE, CANCELLED, PAST_DUE
+  currentPeriodStart   DateTime           @default(now())
+  currentPeriodEnd     DateTime?
+  company              Company?           @relation("CompanySubscription", fields: [companyId], references: [id])
+  companyId            String?            @unique
+  headhunterProfile    HeadhunterProfile? @relation("HeadhunterSubscription", fields: [headhunterProfileId], references: [id])
+  headhunterProfileId  String?            @unique
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
+}
