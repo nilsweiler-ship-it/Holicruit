@@ -60,7 +60,8 @@ export type QuotaAction =
   | "APPLY_TO_ROLE"
   | "CLAIM_ROLE"
   | "HH_SUBMIT"
-  | "VIEW_GAP_REPORT";
+  | "VIEW_GAP_REPORT"
+  | "GENERATE_NARRATIVE";
 
 export async function getHMPlan(userId: string): Promise<HMPlanTier> {
   const user = await prisma.user.findUnique({
@@ -221,6 +222,20 @@ export async function checkQuota(
         limit: plan.gapAnalysis ? 1 : 0,
         message: !plan.gapAnalysis
           ? "Gap analysis is available on Professional and Enterprise plans."
+          : undefined,
+      };
+    }
+
+    case "GENERATE_NARRATIVE": {
+      const tier = await getHMPlan(userId);
+      const plan = HM_PLANS[tier];
+      const allowed = plan.matchScoring !== "score_only";
+      return {
+        allowed,
+        current: 0,
+        limit: allowed ? 1 : 0,
+        message: !allowed
+          ? "AI fit narratives are available on Professional and Enterprise plans."
           : undefined,
       };
     }

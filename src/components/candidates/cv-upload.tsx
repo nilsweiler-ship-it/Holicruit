@@ -3,14 +3,16 @@
 import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import type { ParsedCV } from "@/lib/ai";
 
 interface CVUploadProps {
   currentUrl?: string | null;
-  onUploaded: (url: string) => void;
+  onUploaded: (url: string, parsed?: ParsedCV | null) => void;
 }
 
 export function CVUpload({ currentUrl, onUploaded }: CVUploadProps) {
   const [uploading, setUploading] = useState(false);
+  const [reanalyzing, setReanalyzing] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
   async function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
@@ -44,12 +46,44 @@ export function CVUpload({ currentUrl, onUploaded }: CVUploadProps) {
       if (!res.ok) throw new Error();
 
       const data = await res.json();
-      onUploaded(data.url);
-      toast.success("CV uploaded successfully");
+      onUploaded(data.url, data.parsed);
+
+      if (data.parsed) {
+        toast.success("CV uploaded and analyzed successfully");
+      } else if (data.parseError) {
+        toast.warning(`CV uploaded. ${data.parseError}`);
+      } else {
+        toast.success("CV uploaded successfully");
+      }
     } catch {
       toast.error("Failed to upload CV");
     } finally {
       setUploading(false);
+      if (fileRef.current) fileRef.current.value = "";
+    }
+  }
+
+  async function handleReanalyze() {
+    setReanalyzing(true);
+    try {
+      const res = await fetch("/api/candidates/parse-cv", {
+        method: "POST",
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || "Re-analysis failed");
+      }
+
+      const data = await res.json();
+      onUploaded(currentUrl || "", data.parsed);
+      toast.success("CV re-analyzed successfully");
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Failed to re-analyze CV"
+      );
+    } finally {
+      setReanalyzing(false);
     }
   }
 
@@ -76,10 +110,25 @@ export function CVUpload({ currentUrl, onUploaded }: CVUploadProps) {
           type="button"
           variant="outline"
           onClick={() => fileRef.current?.click()}
-          disabled={uploading}
+          disabled={uploading || reanalyzing}
         >
-          {uploading ? "Uploading..." : currentUrl ? "Replace CV" : "Upload CV"}
+          {uploading
+            ? "Uploading & Analyzing..."
+            : currentUrl
+              ? "Replace CV"
+              : "Upload CV"}
         </Button>
+        {currentUrl && (
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={handleReanalyze}
+            disabled={uploading || reanalyzing}
+          >
+            {reanalyzing ? "Analyzing..." : "Re-analyze CV"}
+          </Button>
+        )}
         <span className="text-xs text-muted-foreground">
           PDF or DOCX, max 5MB
         </span>

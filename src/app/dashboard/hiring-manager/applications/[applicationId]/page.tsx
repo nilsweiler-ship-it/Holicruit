@@ -5,6 +5,7 @@ import { getHMPlan, HM_PLANS } from "@/lib/plans";
 import { MatchScoreBadge } from "@/components/matching/match-score-badge";
 import { MatchBreakdown } from "@/components/matching/match-breakdown";
 import { GapReportView } from "@/components/matching/gap-report-view";
+import { FitNarrative } from "@/components/matching/fit-narrative";
 import { GapReportGate } from "@/components/billing/gap-report-gate";
 import { StageBadge } from "@/components/pipeline/stage-badge";
 import {
@@ -97,6 +98,12 @@ export default async function ApplicationDetailPage({
           )}
         </CardContent>
       </Card>
+
+      <FitNarrative
+        candidateId={application.candidateId}
+        roleId={application.roleId}
+        canAccess={plan.matchScoring !== "score_only"}
+      />
 
       {auditLog.length > 0 && (
         <Card>

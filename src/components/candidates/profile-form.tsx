@@ -14,8 +14,10 @@ import {
 } from "@/components/ui/card";
 import { SkillInput } from "@/components/roles/skill-input";
 import { CVUpload } from "./cv-upload";
+import { CVReviewDialog } from "./cv-review-dialog";
 import { toast } from "sonner";
 import type { Skill, ExperienceEntry, EducationEntry } from "@/types";
+import type { ParsedCV } from "@/lib/ai";
 
 interface ProfileFormProps {
   profile: {
@@ -43,6 +45,31 @@ export function ProfileForm({ profile }: ProfileFormProps) {
   const [education, setEducation] = useState<EducationEntry[]>(
     JSON.parse(profile.education || "[]")
   );
+
+  // CV review dialog state
+  const [reviewOpen, setReviewOpen] = useState(false);
+  const [parsedCV, setParsedCV] = useState<ParsedCV | null>(null);
+
+  function handleCVUploaded(url: string, parsed?: ParsedCV | null) {
+    setResumeUrl(url);
+    if (parsed) {
+      setParsedCV(parsed);
+      setReviewOpen(true);
+    }
+  }
+
+  function handleApplyParsed(data: {
+    bio?: string;
+    skills?: Skill[];
+    experience?: ExperienceEntry[];
+    education?: EducationEntry[];
+  }) {
+    if (data.bio) setBio(data.bio);
+    if (data.skills) setSkills(data.skills);
+    if (data.experience) setExperience(data.experience);
+    if (data.education) setEducation(data.education);
+    toast.info("CV data applied to form. Review and click Save Profile when ready.");
+  }
 
   function addExperience() {
     setExperience([
@@ -107,179 +134,190 @@ export function ProfileForm({ profile }: ProfileFormProps) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">About</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Label>Bio</Label>
-            <Textarea
-              value={bio}
-              onChange={(e) => setBio(e.target.value)}
-              placeholder="Tell us about yourself..."
-              rows={4}
-            />
-          </div>
-          <CVUpload currentUrl={resumeUrl} onUploaded={setResumeUrl} />
-        </CardContent>
-      </Card>
+    <>
+      {parsedCV && (
+        <CVReviewDialog
+          open={reviewOpen}
+          onOpenChange={setReviewOpen}
+          parsedData={parsedCV}
+          onApply={handleApplyParsed}
+        />
+      )}
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Skills</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <SkillInput skills={skills} onChange={setSkills} label="Your Skills" />
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-base">Experience</CardTitle>
-            <Button type="button" variant="outline" size="sm" onClick={addExperience}>
-              Add
-            </Button>
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {experience.map((exp, i) => (
-            <div key={i} className="space-y-2 rounded-lg border p-3">
-              <div className="flex justify-between">
-                <span className="text-sm font-medium">Experience #{i + 1}</span>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => removeExperience(i)}
-                >
-                  Remove
-                </Button>
-              </div>
-              <div className="grid gap-2 md:grid-cols-3">
-                <div>
-                  <Label className="text-xs">Title</Label>
-                  <Input
-                    value={exp.title}
-                    onChange={(e) =>
-                      updateExperience(i, "title", e.target.value)
-                    }
-                    placeholder="Job title"
-                  />
-                </div>
-                <div>
-                  <Label className="text-xs">Company</Label>
-                  <Input
-                    value={exp.company}
-                    onChange={(e) =>
-                      updateExperience(i, "company", e.target.value)
-                    }
-                    placeholder="Company name"
-                  />
-                </div>
-                <div>
-                  <Label className="text-xs">Years</Label>
-                  <Input
-                    type="number"
-                    min={0}
-                    value={exp.years}
-                    onChange={(e) =>
-                      updateExperience(i, "years", Number(e.target.value))
-                    }
-                  />
-                </div>
-              </div>
-              <div>
-                <Label className="text-xs">Description</Label>
-                <Textarea
-                  value={exp.description || ""}
-                  onChange={(e) =>
-                    updateExperience(i, "description", e.target.value)
-                  }
-                  placeholder="Brief description of responsibilities"
-                  rows={2}
-                />
-              </div>
+      <form onSubmit={handleSubmit} className="space-y-6">
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">About</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label>Bio</Label>
+              <Textarea
+                value={bio}
+                onChange={(e) => setBio(e.target.value)}
+                placeholder="Tell us about yourself..."
+                rows={4}
+              />
             </div>
-          ))}
-          {experience.length === 0 && (
-            <p className="text-sm text-muted-foreground">
-              No experience entries. Click &quot;Add&quot; to add one.
-            </p>
-          )}
-        </CardContent>
-      </Card>
+            <CVUpload currentUrl={resumeUrl} onUploaded={handleCVUploaded} />
+          </CardContent>
+        </Card>
 
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-base">Education</CardTitle>
-            <Button type="button" variant="outline" size="sm" onClick={addEducation}>
-              Add
-            </Button>
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {education.map((edu, i) => (
-            <div key={i} className="space-y-2 rounded-lg border p-3">
-              <div className="flex justify-between">
-                <span className="text-sm font-medium">Education #{i + 1}</span>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => removeEducation(i)}
-                >
-                  Remove
-                </Button>
-              </div>
-              <div className="grid gap-2 md:grid-cols-3">
-                <div>
-                  <Label className="text-xs">Degree</Label>
-                  <Input
-                    value={edu.degree}
-                    onChange={(e) =>
-                      updateEducation(i, "degree", e.target.value)
-                    }
-                    placeholder="e.g. Bachelor of Science"
-                  />
-                </div>
-                <div>
-                  <Label className="text-xs">Institution</Label>
-                  <Input
-                    value={edu.institution}
-                    onChange={(e) =>
-                      updateEducation(i, "institution", e.target.value)
-                    }
-                    placeholder="University name"
-                  />
-                </div>
-                <div>
-                  <Label className="text-xs">Year</Label>
-                  <Input
-                    type="number"
-                    value={edu.year}
-                    onChange={(e) =>
-                      updateEducation(i, "year", Number(e.target.value))
-                    }
-                  />
-                </div>
-              </div>
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Skills</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <SkillInput skills={skills} onChange={setSkills} label="Your Skills" />
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-base">Experience</CardTitle>
+              <Button type="button" variant="outline" size="sm" onClick={addExperience}>
+                Add
+              </Button>
             </div>
-          ))}
-          {education.length === 0 && (
-            <p className="text-sm text-muted-foreground">
-              No education entries. Click &quot;Add&quot; to add one.
-            </p>
-          )}
-        </CardContent>
-      </Card>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {experience.map((exp, i) => (
+              <div key={i} className="space-y-2 rounded-lg border p-3">
+                <div className="flex justify-between">
+                  <span className="text-sm font-medium">Experience #{i + 1}</span>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => removeExperience(i)}
+                  >
+                    Remove
+                  </Button>
+                </div>
+                <div className="grid gap-2 md:grid-cols-3">
+                  <div>
+                    <Label className="text-xs">Title</Label>
+                    <Input
+                      value={exp.title}
+                      onChange={(e) =>
+                        updateExperience(i, "title", e.target.value)
+                      }
+                      placeholder="Job title"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-xs">Company</Label>
+                    <Input
+                      value={exp.company}
+                      onChange={(e) =>
+                        updateExperience(i, "company", e.target.value)
+                      }
+                      placeholder="Company name"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-xs">Years</Label>
+                    <Input
+                      type="number"
+                      min={0}
+                      value={exp.years}
+                      onChange={(e) =>
+                        updateExperience(i, "years", Number(e.target.value))
+                      }
+                    />
+                  </div>
+                </div>
+                <div>
+                  <Label className="text-xs">Description</Label>
+                  <Textarea
+                    value={exp.description || ""}
+                    onChange={(e) =>
+                      updateExperience(i, "description", e.target.value)
+                    }
+                    placeholder="Brief description of responsibilities"
+                    rows={2}
+                  />
+                </div>
+              </div>
+            ))}
+            {experience.length === 0 && (
+              <p className="text-sm text-muted-foreground">
+                No experience entries. Click &quot;Add&quot; to add one.
+              </p>
+            )}
+          </CardContent>
+        </Card>
 
-      <Button type="submit" disabled={loading}>
-        {loading ? "Saving..." : "Save Profile"}
-      </Button>
-    </form>
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-base">Education</CardTitle>
+              <Button type="button" variant="outline" size="sm" onClick={addEducation}>
+                Add
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {education.map((edu, i) => (
+              <div key={i} className="space-y-2 rounded-lg border p-3">
+                <div className="flex justify-between">
+                  <span className="text-sm font-medium">Education #{i + 1}</span>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => removeEducation(i)}
+                  >
+                    Remove
+                  </Button>
+                </div>
+                <div className="grid gap-2 md:grid-cols-3">
+                  <div>
+                    <Label className="text-xs">Degree</Label>
+                    <Input
+                      value={edu.degree}
+                      onChange={(e) =>
+                        updateEducation(i, "degree", e.target.value)
+                      }
+                      placeholder="e.g. Bachelor of Science"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-xs">Institution</Label>
+                    <Input
+                      value={edu.institution}
+                      onChange={(e) =>
+                        updateEducation(i, "institution", e.target.value)
+                      }
+                      placeholder="University name"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-xs">Year</Label>
+                    <Input
+                      type="number"
+                      value={edu.year}
+                      onChange={(e) =>
+                        updateEducation(i, "year", Number(e.target.value))
+                      }
+                    />
+                  </div>
+                </div>
+              </div>
+            ))}
+            {education.length === 0 && (
+              <p className="text-sm text-muted-foreground">
+                No education entries. Click &quot;Add&quot; to add one.
+              </p>
+            )}
+          </CardContent>
+        </Card>
+
+        <Button type="submit" disabled={loading}>
+          {loading ? "Saving..." : "Save Profile"}
+        </Button>
+      </form>
+    </>
   );
 }
