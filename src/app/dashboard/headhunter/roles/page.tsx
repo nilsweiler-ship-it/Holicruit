@@ -11,10 +11,17 @@ import {
 } from "@/components/ui/card";
 import Link from "next/link";
 import { ClaimButton } from "./claim-button";
+import { SearchInput } from "@/components/search-input";
 
-export default async function HeadhunterRolesPage() {
+export default async function HeadhunterRolesPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ q?: string }>;
+}) {
   const session = await auth();
   if (!session?.user || session.user.role !== "HEADHUNTER") redirect("/login");
+  const { q } = await searchParams;
+  const query = q?.trim().toLowerCase() || "";
 
   const hhProfile = await prisma.headhunterProfile.findUnique({
     where: { userId: session.user.id },
@@ -22,7 +29,15 @@ export default async function HeadhunterRolesPage() {
   });
 
   const roles = await prisma.jobRole.findMany({
-    where: { status: "PUBLISHED" },
+    where: {
+      status: "PUBLISHED",
+      ...(query && {
+        OR: [
+          { title: { contains: query } },
+          { description: { contains: query } },
+        ],
+      }),
+    },
     include: {
       company: { select: { name: true } },
       applications: { select: { id: true } },
@@ -35,11 +50,16 @@ export default async function HeadhunterRolesPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold">Browse Roles</h1>
-        <p className="text-muted-foreground">
-          Find and claim roles to submit candidates
-        </p>
+      <div className="flex items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold">Browse Roles</h1>
+          <p className="text-muted-foreground">
+            Find and claim roles to submit candidates
+          </p>
+        </div>
+        <div className="w-64">
+          <SearchInput placeholder="Search roles..." />
+        </div>
       </div>
 
       {roles.length > 0 ? (

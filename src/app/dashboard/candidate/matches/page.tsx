@@ -12,10 +12,17 @@ import {
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { ApplyButtonClient } from "./apply-button";
+import { SearchInput } from "@/components/search-input";
 
-export default async function CandidateMatchesPage() {
+export default async function CandidateMatchesPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ q?: string }>;
+}) {
   const session = await auth();
   if (!session?.user || session.user.role !== "CANDIDATE") redirect("/login");
+  const { q } = await searchParams;
+  const query = q?.trim().toLowerCase() || "";
 
   const profile = await prisma.candidateProfile.findUnique({
     where: { userId: session.user.id },
@@ -36,27 +43,46 @@ export default async function CandidateMatchesPage() {
       ...(appliedRoleIds.length > 0 && {
         id: { notIn: appliedRoleIds },
       }),
+      ...(query && {
+        OR: [
+          { title: { contains: query } },
+          { description: { contains: query } },
+        ],
+      }),
     },
     include: { company: { select: { name: true } } },
-    take: 10,
+    take: 20,
   });
+
+  const filteredApplications = query
+    ? profile?.applications.filter(
+        (a) =>
+          a.role.title.toLowerCase().includes(query) ||
+          a.role.company.name.toLowerCase().includes(query)
+      )
+    : profile?.applications;
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold">My Matches</h1>
-        <p className="text-muted-foreground">
-          Roles you&apos;ve applied to and available opportunities
-        </p>
+      <div className="flex items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold">My Matches</h1>
+          <p className="text-muted-foreground">
+            Roles you&apos;ve applied to and available opportunities
+          </p>
+        </div>
+        <div className="w-64">
+          <SearchInput placeholder="Search roles..." />
+        </div>
       </div>
 
-      {profile?.applications && profile.applications.length > 0 && (
+      {filteredApplications && filteredApplications.length > 0 && (
         <Card>
           <CardHeader>
             <CardTitle className="text-base">Your Applications</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            {profile.applications.map((app) => (
+            {filteredApplications.map((app) => (
               <div
                 key={app.id}
                 className="flex items-center justify-between rounded-lg border p-3"
@@ -111,7 +137,7 @@ export default async function CandidateMatchesPage() {
         </Card>
       )}
 
-      {(!profile?.applications || profile.applications.length === 0) &&
+      {(!filteredApplications || filteredApplications.length === 0) &&
         availableRoles.length === 0 && (
           <div className="rounded-lg border border-dashed p-8 text-center">
             <p className="text-muted-foreground">
