@@ -191,6 +191,38 @@ export async function POST(req: Request) {
       });
     }
 
+    // Send email notifications (fire-and-forget)
+    try {
+      const { sendApplicationReceived, sendShortlisted } = await import("@/lib/email");
+      const hm = await prisma.user.findUnique({
+        where: { id: role.createdById },
+        select: { email: true },
+      });
+      const candidateUser = await prisma.user.findFirst({
+        where: { candidateProfile: { id: data.candidateId } },
+        select: { name: true, email: true },
+      });
+      const roleCompany = await prisma.company.findUnique({
+        where: { id: role.companyId },
+        select: { name: true },
+      });
+
+      if (hm?.email && candidateUser) {
+        sendApplicationReceived(
+          hm.email,
+          candidateUser.name || "A candidate",
+          role.title,
+          matchResult.overallScore,
+          role.id
+        );
+      }
+      if (stage === "SHORTLISTED" && candidateUser?.email && roleCompany) {
+        sendShortlisted(candidateUser.email, role.title, roleCompany.name);
+      }
+    } catch {
+      // Don't fail the request if email fails
+    }
+
     return NextResponse.json(application, { status: 201 });
   } catch (error) {
     console.error("Create application error:", error);

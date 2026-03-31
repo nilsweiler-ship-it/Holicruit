@@ -29,6 +29,11 @@ const navItems: Record<string, NavItem[]> = {
     { title: "Submissions", href: "/dashboard/headhunter/submissions" },
     { title: "Billing", href: "/dashboard/headhunter/billing" },
   ],
+  ADMIN: [
+    { title: "Dashboard", href: "/dashboard/admin" },
+    { title: "Users", href: "/dashboard/admin/users" },
+    { title: "Roles", href: "/dashboard/admin/roles" },
+  ],
 };
 
 export function Sidebar() {

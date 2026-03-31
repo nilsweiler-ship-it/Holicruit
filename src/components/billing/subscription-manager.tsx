@@ -48,21 +48,46 @@ export function SubscriptionManager({
   async function executeSwitch(tier: string) {
     setLoading(tier);
     setDowngradeTarget(null);
+
+    const plan = plans.find((p) => p.tier === tier);
+    const isFree = plan?.price === 0;
+
     try {
-      const res = await fetch("/api/billing/subscribe", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ plan: tier }),
-      });
-
-      if (!res.ok) {
+      if (isFree) {
+        // Downgrade to free plan — use direct subscribe API
+        const res = await fetch("/api/billing/subscribe", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ plan: tier }),
+        });
+        if (!res.ok) {
+          const data = await res.json();
+          toast.error(data.error || "Failed to switch plan");
+          return;
+        }
+        toast.success(`Switched to ${plan?.label} plan`);
+        router.refresh();
+      } else {
+        // Paid plan — use Stripe checkout (or stub fallback)
+        const res = await fetch("/api/billing/checkout", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ plan: tier }),
+        });
         const data = await res.json();
-        toast.error(data.error || "Failed to switch plan");
-        return;
+        if (!res.ok) {
+          toast.error(data.error || "Failed to start checkout");
+          return;
+        }
+        if (data.url) {
+          // Stripe checkout — redirect to hosted page
+          window.location.href = data.url;
+          return;
+        }
+        // Stub mode — plan activated directly
+        toast.success(`Switched to ${plan?.label} plan`);
+        router.refresh();
       }
-
-      toast.success(`Switched to ${plans.find((p) => p.tier === tier)?.label} plan`);
-      router.refresh();
     } catch {
       toast.error("Something went wrong");
     } finally {

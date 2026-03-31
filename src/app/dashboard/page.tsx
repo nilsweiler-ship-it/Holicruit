@@ -12,6 +12,7 @@ export default async function DashboardPage() {
     CANDIDATE: "/dashboard/candidate",
     HIRING_MANAGER: "/dashboard/hiring-manager",
     HEADHUNTER: "/dashboard/headhunter",
+    ADMIN: "/dashboard/admin",
   };
 
   redirect(roleRedirects[session.user.role] || "/login");

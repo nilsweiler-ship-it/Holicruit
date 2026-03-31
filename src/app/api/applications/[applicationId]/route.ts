@@ -65,11 +65,48 @@ export async function PATCH(
 
     const application = await prisma.application.update({
       where: { id: applicationId },
+      include: {
+        candidate: {
+          include: { user: { select: { name: true, email: true } } },
+        },
+        role: { include: { company: { select: { name: true } } } },
+      },
       data: {
         stage: data.stage,
         auditLog: JSON.stringify(currentLog),
       },
     });
+
+    // Send email notifications (fire-and-forget)
+    try {
+      const { sendStageUpdate, sendOfferExtended, sendShortlisted, sendHeadhunterSubmissionUpdate } =
+        await import("@/lib/email");
+      const candidateEmail = application.candidate.user.email;
+      const candidateName = application.candidate.user.name || "Candidate";
+      const roleTitle = application.role.title;
+      const companyName = application.role.company.name;
+
+      if (data.stage === "SHORTLISTED") {
+        sendShortlisted(candidateEmail, roleTitle, companyName);
+      } else if (data.stage === "OFFER") {
+        sendOfferExtended(candidateEmail, roleTitle, companyName);
+      } else {
+        sendStageUpdate(candidateEmail, roleTitle, data.stage);
+      }
+
+      // Notify headhunter if applicable
+      if (application.headhunterId) {
+        const hh = await prisma.headhunterProfile.findUnique({
+          where: { id: application.headhunterId },
+          include: { user: { select: { email: true } } },
+        });
+        if (hh?.user.email) {
+          sendHeadhunterSubmissionUpdate(hh.user.email, candidateName, roleTitle, data.stage);
+        }
+      }
+    } catch {
+      // Don't fail the request if email fails
+    }
 
     return NextResponse.json(application);
   } catch (error) {
