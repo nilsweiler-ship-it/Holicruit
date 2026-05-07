@@ -1,6 +1,7 @@
 "use client";
 
 import type { RoleWeights } from "@/types";
+import { MatchRadarChart } from "./match-radar-chart";
 
 interface DimensionScores {
   hardSkills: number;
@@ -30,7 +31,8 @@ export function MatchBreakdown({ scores, weights }: MatchBreakdownProps) {
   ] as const;
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-4">
+      <MatchRadarChart scores={scores} weights={weights} />
       {dimensions.map(({ key, label }) => (
         <div key={key} className="space-y-1">
           <div className="flex justify-between text-sm">

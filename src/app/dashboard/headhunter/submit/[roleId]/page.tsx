@@ -44,7 +44,7 @@ export default async function SubmitCandidatePage({
       visibility: { not: "HIDDEN" },
       ...(appliedIds.length > 0 && { id: { notIn: appliedIds } }),
     },
-    include: { user: { select: { name: true, email: true } } },
+    include: { user: { select: { name: true } } },
   });
 
   return (
@@ -70,7 +70,6 @@ export default async function SubmitCandidatePage({
             candidates={candidates.map((c) => ({
               id: c.id,
               name: c.user.name,
-              email: c.user.email,
               skills: JSON.parse(c.skills),
             }))}
           />

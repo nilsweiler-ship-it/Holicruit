@@ -19,6 +19,8 @@ import {
 } from "@/components/ui/table";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { ShortlistRadarCell } from "./shortlist-radar-cell";
+import { RevealIdentityButton } from "./reveal-identity-button";
 
 export default async function ShortlistPage({
   params,
@@ -86,21 +88,35 @@ export default async function ShortlistPage({
               <TableHeader>
                 <TableRow>
                   <TableHead>Candidate</TableHead>
-                  <TableHead>Email</TableHead>
                   <TableHead>Score</TableHead>
+                  <TableHead>Breakdown</TableHead>
                   <TableHead>Stage</TableHead>
                   <TableHead>Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {shortlisted.map((app) => (
+                {shortlisted.map((app, index) => (
                   <TableRow key={app.id}>
                     <TableCell className="font-medium">
-                      {app.candidate.user.name}
+                      {app.identityRevealed ? (
+                        <div>
+                          <p>{app.candidate.user.name}</p>
+                          <p className="text-sm text-muted-foreground">
+                            {app.candidate.user.email}
+                          </p>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-2">
+                          <span>Candidate {String.fromCharCode(65 + index)}</span>
+                          <RevealIdentityButton applicationId={app.id} />
+                        </div>
+                      )}
                     </TableCell>
-                    <TableCell>{app.candidate.user.email}</TableCell>
                     <TableCell>
                       <MatchScoreBadge score={app.matchScore!} />
+                    </TableCell>
+                    <TableCell>
+                      <ShortlistRadarCell scoreBreakdown={app.scoreBreakdown} />
                     </TableCell>
                     <TableCell>
                       <Badge variant="secondary">{app.stage}</Badge>
@@ -139,15 +155,21 @@ export default async function ShortlistPage({
                 <TableRow>
                   <TableHead>Candidate</TableHead>
                   <TableHead>Score</TableHead>
+                  <TableHead>Breakdown</TableHead>
                   <TableHead>Stage</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {belowThreshold.map((app) => (
+                {belowThreshold.map((app, index) => (
                   <TableRow key={app.id}>
-                    <TableCell>{app.candidate.user.name}</TableCell>
+                    <TableCell>
+                      Candidate {String.fromCharCode(65 + shortlisted.length + index)}
+                    </TableCell>
                     <TableCell>
                       <MatchScoreBadge score={app.matchScore!} />
+                    </TableCell>
+                    <TableCell>
+                      <ShortlistRadarCell scoreBreakdown={app.scoreBreakdown} />
                     </TableCell>
                     <TableCell>
                       <Badge variant="secondary">{app.stage}</Badge>

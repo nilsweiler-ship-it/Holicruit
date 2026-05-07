@@ -2,6 +2,9 @@ import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/db";
 import { z } from "zod";
+import { env } from "@/lib/env";
+import { mintToken } from "@/lib/auth-tokens";
+import { sendVerifyEmail } from "@/lib/email";
 
 const registerSchema = z.object({
   name: z.string().min(1, "Name is required"),
@@ -71,6 +74,23 @@ export async function POST(req: Request) {
         },
       });
     }
+
+    // Fire and forget the verification email — never block registration on it.
+    // We deliberately don't await: a Resend hiccup shouldn't 500 the signup.
+    void (async () => {
+      try {
+        const token = await mintToken(user.id, "VERIFY_EMAIL");
+        const verifyUrl = `${env.NEXT_PUBLIC_APP_URL}/verify-email?token=${encodeURIComponent(token)}`;
+        await sendVerifyEmail({
+          to: user.email,
+          name: user.name,
+          verifyUrl,
+        });
+      } catch (err) {
+        // eslint-disable-next-line no-console
+        console.error("Failed to send verification email:", err);
+      }
+    })();
 
     return NextResponse.json({ id: user.id, email: user.email }, { status: 201 });
   } catch (error) {

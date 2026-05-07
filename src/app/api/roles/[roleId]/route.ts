@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { updateRoleSchema } from "@/lib/validations/role";
+import { logDataAccess } from "@/lib/audit";
 
 export async function GET(
   req: Request,
@@ -31,6 +32,51 @@ export async function GET(
 
   if (!role) {
     return NextResponse.json({ error: "Role not found" }, { status: 404 });
+  }
+
+  // Ownership check
+  if (session.user.role === "HIRING_MANAGER") {
+    const user = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { companyId: true },
+    });
+    if (role.companyId !== user?.companyId) {
+      return NextResponse.json({ error: "Not found" }, { status: 404 });
+    }
+  } else if (session.user.role === "HEADHUNTER") {
+    const hhProfile = await prisma.headhunterProfile.findUnique({
+      where: { userId: session.user.id },
+      select: { id: true },
+    });
+    if (role.claimedById !== hhProfile?.id) {
+      return NextResponse.json({ error: "Not found" }, { status: 404 });
+    }
+  } else {
+    // Other roles (CANDIDATE, etc.) cannot access role details with applications
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
+
+  logDataAccess({
+    userId: session.user.id,
+    action: "VIEW_CANDIDATE",
+    resourceType: "JobRole",
+    resourceId: role.id,
+    metadata: { applicationCount: role.applications.length },
+  });
+
+  // Strip emails from response for headhunters
+  if (session.user.role === "HEADHUNTER") {
+    const sanitized = {
+      ...role,
+      applications: role.applications.map((app) => ({
+        ...app,
+        candidate: {
+          ...app.candidate,
+          user: { name: app.candidate.user.name },
+        },
+      })),
+    };
+    return NextResponse.json(sanitized);
   }
 
   return NextResponse.json(role);
@@ -101,6 +147,9 @@ export async function DELETE(
     return NextResponse.json({ error: "Not found or not authorized" }, { status: 404 });
   }
 
+  // Delete related records first (skill gaps → applications → role)
+  await prisma.skillGap.deleteMany({ where: { application: { roleId } } });
+  await prisma.application.deleteMany({ where: { roleId } });
   await prisma.jobRole.delete({ where: { id: roleId } });
 
   return NextResponse.json({ success: true });

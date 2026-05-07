@@ -24,7 +24,17 @@ export const createRoleSchema = z.object({
   status: z.enum(["DRAFT", "PUBLISHED", "CLOSED"]).default("DRAFT"),
 });
 
-export const updateRoleSchema = createRoleSchema.partial();
+// Define update schema without .default() values — .partial() + .default()
+// causes Zod to apply defaults for missing fields, overwriting existing data.
+export const updateRoleSchema = z.object({
+  title: z.string().min(1, "Title is required").max(200),
+  description: z.string().min(1, "Description is required"),
+  hardSkills: z.array(skillSchema).min(1, "At least one hard skill is required"),
+  softSkills: z.array(skillSchema),
+  weights: roleWeightsSchema,
+  threshold: z.number().min(0).max(100),
+  status: z.enum(["DRAFT", "PUBLISHED", "CLOSED"]),
+}).partial();
 
 export type CreateRoleInput = z.infer<typeof createRoleSchema>;
 export type UpdateRoleInput = z.infer<typeof updateRoleSchema>;

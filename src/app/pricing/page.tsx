@@ -18,6 +18,9 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { PublicHeader } from "@/components/layout/public-header";
+import { PublicFooter } from "@/components/layout/public-footer";
+import { BillingToggle } from "./billing-toggle";
 
 const hmFeatures = [
   { feature: "Active roles", starter: "2", professional: "10", enterprise: "Unlimited" },
@@ -25,6 +28,8 @@ const hmFeatures = [
   { feature: "Match scoring", starter: "Score only", professional: "Full breakdown", enterprise: "Full + custom" },
   { feature: "Gap analysis", starter: "No", professional: "Yes", enterprise: "Yes" },
   { feature: "Team members", starter: "1", professional: "5", enterprise: "Unlimited" },
+  { feature: "Priority support", starter: "No", professional: "Email", enterprise: "Dedicated" },
+  { feature: "Custom branding", starter: "No", professional: "No", enterprise: "Yes" },
 ];
 
 const hhFeatures = [
@@ -44,35 +49,12 @@ export default async function PricingPage() {
 
   return (
     <div className="flex min-h-screen flex-col">
-      <header className="border-b">
-        <div className="flex h-14 items-center px-4 md:px-6">
-          <Link href="/" className="text-xl font-bold">
-            Holicruit
-          </Link>
-          <div className="flex-1" />
-          <div className="flex items-center gap-2">
-            {session?.user ? (
-              <Button variant="ghost" asChild>
-                <Link href="/dashboard">Dashboard</Link>
-              </Button>
-            ) : (
-              <>
-                <Button variant="ghost" asChild>
-                  <Link href="/login">Log in</Link>
-                </Button>
-                <Button asChild>
-                  <Link href="/register">Sign up</Link>
-                </Button>
-              </>
-            )}
-          </div>
-        </div>
-      </header>
+      <PublicHeader />
 
       <main className="flex-1 py-16">
         <div className="mx-auto max-w-5xl px-4">
           <div className="text-center mb-12">
-            <h1 className="text-4xl font-bold tracking-tight mb-4">
+            <h1 className="font-display text-4xl font-bold tracking-tight text-primary mb-4 md:text-5xl">
               Simple, transparent pricing
             </h1>
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
@@ -87,100 +69,9 @@ export default async function PricingPage() {
             </TabsList>
 
             <TabsContent value="hiring-managers">
-              <div className="flex gap-6 mb-8 snap-x snap-mandatory overflow-x-auto pb-2 md:grid md:grid-cols-3 md:overflow-visible md:pb-0">
-                <Card className="shadow-sm snap-center min-w-[280px] md:min-w-0">
-                  <CardHeader>
-                    <CardTitle>Starter</CardTitle>
-                    <CardDescription>
-                      <span className="text-2xl font-bold text-foreground">Free</span>
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <ul className="space-y-2 text-sm mb-6">
-                      <li className="flex items-start gap-2"><Check />2 active roles</li>
-                      <li className="flex items-start gap-2"><Check />10 apps per role</li>
-                      <li className="flex items-start gap-2"><Check />Score only matching</li>
-                      <li className="flex items-start gap-2"><Check />1 team member</li>
-                    </ul>
-                    <Button className="w-full" variant="outline" asChild>
-                      <Link href="/register">Get Started</Link>
-                    </Button>
-                  </CardContent>
-                </Card>
-
-                <Card className="border-primary shadow-md snap-center min-w-[280px] md:min-w-0">
-                  <CardHeader>
-                    <div className="flex items-center justify-between">
-                      <CardTitle>Professional</CardTitle>
-                      <Badge>Popular</Badge>
-                    </div>
-                    <CardDescription>
-                      <span className="text-2xl font-bold text-foreground">$99</span>/mo
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <ul className="space-y-2 text-sm mb-6">
-                      <li className="flex items-start gap-2"><Check />10 active roles</li>
-                      <li className="flex items-start gap-2"><Check />50 apps per role</li>
-                      <li className="flex items-start gap-2"><Check />Full match breakdown</li>
-                      <li className="flex items-start gap-2"><Check />Gap analysis</li>
-                      <li className="flex items-start gap-2"><Check />5 team members</li>
-                    </ul>
-                    <Button className="w-full" asChild>
-                      <Link href="/register">Start Free Trial</Link>
-                    </Button>
-                  </CardContent>
-                </Card>
-
-                <Card className="shadow-sm snap-center min-w-[280px] md:min-w-0">
-                  <CardHeader>
-                    <CardTitle>Enterprise</CardTitle>
-                    <CardDescription>
-                      <span className="text-2xl font-bold text-foreground">$299</span>/mo
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <ul className="space-y-2 text-sm mb-6">
-                      <li className="flex items-start gap-2"><Check />Unlimited roles</li>
-                      <li className="flex items-start gap-2"><Check />Unlimited apps per role</li>
-                      <li className="flex items-start gap-2"><Check />Full + custom scoring</li>
-                      <li className="flex items-start gap-2"><Check />Gap analysis</li>
-                      <li className="flex items-start gap-2"><Check />Unlimited team members</li>
-                    </ul>
-                    <Button className="w-full" variant="outline" asChild>
-                      <Link href="/register">Contact Sales</Link>
-                    </Button>
-                  </CardContent>
-                </Card>
-              </div>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle>Compare Plans</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Feature</TableHead>
-                        <TableHead>Starter</TableHead>
-                        <TableHead>Professional</TableHead>
-                        <TableHead>Enterprise</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {hmFeatures.map((row) => (
-                        <TableRow key={row.feature}>
-                          <TableCell className="font-medium">{row.feature}</TableCell>
-                          <TableCell>{row.starter}</TableCell>
-                          <TableCell>{row.professional}</TableCell>
-                          <TableCell>{row.enterprise}</TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </CardContent>
-              </Card>
+              <BillingToggle
+                hmFeatures={hmFeatures}
+              />
             </TabsContent>
 
             <TabsContent value="headhunters">
@@ -204,7 +95,7 @@ export default async function PricingPage() {
                   </CardContent>
                 </Card>
 
-                <Card className="border-primary shadow-md snap-center min-w-[280px] md:min-w-0">
+                <Card className="border-primary shadow-sm snap-center min-w-[280px] md:min-w-0">
                   <CardHeader>
                     <div className="flex items-center justify-between">
                       <CardTitle>Pro</CardTitle>
@@ -257,9 +148,7 @@ export default async function PricingPage() {
         </div>
       </main>
 
-      <footer className="border-t py-6 text-center text-sm text-muted-foreground">
-        Holicruit &copy; {new Date().getFullYear()}. All rights reserved.
-      </footer>
+      <PublicFooter />
     </div>
   );
 }

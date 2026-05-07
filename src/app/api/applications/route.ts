@@ -28,6 +28,14 @@ export async function GET(req: Request) {
       select: { id: true },
     });
     if (profile) where.headhunterId = profile.id;
+  } else if (session.user.role === "HIRING_MANAGER") {
+    const user = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { companyId: true },
+    });
+    if (user?.companyId) {
+      where.role = { companyId: user.companyId };
+    }
   }
 
   if (roleId) where.roleId = roleId;

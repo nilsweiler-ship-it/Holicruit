@@ -27,6 +27,27 @@ export async function POST(req: Request) {
       );
     }
 
+    // Authorization: only HH who claimed the role or HM whose company owns it
+    if (session.user.role === "HEADHUNTER") {
+      const hhProfile = await prisma.headhunterProfile.findUnique({
+        where: { userId: session.user.id },
+        select: { id: true },
+      });
+      if (role.claimedById !== hhProfile?.id) {
+        return NextResponse.json({ error: "Not found" }, { status: 404 });
+      }
+    } else if (session.user.role === "HIRING_MANAGER") {
+      const user = await prisma.user.findUnique({
+        where: { id: session.user.id },
+        select: { companyId: true },
+      });
+      if (role.companyId !== user?.companyId) {
+        return NextResponse.json({ error: "Not found" }, { status: 404 });
+      }
+    } else {
+      return NextResponse.json({ error: "Not found" }, { status: 404 });
+    }
+
     const parsedCandidate: ParsedCandidate = {
       skills: JSON.parse(candidate.skills),
       experience: JSON.parse(candidate.experience),

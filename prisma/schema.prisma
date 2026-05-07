@@ -8,18 +8,37 @@ datasource db {
 }
 
 model User {
-  id           String   @id @default(cuid())
-  email        String   @unique
-  name         String
-  passwordHash String
-  role         String   @default("CANDIDATE") // CANDIDATE, HEADHUNTER, HIRING_MANAGER, ADMIN
-  createdAt    DateTime @default(now())
+  id              String    @id @default(cuid())
+  email           String    @unique
+  name            String
+  passwordHash    String
+  role            String    @default("CANDIDATE") // CANDIDATE, HEADHUNTER, HIRING_MANAGER, ADMIN
+  emailVerifiedAt DateTime?
+  createdAt       DateTime  @default(now())
 
   candidateProfile  CandidateProfile?
   headhunterProfile HeadhunterProfile?
   company           Company?            @relation(fields: [companyId], references: [id])
   companyId         String?
   createdRoles      JobRole[]           @relation("CreatedByHM")
+  authTokens        AuthToken[]
+}
+
+/**
+ * Single-use, signed tokens for email verification and password reset.
+ * Token strings are hashed before storage so a DB leak doesn't grant access.
+ */
+model AuthToken {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String   @unique
+  purpose   String // VERIFY_EMAIL | RESET_PASSWORD
+  expiresAt DateTime
+  consumedAt DateTime?
+  createdAt DateTime @default(now())
+
+  @@index([userId, purpose])
 }
 
 model Company {
@@ -92,6 +111,9 @@ model Application {
   scoreBreakdown String?
   stage          String  @default("APPLIED") // APPLIED, SCREENING, SHORTLISTED, INTERVIEW, OFFER, HIRED, REJECTED
   auditLog       String  @default("[]")
+  identityRevealed Boolean  @default(false)
+  revealedAt       DateTime?
+  revealedById     String?
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
@@ -110,6 +132,16 @@ model SkillGap {
   requiredLevel   Int
   status          String      // MET, PARTIAL, MISSING
   recommendations String      @default("[]")
+}
+
+model DataAccessLog {
+  id           String   @id @default(cuid())
+  userId       String
+  action       String   // VIEW_CANDIDATE, REVEAL_IDENTITY, DOWNLOAD_CV, EXPORT_DATA
+  resourceType String   // Application, CandidateProfile, JobRole
+  resourceId   String
+  metadata     String   @default("{}")
+  createdAt    DateTime @default(now())
 }
 
 model Subscription {
