@@ -4,16 +4,17 @@ import { prisma } from "@/lib/db";
 import { getHMPlan, HM_PLANS } from "@/lib/plans";
 import { MatchScoreBadge } from "@/components/matching/match-score-badge";
 import { MatchBreakdown } from "@/components/matching/match-breakdown";
+import { SkillRadarChart } from "@/components/matching/skill-radar-chart";
 import { GapReportView } from "@/components/matching/gap-report-view";
 import { GapReportGate } from "@/components/billing/gap-report-gate";
 import { StageBadge } from "@/components/pipeline/stage-badge";
 import {
   Card,
   CardContent,
+  CardDescription,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
 import type { RoleWeights } from "@/types";
 
 export default async function ApplicationDetailPage({
@@ -55,6 +56,25 @@ export default async function ApplicationDetailPage({
     details?: string;
   }> = JSON.parse(application.auditLog);
 
+  const candidateSkills: Array<{ name: string; level: number; category?: string }> =
+    JSON.parse(application.candidate.skills || "[]");
+  const roleHardSkills: Array<{ name: string; level: number }> =
+    JSON.parse(application.role.hardSkills);
+  const roleSoftSkills: Array<{ name: string; level: number }> =
+    JSON.parse(application.role.softSkills);
+  const allRequiredSkills = [...roleHardSkills, ...roleSoftSkills];
+
+  const radarPoints = allRequiredSkills.map((req) => {
+    const match = candidateSkills.find(
+      (s) => s.name.toLowerCase().trim() === req.name.toLowerCase().trim()
+    );
+    return {
+      label: req.name,
+      candidate: match?.level || 0,
+      required: req.level,
+    };
+  });
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -74,16 +94,34 @@ export default async function ApplicationDetailPage({
         </div>
       </div>
 
-      {breakdown && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Match Breakdown</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <MatchBreakdown scores={breakdown} weights={weights} />
-          </CardContent>
-        </Card>
-      )}
+      <div className="grid gap-6 lg:grid-cols-2">
+        {/* Radar chart */}
+        {radarPoints.length >= 3 && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Skills Match</CardTitle>
+              <CardDescription>
+                Candidate profile vs. role requirements
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="flex justify-center">
+              <SkillRadarChart points={radarPoints} size={320} />
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Score breakdown */}
+        {breakdown && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Score Breakdown</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <MatchBreakdown scores={breakdown} weights={weights} />
+            </CardContent>
+          </Card>
+        )}
+      </div>
 
       <Card>
         <CardHeader>

@@ -3,13 +3,16 @@ import { redirect, notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { MatchScoreBadge } from "@/components/matching/match-score-badge";
 import { MatchBreakdown } from "@/components/matching/match-breakdown";
+import { SkillRadarChart } from "@/components/matching/skill-radar-chart";
 import { GapReportView } from "@/components/matching/gap-report-view";
+import { ImprovementActions } from "@/components/matching/improvement-actions";
 import { StageBadge } from "@/components/pipeline/stage-badge";
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
+  CardDescription,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
@@ -27,7 +30,7 @@ export default async function CandidateGapReportPage({
 
   const profile = await prisma.candidateProfile.findUnique({
     where: { userId: session.user.id },
-    select: { id: true },
+    select: { id: true, skills: true },
   });
 
   const application = await prisma.application.findUnique({
@@ -44,6 +47,25 @@ export default async function CandidateGapReportPage({
     ? JSON.parse(application.scoreBreakdown)
     : null;
   const weights: RoleWeights = JSON.parse(application.role.weights);
+
+  const candidateSkills: Array<{ name: string; level: number; category?: string }> =
+    JSON.parse(profile?.skills || "[]");
+  const roleHardSkills: Array<{ name: string; level: number }> =
+    JSON.parse(application.role.hardSkills);
+  const roleSoftSkills: Array<{ name: string; level: number }> =
+    JSON.parse(application.role.softSkills);
+  const allRequiredSkills = [...roleHardSkills, ...roleSoftSkills];
+
+  const radarPoints = allRequiredSkills.map((req) => {
+    const match = candidateSkills.find(
+      (s) => s.name.toLowerCase().trim() === req.name.toLowerCase().trim()
+    );
+    return {
+      label: req.name,
+      candidate: match?.level || 0,
+      required: req.level,
+    };
+  });
 
   return (
     <div className="space-y-6">
@@ -65,16 +87,37 @@ export default async function CandidateGapReportPage({
         </div>
       </div>
 
-      {breakdown && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Score Breakdown</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <MatchBreakdown scores={breakdown} weights={weights} />
-          </CardContent>
-        </Card>
-      )}
+      <div className="grid gap-6 lg:grid-cols-2">
+        {/* Radar chart */}
+        {radarPoints.length >= 3 && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Skills Match</CardTitle>
+              <CardDescription>
+                Your profile vs. role requirements
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="flex justify-center">
+              <SkillRadarChart points={radarPoints} size={320} />
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Score breakdown */}
+        {breakdown && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Score Breakdown</CardTitle>
+              <CardDescription>
+                How your overall score is calculated
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <MatchBreakdown scores={breakdown} weights={weights} />
+            </CardContent>
+          </Card>
+        )}
+      </div>
 
       <Card>
         <CardHeader>
@@ -82,6 +125,18 @@ export default async function CandidateGapReportPage({
         </CardHeader>
         <CardContent>
           <GapReportView gaps={application.skillGaps} />
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Improve Your Profile</CardTitle>
+          <CardDescription>
+            Targeted training courses and job opportunities to close your skill gaps
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <ImprovementActions gaps={application.skillGaps} />
         </CardContent>
       </Card>
     </div>
