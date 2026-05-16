@@ -77,6 +77,8 @@ export async function POST(req: Request) {
       data: {
         title: data.title,
         description: data.description,
+        roleType: data.roleType,
+        bounty: data.bounty,
         hardSkills: JSON.stringify(data.hardSkills),
         softSkills: JSON.stringify(data.softSkills),
         weights: JSON.stringify(data.weights),

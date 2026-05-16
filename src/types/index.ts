@@ -11,6 +11,10 @@ export type ApplicationStage =
 
 export type RoleStatus = "DRAFT" | "PUBLISHED" | "CLOSED";
 
+export type RoleType = "PERMANENT" | "CONTRACT_SHORT" | "CONTRACT_MEDIUM" | "CONTRACT_LONG";
+
+export type MilestoneType = "SHORTLIST" | "HIRE";
+
 export interface Skill {
   name: string;
   level: number; // 1-5
@@ -60,6 +64,13 @@ export const APPLICATION_STAGES: ApplicationStage[] = [
   "OFFER",
   "HIRED",
   "REJECTED",
+];
+
+export const ROLE_TYPES: { value: RoleType; label: string }[] = [
+  { value: "PERMANENT", label: "Permanent" },
+  { value: "CONTRACT_SHORT", label: "Contract (<3 months)" },
+  { value: "CONTRACT_MEDIUM", label: "Contract (3-6 months)" },
+  { value: "CONTRACT_LONG", label: "Contract (6+ months)" },
 ];
 
 // Plan types

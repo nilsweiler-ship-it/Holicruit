@@ -16,7 +16,8 @@ import {
 import { SkillInput } from "./skill-input";
 import { UpgradePrompt } from "@/components/billing/upgrade-prompt";
 import { toast } from "sonner";
-import type { Skill, RoleWeights } from "@/types";
+import type { Skill, RoleWeights, RoleType } from "@/types";
+import { ROLE_TYPES } from "@/types";
 
 const STEPS = [
   "Basic Info",
@@ -35,6 +36,8 @@ export function RoleForm() {
   const [upgradeMessage, setUpgradeMessage] = useState("");
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
+  const [roleType, setRoleType] = useState<RoleType>("PERMANENT");
+  const [bounty, setBounty] = useState<string>("");
   const [hardSkills, setHardSkills] = useState<Skill[]>([]);
   const [softSkills, setSoftSkills] = useState<Skill[]>([]);
   const [weights, setWeights] = useState<RoleWeights>({
@@ -57,6 +60,8 @@ export function RoleForm() {
         body: JSON.stringify({
           title,
           description,
+          roleType,
+          bounty: bounty ? Math.round(parseFloat(bounty) * 100) : undefined,
           hardSkills,
           softSkills,
           weights,
@@ -156,6 +161,34 @@ export function RoleForm() {
                   placeholder="Describe the role, responsibilities, and requirements..."
                   rows={6}
                 />
+              </div>
+              <div className="space-y-2">
+                <Label>Role Type</Label>
+                <select
+                  value={roleType}
+                  onChange={(e) => setRoleType(e.target.value as RoleType)}
+                  className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm"
+                >
+                  {ROLE_TYPES.map((rt) => (
+                    <option key={rt.value} value={rt.value}>
+                      {rt.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="space-y-2">
+                <Label>Headhunter Bounty (optional)</Label>
+                <Input
+                  type="number"
+                  value={bounty}
+                  onChange={(e) => setBounty(e.target.value)}
+                  placeholder="e.g. 3000 (in USD, overrides default platform split)"
+                  min="0"
+                  step="100"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Set a custom bounty for headhunters. Leave empty to use the platform default (60/40 split of hire fee).
+                </p>
               </div>
             </>
           )}

@@ -17,22 +17,27 @@ const navItems: Record<string, NavItem[]> = {
     { title: "Dashboard", href: "/dashboard/candidate" },
     { title: "My Profile", href: "/dashboard/candidate/profile" },
     { title: "Matches", href: "/dashboard/candidate/matches" },
+    { title: "Progress", href: "/dashboard/candidate/progress" },
+    { title: "Messages", href: "/dashboard/messages" },
   ],
   HIRING_MANAGER: [
     { title: "Dashboard", href: "/dashboard/hiring-manager" },
     { title: "Roles", href: "/dashboard/hiring-manager/roles" },
-    { title: "Billing", href: "/dashboard/hiring-manager/billing" },
+    { title: "Team & Talent", href: "/dashboard/hiring-manager/team" },
+    { title: "Messages", href: "/dashboard/messages" },
   ],
   HEADHUNTER: [
     { title: "Dashboard", href: "/dashboard/headhunter" },
     { title: "Browse Roles", href: "/dashboard/headhunter/roles" },
     { title: "Submissions", href: "/dashboard/headhunter/submissions" },
-    { title: "Billing", href: "/dashboard/headhunter/billing" },
+    { title: "Placements", href: "/dashboard/headhunter/placements" },
+    { title: "Messages", href: "/dashboard/messages" },
   ],
   ADMIN: [
     { title: "Dashboard", href: "/dashboard/admin" },
     { title: "Users", href: "/dashboard/admin/users" },
     { title: "Roles", href: "/dashboard/admin/roles" },
+    { title: "Pricing", href: "/dashboard/admin/pricing" },
   ],
 };
 

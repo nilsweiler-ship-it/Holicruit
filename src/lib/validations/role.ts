@@ -17,6 +17,8 @@ export const roleWeightsSchema = z.object({
 export const createRoleSchema = z.object({
   title: z.string().min(1, "Title is required").max(200),
   description: z.string().min(1, "Description is required"),
+  roleType: z.enum(["PERMANENT", "CONTRACT_SHORT", "CONTRACT_MEDIUM", "CONTRACT_LONG"]).default("PERMANENT"),
+  bounty: z.number().int().min(0).optional(),
   hardSkills: z.array(skillSchema).min(1, "At least one hard skill is required"),
   softSkills: z.array(skillSchema),
   weights: roleWeightsSchema,

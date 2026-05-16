@@ -57,6 +57,18 @@ export async function PUT(req: Request) {
       },
     });
 
+    // Record a skill snapshot for career tracking (fire-and-forget)
+    if (data.skills && data.skills.length > 0) {
+      prisma.skillSnapshot
+        .create({
+          data: {
+            candidateId: profile.id,
+            skills: JSON.stringify(data.skills),
+          },
+        })
+        .catch(() => {});
+    }
+
     return NextResponse.json(profile);
   } catch (error) {
     console.error("Update profile error:", error);

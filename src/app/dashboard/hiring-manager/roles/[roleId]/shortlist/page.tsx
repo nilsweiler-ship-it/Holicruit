@@ -1,6 +1,7 @@
 import { auth } from "@/lib/auth";
 import { redirect, notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
+import { triggerMilestone } from "@/lib/milestones";
 import { Badge } from "@/components/ui/badge";
 import { MatchScoreBadge } from "@/components/matching/match-score-badge";
 import {
@@ -50,6 +51,11 @@ export default async function ShortlistPage({
 
   if (!role || role.createdById !== session.user.id) notFound();
 
+  // Trigger shortlist milestone fee (idempotent — only charges once per role)
+  if (role.applications.length > 0) {
+    triggerMilestone(role.id, "SHORTLIST").catch(() => {});
+  }
+
   const shortlisted = role.applications.filter(
     (a) => a.matchScore !== null && a.matchScore >= role.threshold
   );
@@ -93,29 +99,37 @@ export default async function ShortlistPage({
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {shortlisted.map((app) => (
-                  <TableRow key={app.id}>
-                    <TableCell className="font-medium">
-                      {app.candidate.user.name}
-                    </TableCell>
-                    <TableCell>{app.candidate.user.email}</TableCell>
-                    <TableCell>
-                      <MatchScoreBadge score={app.matchScore!} />
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="secondary">{app.stage}</Badge>
-                    </TableCell>
-                    <TableCell>
-                      <Button size="sm" variant="outline" asChild>
-                        <Link
-                          href={`/dashboard/hiring-manager/applications/${app.id}`}
-                        >
-                          View
-                        </Link>
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
+                {shortlisted.map((app) => {
+                  const contactRevealed = ["INTERVIEW", "OFFER", "HIRED"].includes(app.stage);
+                  return (
+                    <TableRow key={app.id}>
+                      <TableCell className="font-medium">
+                        {app.candidate.user.name}
+                      </TableCell>
+                      <TableCell>
+                        {contactRevealed
+                          ? app.candidate.user.email
+                          : <span className="text-muted-foreground italic">Revealed at interview stage</span>
+                        }
+                      </TableCell>
+                      <TableCell>
+                        <MatchScoreBadge score={app.matchScore!} />
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="secondary">{app.stage}</Badge>
+                      </TableCell>
+                      <TableCell>
+                        <Button size="sm" variant="outline" asChild>
+                          <Link
+                            href={`/dashboard/hiring-manager/applications/${app.id}`}
+                          >
+                            View
+                          </Link>
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
               </TableBody>
             </Table>
           ) : (

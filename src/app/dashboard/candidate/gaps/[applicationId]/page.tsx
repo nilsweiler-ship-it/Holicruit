@@ -6,6 +6,7 @@ import { MatchBreakdown } from "@/components/matching/match-breakdown";
 import { SkillRadarChart } from "@/components/matching/skill-radar-chart";
 import { GapReportView } from "@/components/matching/gap-report-view";
 import { ImprovementActions } from "@/components/matching/improvement-actions";
+import { HireConfirmation } from "@/components/pipeline/hire-confirmation";
 import { StageBadge } from "@/components/pipeline/stage-badge";
 import {
   Card,
@@ -118,6 +119,19 @@ export default async function CandidateGapReportPage({
           </Card>
         )}
       </div>
+
+      {(application.stage === "OFFER" || application.stage === "HIRED") && (
+        <Card>
+          <CardContent className="pt-6">
+            <HireConfirmation
+              applicationId={application.id}
+              hmConfirmed={application.hmConfirmed}
+              candidateConfirmed={application.candidateConfirmed}
+              role="CANDIDATE"
+            />
+          </CardContent>
+        </Card>
+      )}
 
       <Card>
         <CardHeader>
