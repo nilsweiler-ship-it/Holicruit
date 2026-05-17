@@ -9,6 +9,12 @@ async function main() {
   console.log("Seeding database...");
 
   // Clean existing data
+  await prisma.placement.deleteMany();
+  await prisma.milestoneCharge.deleteMany();
+  await prisma.milestoneFee.deleteMany();
+  await prisma.message.deleteMany();
+  await prisma.skillSnapshot.deleteMany();
+  await prisma.platformConfig.deleteMany();
   await prisma.subscription.deleteMany();
   await prisma.skillGap.deleteMany();
   await prisma.application.deleteMany();
@@ -17,6 +23,9 @@ async function main() {
   await prisma.jobRole.deleteMany();
   await prisma.user.deleteMany();
   await prisma.company.deleteMany();
+
+  // Create default platform config
+  await prisma.platformConfig.create({ data: {} });
 
   const hash = await bcrypt.hash("password123", 10);
 
@@ -143,6 +152,27 @@ async function main() {
       status: "ACTIVE",
       currentPeriodStart: new Date(),
       currentPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+    },
+  });
+
+  // Admin user
+  await prisma.user.create({
+    data: {
+      name: "Admin",
+      email: "admin@holicruit.com",
+      passwordHash: hash,
+      role: "ADMIN",
+    },
+  });
+
+  // Alias users for easy testing (same credentials: password123)
+  const alice = await prisma.user.create({
+    data: {
+      name: "Alice (HM alias)",
+      email: "alice@example.com",
+      passwordHash: hash,
+      role: "HIRING_MANAGER",
+      companyId: acme.id,
     },
   });
 
