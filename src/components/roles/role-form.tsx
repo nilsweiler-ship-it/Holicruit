@@ -38,6 +38,11 @@ export function RoleForm() {
   const [description, setDescription] = useState("");
   const [roleType, setRoleType] = useState<RoleType>("PERMANENT");
   const [bounty, setBounty] = useState<string>("");
+  const [contractStart, setContractStart] = useState("");
+  const [contractEnd, setContractEnd] = useState("");
+  const [rateAmount, setRateAmount] = useState("");
+  const [rateType, setRateType] = useState<"HOURLY" | "DAILY">("DAILY");
+  const isContract = roleType !== "PERMANENT";
   const [hardSkills, setHardSkills] = useState<Skill[]>([]);
   const [softSkills, setSoftSkills] = useState<Skill[]>([]);
   const [weights, setWeights] = useState<RoleWeights>({
@@ -62,6 +67,10 @@ export function RoleForm() {
           description,
           roleType,
           bounty: bounty ? Math.round(parseFloat(bounty) * 100) : undefined,
+          contractStart: contractStart || undefined,
+          contractEnd: contractEnd || undefined,
+          rateAmount: rateAmount ? Math.round(parseFloat(rateAmount) * 100) : undefined,
+          rateType: isContract ? rateType : undefined,
           hardSkills,
           softSkills,
           weights,
@@ -190,6 +199,54 @@ export function RoleForm() {
                   Set a custom bounty for headhunters. Leave empty to use the platform default (60/40 split of hire fee).
                 </p>
               </div>
+              {isContract && (
+                <>
+                  <div className="rounded-lg border bg-muted/30 p-4 space-y-4">
+                    <p className="text-sm font-medium">Contract Details</p>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label>Start Date</Label>
+                        <Input
+                          type="date"
+                          value={contractStart}
+                          onChange={(e) => setContractStart(e.target.value)}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>End Date</Label>
+                        <Input
+                          type="date"
+                          value={contractEnd}
+                          onChange={(e) => setContractEnd(e.target.value)}
+                        />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label>Rate</Label>
+                        <Input
+                          type="number"
+                          value={rateAmount}
+                          onChange={(e) => setRateAmount(e.target.value)}
+                          placeholder="e.g. 750"
+                          min="0"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Rate Type</Label>
+                        <select
+                          value={rateType}
+                          onChange={(e) => setRateType(e.target.value as "HOURLY" | "DAILY")}
+                          className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm"
+                        >
+                          <option value="DAILY">Per Day</option>
+                          <option value="HOURLY">Per Hour</option>
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+                </>
+              )}
             </>
           )}
 

@@ -3,13 +3,13 @@ import "./globals.css";
 import { Providers } from "@/components/layout/providers";
 
 export const viewport: Viewport = {
-  themeColor: "#0a0a0a",
+  themeColor: "#1a7a6d",
 };
 
 export const metadata: Metadata = {
-  title: "Holicruit - Recruitment Platform",
+  title: "Holicruit - Transparent, Holistic Recruiting",
   description:
-    "Connect freelance headhunters with hiring companies. Smart matching and pipeline management.",
+    "Radical transparency in hiring. Candidates see exactly which skills they lack. Hiring managers see every candidate scored. Everyone wins when everyone knows where they stand.",
   appleWebApp: {
     capable: true,
     title: "Holicruit",

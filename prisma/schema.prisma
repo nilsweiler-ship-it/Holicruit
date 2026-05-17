@@ -45,6 +45,10 @@ model JobRole {
   status          String   @default("DRAFT") // DRAFT, PUBLISHED, CLOSED
   roleType        String   @default("PERMANENT") // PERMANENT, CONTRACT_SHORT, CONTRACT_MEDIUM, CONTRACT_LONG
   bounty          Int?     // Custom headhunter bounty in cents (overrides default split)
+  contractStart   DateTime?
+  contractEnd     DateTime?
+  rateAmount      Int?     // Rate in cents (hourly or daily)
+  rateType        String?  // HOURLY, DAILY
   company         Company  @relation("CompanyRoles", fields: [companyId], references: [id])
   companyId       String
   createdBy       User     @relation("CreatedByHM", fields: [createdById], references: [id])
@@ -55,7 +59,24 @@ model JobRole {
 
   applications Application[]
   milestones   MilestoneFee[]
+  contracts    Contract[]
   createdAt    DateTime        @default(now())
+}
+
+model Contract {
+  id              String   @id @default(cuid())
+  role            JobRole  @relation(fields: [roleId], references: [id])
+  roleId          String
+  candidateId     String
+  status          String   @default("ACTIVE") // ACTIVE, EXTENDED, COMPLETED, TERMINATED
+  startDate       DateTime
+  endDate         DateTime
+  rateAmount      Int      // Rate in cents
+  rateType        String   // HOURLY, DAILY
+  extensions      String   @default("[]") // JSON array of { extendedTo, reason, timestamp }
+  notes           String   @default("")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 }
 
 model CandidateProfile {

@@ -64,8 +64,20 @@ export default async function RoleDetailPage({
             >
               {role.status}
             </Badge>
+            {role.roleType !== "PERMANENT" && (
+              <Badge variant="outline" className="text-xs">
+                {role.roleType === "CONTRACT_SHORT" ? "Contract <3mo" : role.roleType === "CONTRACT_MEDIUM" ? "Contract 3-6mo" : "Contract 6mo+"}
+              </Badge>
+            )}
           </div>
-          <p className="text-muted-foreground">{role.company.name}</p>
+          <p className="text-muted-foreground">
+            {role.company.name}
+            {role.contractStart && role.contractEnd && (
+              <span className="text-xs ml-2">
+                ({new Date(role.contractStart).toLocaleDateString()} &ndash; {new Date(role.contractEnd).toLocaleDateString()})
+              </span>
+            )}
+          </p>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" asChild>
