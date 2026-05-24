@@ -43,6 +43,7 @@ export function RoleForm() {
   const [rateAmount, setRateAmount] = useState("");
   const [rateType, setRateType] = useState<"HOURLY" | "DAILY">("DAILY");
   const isContract = roleType !== "PERMANENT";
+  const isProject = roleType === "PROJECT";
   const [hardSkills, setHardSkills] = useState<Skill[]>([]);
   const [softSkills, setSoftSkills] = useState<Skill[]>([]);
   const [weights, setWeights] = useState<RoleWeights>({

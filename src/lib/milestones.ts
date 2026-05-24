@@ -22,6 +22,8 @@ export function getHireFeeForRoleType(
       return config.hireFeeContractMedium;
     case "CONTRACT_LONG":
       return config.hireFeeContractLong;
+    case "PROJECT":
+      return config.hireFeeContractMedium;
     default:
       return config.hireFeePermanentCents;
   }

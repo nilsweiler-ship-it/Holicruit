@@ -43,7 +43,7 @@ model JobRole {
   weights         String   @default("{\"hardSkills\":40,\"softSkills\":25,\"experience\":25,\"education\":10}")
   threshold       Int      @default(70)
   status          String   @default("DRAFT") // DRAFT, PUBLISHED, CLOSED
-  roleType        String   @default("PERMANENT") // PERMANENT, CONTRACT_SHORT, CONTRACT_MEDIUM, CONTRACT_LONG
+  roleType        String   @default("PERMANENT") // PERMANENT, CONTRACT_SHORT, CONTRACT_MEDIUM, CONTRACT_LONG, PROJECT
   bounty          Int?     // Custom headhunter bounty in cents (overrides default split)
   contractStart   DateTime?
   contractEnd     DateTime?
