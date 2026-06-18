@@ -15,6 +15,7 @@
     "seed": "npx tsx prisma/seed.ts"
   },
   "dependencies": {
+    "@fontsource/outfit": "^5.2.8",
     "@hookform/resolvers": "^5.2.2",
     "@libsql/client": "^0.17.0",
     "@prisma/adapter-libsql": "^7.4.0",

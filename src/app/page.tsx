@@ -25,7 +25,7 @@ export default function HomePage() {
   return (
     <div className="flex min-h-screen flex-col">
       {/* Header */}
-      <header className="border-b bg-white/80 backdrop-blur-sm sticky top-0 z-50">
+      <header className="border-b bg-background/80 backdrop-blur-sm sticky top-0 z-50">
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 md:px-6">
           <Link href="/" className="text-2xl font-bold tracking-tight text-primary">
             holicruit
