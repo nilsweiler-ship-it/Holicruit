@@ -1,11 +1,9 @@
 "use client";
 
-import { useState } from "react";
-import { PipelineCard } from "./pipeline-card";
-import { StageBadge } from "./stage-badge";
-import { toast } from "sonner";
-import { useRouter } from "next/navigation";
-import { APPLICATION_STAGES } from "@/types";
+import Link from "next/link";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { MessageCircle, Star, User } from "lucide-react";
 
 interface ApplicationItem {
   id: string;
@@ -14,102 +12,111 @@ interface ApplicationItem {
   stage: string;
   createdAt: string;
   roleId: string;
+  hasMessages?: boolean;
 }
 
 interface PipelineBoardProps {
   applications: ApplicationItem[];
   roleId: string;
+  highlightedId?: string;
 }
 
-export function PipelineBoard({ applications, roleId }: PipelineBoardProps) {
-  const router = useRouter();
-  const stages = APPLICATION_STAGES.filter((s) => s !== "REJECTED");
+type KanbanColumn = {
+  key: string;
+  label: string;
+  stages: string[];
+  indicator?: "chat" | "star";
+};
 
-  async function handleDrop(applicationId: string, newStage: string) {
-    try {
-      const res = await fetch(`/api/applications/${applicationId}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ stage: newStage }),
-      });
-      if (!res.ok) throw new Error();
-      toast.success(`Moved to ${newStage}`);
-      router.refresh();
-    } catch {
-      toast.error("Failed to update stage");
-    }
-  }
+const COLUMNS: KanbanColumn[] = [
+  { key: "new", label: "New", stages: ["APPLIED", "SCREENING", "SHORTLISTED"] },
+  { key: "talking", label: "Talking", stages: ["INTERVIEW"], indicator: "chat" },
+  { key: "offer", label: "Offer", stages: ["OFFER", "HIRED"], indicator: "star" },
+];
 
+export function PipelineBoard({
+  applications,
+  roleId,
+  highlightedId,
+}: PipelineBoardProps) {
   return (
-    <div className="flex gap-4 overflow-x-auto pb-4">
-      {stages.map((stage) => {
-        const stageApps = applications.filter((a) => a.stage === stage);
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      {COLUMNS.map((col) => {
+        const colApps = applications.filter((a) =>
+          col.stages.includes(a.stage)
+        );
         return (
-          <div
-            key={stage}
-            className="min-w-[220px] flex-shrink-0 rounded-lg bg-muted/50 p-3"
-            onDragOver={(e) => e.preventDefault()}
-            onDrop={(e) => {
-              const id = e.dataTransfer.getData("applicationId");
-              if (id) handleDrop(id, stage);
-            }}
-          >
-            <div className="flex items-center justify-between mb-3">
-              <StageBadge stage={stage} />
-              <span className="text-xs text-muted-foreground">
-                {stageApps.length}
-              </span>
+          <div key={col.key} className="space-y-3">
+            {/* Column header */}
+            <div className="flex items-center justify-between px-1">
+              <h3 className="text-sm font-semibold text-foreground">
+                {col.label}
+              </h3>
+              <Badge variant="secondary" className="text-xs tabular-nums">
+                {colApps.length}
+              </Badge>
             </div>
-            <div className="space-y-2">
-              {stageApps.map((app) => (
-                <div
-                  key={app.id}
-                  draggable
-                  onDragStart={(e) =>
-                    e.dataTransfer.setData("applicationId", app.id)
-                  }
-                  className="cursor-grab active:cursor-grabbing"
-                >
-                  <PipelineCard application={app} />
-                </div>
-              ))}
+
+            {/* Column body */}
+            <div className="rounded-xl bg-muted/40 p-3 min-h-[200px] space-y-2">
+              {colApps.length === 0 && (
+                <p className="text-xs text-muted-foreground text-center py-8">
+                  No candidates
+                </p>
+              )}
+              {colApps.map((app) => {
+                const isHighlighted = app.id === highlightedId;
+                return (
+                  <Link
+                    key={app.id}
+                    href={`/dashboard/hiring-manager/applications/${app.id}`}
+                    className="block"
+                  >
+                    <Card
+                      className={`transition-colors hover:border-primary/40 hover:shadow-sm ${
+                        isHighlighted
+                          ? "bg-amber-50 border-amber-200 dark:bg-amber-950/30 dark:border-amber-800"
+                          : ""
+                      }`}
+                    >
+                      <CardContent className="p-3">
+                        <div className="flex items-center gap-3">
+                          {/* Avatar placeholder */}
+                          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-muted">
+                            <User className="h-4 w-4 text-muted-foreground" />
+                          </div>
+
+                          {/* Name + indicator */}
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-1.5">
+                              <span className="text-sm font-medium truncate">
+                                {app.candidateName}
+                              </span>
+                              {col.indicator === "chat" && app.hasMessages && (
+                                <MessageCircle className="h-3.5 w-3.5 text-primary shrink-0" />
+                              )}
+                              {col.indicator === "star" && (
+                                <Star className="h-3.5 w-3.5 text-amber-500 fill-amber-500 shrink-0" />
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Fit score */}
+                          {app.matchScore !== null && (
+                            <span className="text-lg font-bold tabular-nums text-foreground">
+                              {app.matchScore}
+                            </span>
+                          )}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </Link>
+                );
+              })}
             </div>
           </div>
         );
       })}
-
-      {/* Rejected column */}
-      <div
-        className="min-w-[220px] flex-shrink-0 rounded-lg bg-red-50 p-3"
-        onDragOver={(e) => e.preventDefault()}
-        onDrop={(e) => {
-          const id = e.dataTransfer.getData("applicationId");
-          if (id) handleDrop(id, "REJECTED");
-        }}
-      >
-        <div className="flex items-center justify-between mb-3">
-          <StageBadge stage="REJECTED" />
-          <span className="text-xs text-muted-foreground">
-            {applications.filter((a) => a.stage === "REJECTED").length}
-          </span>
-        </div>
-        <div className="space-y-2">
-          {applications
-            .filter((a) => a.stage === "REJECTED")
-            .map((app) => (
-              <div
-                key={app.id}
-                draggable
-                onDragStart={(e) =>
-                  e.dataTransfer.setData("applicationId", app.id)
-                }
-                className="cursor-grab active:cursor-grabbing"
-              >
-                <PipelineCard application={app} />
-              </div>
-            ))}
-        </div>
-      </div>
     </div>
   );
 }

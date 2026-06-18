@@ -13,6 +13,10 @@ interface NavItem {
   href: string;
 }
 
+const roleDisplayName: Record<string, string> = {
+  HEADHUNTER: "RECRUITER",
+};
+
 const navItems: Record<string, NavItem[]> = {
   CANDIDATE: [
     { title: "Dashboard", href: "/dashboard/candidate" },
@@ -98,7 +102,7 @@ export function Sidebar() {
       {/* Desktop sidebar */}
       <aside className="hidden md:flex w-56 flex-col border-r bg-sidebar p-4">
         <div className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground mb-3 px-3">
-          {session.user.role.replace("_", " ")}
+          {(roleDisplayName[session.user.role] ?? session.user.role).replace("_", " ")}
         </div>
         <nav className="flex flex-col gap-0.5 flex-1">
           {items.map((item) => {

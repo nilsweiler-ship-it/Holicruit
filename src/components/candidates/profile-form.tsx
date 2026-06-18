@@ -4,20 +4,22 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
   Card,
   CardContent,
+  CardDescription,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { SkillInput } from "@/components/roles/skill-input";
-import { CVUpload } from "./cv-upload";
 import { toast } from "sonner";
-import type { Skill, ExperienceEntry, EducationEntry } from "@/types";
+import { Check, Plus, Zap } from "lucide-react";
+import type { Skill } from "@/types";
 
 interface ProfileFormProps {
+  userName: string;
   profile: {
     bio: string | null;
     resumeUrl: string | null;
@@ -26,71 +28,94 @@ interface ProfileFormProps {
     education: string;
     visibility: string;
   };
+  completeness: number;
+  hardSkills: Skill[];
+  softSkills: Skill[];
 }
 
-export function ProfileForm({ profile }: ProfileFormProps) {
+function CompletenessRing({ percentage }: { percentage: number }) {
+  const size = 120;
+  const strokeWidth = 10;
+  const radius = (size - strokeWidth) / 2;
+  const circumference = 2 * Math.PI * radius;
+  const dashoffset = circumference * (1 - percentage / 100);
+
+  return (
+    <div className="flex flex-col items-center gap-2">
+      <svg width={size} height={size} className="-rotate-90">
+        {/* Background track */}
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={radius}
+          fill="none"
+          stroke="currentColor"
+          strokeWidth={strokeWidth}
+          className="text-muted/40"
+        />
+        {/* Filled arc */}
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={radius}
+          fill="none"
+          stroke="currentColor"
+          strokeWidth={strokeWidth}
+          strokeLinecap="round"
+          strokeDasharray={circumference}
+          strokeDashoffset={dashoffset}
+          className="text-primary transition-all duration-500"
+        />
+        {/* Percentage text (rotated back to upright) */}
+        <text
+          x={size / 2}
+          y={size / 2}
+          textAnchor="middle"
+          dominantBaseline="central"
+          className="fill-foreground rotate-90 origin-center text-xl font-bold"
+        >
+          {percentage}%
+        </text>
+      </svg>
+      <span className="text-sm text-muted-foreground">Profile completeness</span>
+    </div>
+  );
+}
+
+function getInitials(name: string): string {
+  return name
+    .split(" ")
+    .map((part) => part[0])
+    .filter(Boolean)
+    .slice(0, 2)
+    .join("")
+    .toUpperCase();
+}
+
+export function ProfileForm({
+  userName,
+  profile,
+  completeness,
+  hardSkills: initialHardSkills,
+  softSkills,
+}: ProfileFormProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
+  const [hardSkills, setHardSkills] = useState<Skill[]>(initialHardSkills);
+  const [showAddSkill, setShowAddSkill] = useState(false);
+  const [newSkillName, setNewSkillName] = useState("");
 
-  const [bio, setBio] = useState(profile.bio || "");
-  const [resumeUrl, setResumeUrl] = useState(profile.resumeUrl || "");
-  const [skills, setSkills] = useState<Skill[]>(
-    JSON.parse(profile.skills || "[]")
-  );
-  const [experience, setExperience] = useState<ExperienceEntry[]>(
-    JSON.parse(profile.experience || "[]")
-  );
-  const [education, setEducation] = useState<EducationEntry[]>(
-    JSON.parse(profile.education || "[]")
-  );
-
-  function addExperience() {
-    setExperience([
-      ...experience,
-      { title: "", company: "", years: 0, description: "" },
-    ]);
-  }
-
-  function updateExperience(index: number, field: string, value: string | number) {
-    const updated = [...experience];
-    updated[index] = { ...updated[index], [field]: value };
-    setExperience(updated);
-  }
-
-  function removeExperience(index: number) {
-    setExperience(experience.filter((_, i) => i !== index));
-  }
-
-  function addEducation() {
-    setEducation([
-      ...education,
-      { degree: "", institution: "", year: new Date().getFullYear() },
-    ]);
-  }
-
-  function updateEducation(index: number, field: string, value: string | number) {
-    const updated = [...education];
-    updated[index] = { ...updated[index], [field]: value };
-    setEducation(updated);
-  }
-
-  function removeEducation(index: number) {
-    setEducation(education.filter((_, i) => i !== index));
-  }
-
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
+  async function save(allSkills: Skill[]) {
     setLoading(true);
-
     try {
       const res = await fetch("/api/candidates/profile", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          bio,
-          skills,
-          experience,
-          education,
+          bio: profile.bio,
+          skills: allSkills,
+          experience: JSON.parse(profile.experience || "[]"),
+          education: JSON.parse(profile.education || "[]"),
           visibility: profile.visibility,
         }),
       });
@@ -106,180 +131,156 @@ export function ProfileForm({ profile }: ProfileFormProps) {
     }
   }
 
+  function handleAddSkill() {
+    const trimmed = newSkillName.trim();
+    if (!trimmed) return;
+
+    const newSkill: Skill = { name: trimmed, level: 3, category: "hard" };
+    const updatedHardSkills = [...hardSkills, newSkill];
+    setHardSkills(updatedHardSkills);
+    setNewSkillName("");
+    setShowAddSkill(false);
+
+    // Combine with soft skills and save
+    const allSkills = [...updatedHardSkills, ...softSkills];
+    save(allSkills);
+  }
+
+  const bio = profile.bio;
+  const headline = bio && bio.trim().length > 0 ? bio.trim() : "Full-stack Developer";
+
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
+    <div className="space-y-6">
+      {/* A) Hero section */}
       <Card>
-        <CardHeader>
-          <CardTitle className="text-base">About</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Label>Bio</Label>
-            <Textarea
-              value={bio}
-              onChange={(e) => setBio(e.target.value)}
-              placeholder="Tell us about yourself..."
-              rows={4}
-            />
+        <CardContent className="flex items-center justify-between py-6">
+          <div className="flex items-center gap-4">
+            <Avatar className="size-20 text-2xl">
+              <AvatarFallback className="text-2xl">
+                {getInitials(userName)}
+              </AvatarFallback>
+            </Avatar>
+            <div>
+              <h1 className="text-2xl font-bold">{userName}</h1>
+              <p className="text-muted-foreground">{headline}</p>
+            </div>
           </div>
-          <CVUpload currentUrl={resumeUrl} onUploaded={setResumeUrl} />
+          <CompletenessRing percentage={completeness} />
         </CardContent>
       </Card>
 
+      {/* B) Hard Skills section */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Skills</CardTitle>
+          <CardTitle>Hard skills</CardTitle>
         </CardHeader>
         <CardContent>
-          <SkillInput skills={skills} onChange={setSkills} label="Your Skills" />
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-base">Experience</CardTitle>
-            <Button type="button" variant="outline" size="sm" onClick={addExperience}>
-              Add
-            </Button>
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {experience.map((exp, i) => (
-            <div key={i} className="space-y-2 rounded-lg border p-3">
-              <div className="flex justify-between">
-                <span className="text-sm font-medium">Experience #{i + 1}</span>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => removeExperience(i)}
+          <div className="flex flex-wrap items-center gap-2">
+            {hardSkills.map((skill, index) => {
+              const isVerified = skill.level >= 4;
+              return (
+                <Badge
+                  key={`${skill.name}-${index}`}
+                  variant={isVerified ? "default" : "outline"}
+                  className="gap-1 px-3 py-1.5 text-sm"
                 >
-                  Remove
-                </Button>
-              </div>
-              <div className="grid gap-2 md:grid-cols-3">
-                <div>
-                  <Label className="text-xs">Title</Label>
-                  <Input
-                    value={exp.title}
-                    onChange={(e) =>
-                      updateExperience(i, "title", e.target.value)
+                  {isVerified && <Check className="size-3" />}
+                  {skill.name}
+                </Badge>
+              );
+            })}
+
+            {showAddSkill ? (
+              <div className="flex items-center gap-2">
+                <Input
+                  value={newSkillName}
+                  onChange={(e) => setNewSkillName(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      handleAddSkill();
                     }
-                    placeholder="Job title"
-                  />
-                </div>
-                <div>
-                  <Label className="text-xs">Company</Label>
-                  <Input
-                    value={exp.company}
-                    onChange={(e) =>
-                      updateExperience(i, "company", e.target.value)
+                    if (e.key === "Escape") {
+                      setShowAddSkill(false);
+                      setNewSkillName("");
                     }
-                    placeholder="Company name"
-                  />
-                </div>
-                <div>
-                  <Label className="text-xs">Years</Label>
-                  <Input
-                    type="number"
-                    min={0}
-                    value={exp.years}
-                    onChange={(e) =>
-                      updateExperience(i, "years", Number(e.target.value))
-                    }
-                  />
-                </div>
-              </div>
-              <div>
-                <Label className="text-xs">Description</Label>
-                <Textarea
-                  value={exp.description || ""}
-                  onChange={(e) =>
-                    updateExperience(i, "description", e.target.value)
-                  }
-                  placeholder="Brief description of responsibilities"
-                  rows={2}
+                  }}
+                  placeholder="Skill name"
+                  className="h-8 w-40"
+                  autoFocus
                 />
-              </div>
-            </div>
-          ))}
-          {experience.length === 0 && (
-            <p className="text-sm text-muted-foreground">
-              No experience entries. Click &quot;Add&quot; to add one.
-            </p>
-          )}
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-base">Education</CardTitle>
-            <Button type="button" variant="outline" size="sm" onClick={addEducation}>
-              Add
-            </Button>
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {education.map((edu, i) => (
-            <div key={i} className="space-y-2 rounded-lg border p-3">
-              <div className="flex justify-between">
-                <span className="text-sm font-medium">Education #{i + 1}</span>
                 <Button
                   type="button"
-                  variant="ghost"
                   size="sm"
-                  onClick={() => removeEducation(i)}
+                  onClick={handleAddSkill}
+                  disabled={loading || !newSkillName.trim()}
                 >
-                  Remove
+                  Add
                 </Button>
               </div>
-              <div className="grid gap-2 md:grid-cols-3">
-                <div>
-                  <Label className="text-xs">Degree</Label>
-                  <Input
-                    value={edu.degree}
-                    onChange={(e) =>
-                      updateEducation(i, "degree", e.target.value)
-                    }
-                    placeholder="e.g. Bachelor of Science"
+            ) : (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="gap-1"
+                onClick={() => setShowAddSkill(true)}
+              >
+                <Plus className="size-3.5" />
+                Add skill
+              </Button>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* C) Soft Skills section */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Soft skills</CardTitle>
+          <CardDescription>
+            From a short scenario test, not self-rated
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {softSkills.length > 0 ? (
+            <div className="space-y-4">
+              {softSkills.map((skill, index) => (
+                <div
+                  key={`${skill.name}-${index}`}
+                  className="flex items-center gap-4"
+                >
+                  <span className="w-32 shrink-0 text-sm font-medium">
+                    {skill.name}
+                  </span>
+                  <Progress
+                    value={(skill.level / 5) * 100}
+                    className="flex-1"
                   />
+                  <span className="w-10 shrink-0 text-right text-sm text-muted-foreground">
+                    {skill.level}/5
+                  </span>
                 </div>
-                <div>
-                  <Label className="text-xs">Institution</Label>
-                  <Input
-                    value={edu.institution}
-                    onChange={(e) =>
-                      updateEducation(i, "institution", e.target.value)
-                    }
-                    placeholder="University name"
-                  />
-                </div>
-                <div>
-                  <Label className="text-xs">Year</Label>
-                  <Input
-                    type="number"
-                    value={edu.year}
-                    onChange={(e) =>
-                      updateEducation(i, "year", Number(e.target.value))
-                    }
-                  />
-                </div>
-              </div>
+              ))}
             </div>
-          ))}
-          {education.length === 0 && (
+          ) : (
             <p className="text-sm text-muted-foreground">
-              No education entries. Click &quot;Add&quot; to add one.
+              No soft skill scores yet. Complete a scenario test to get your
+              results.
             </p>
           )}
         </CardContent>
       </Card>
 
-      <Button type="submit" disabled={loading}>
-        {loading ? "Saving..." : "Save Profile"}
+      {/* D) Primary CTA */}
+      <Button
+        size="lg"
+        className="w-full gap-2 py-6 text-base"
+        onClick={() => toast("Coming soon!")}
+      >
+        <Zap className="size-5" />
+        Take the 8-min skill scenario
       </Button>
-    </form>
+    </div>
   );
 }

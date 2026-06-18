@@ -1,23 +1,16 @@
 import { auth } from "@/lib/auth";
 import { redirect, notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
-import { MatchScoreBadge } from "@/components/matching/match-score-badge";
-import { MatchBreakdown } from "@/components/matching/match-breakdown";
-import { SkillRadarChart } from "@/components/matching/skill-radar-chart";
-import { GapReportView } from "@/components/matching/gap-report-view";
-import { ImprovementActions } from "@/components/matching/improvement-actions";
-import { HireConfirmation } from "@/components/pipeline/hire-confirmation";
-import { StageBadge } from "@/components/pipeline/stage-badge";
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
-  CardDescription,
 } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { ArrowLeft, AlertTriangle, CheckCircle2, TrendingUp } from "lucide-react";
 import Link from "next/link";
-import type { RoleWeights } from "@/types";
 
 export default async function CandidateGapReportPage({
   params,
@@ -44,115 +37,199 @@ export default async function CandidateGapReportPage({
 
   if (!application || application.candidateId !== profile?.id) notFound();
 
-  const breakdown = application.scoreBreakdown
-    ? JSON.parse(application.scoreBreakdown)
-    : null;
-  const weights: RoleWeights = JSON.parse(application.role.weights);
+  const hardGaps = application.skillGaps.filter((g) => g.category === "HARD");
+  const softGaps = application.skillGaps.filter((g) => g.category === "SOFT");
 
-  const candidateSkills: Array<{ name: string; level: number; category?: string }> =
-    JSON.parse(profile?.skills || "[]");
-  const roleHardSkills: Array<{ name: string; level: number }> =
-    JSON.parse(application.role.hardSkills);
-  const roleSoftSkills: Array<{ name: string; level: number }> =
-    JSON.parse(application.role.softSkills);
-  const allRequiredSkills = [...roleHardSkills, ...roleSoftSkills];
+  // Collect gap skill names for the CTA query
+  const gapSkillNames = application.skillGaps
+    .filter((g) => g.status === "MISSING" || g.status === "PARTIAL")
+    .map((g) => g.skill);
 
-  const radarPoints = allRequiredSkills.map((req) => {
-    const match = candidateSkills.find(
-      (s) => s.name.toLowerCase().trim() === req.name.toLowerCase().trim()
-    );
-    return {
-      label: req.name,
-      candidate: match?.level || 0,
-      required: req.level,
-    };
-  });
+  // Count published roles that mention any of the gap skills
+  let matchingRoleCount = 0;
+  if (gapSkillNames.length > 0) {
+    const publishedRoles = await prisma.jobRole.findMany({
+      where: { status: "PUBLISHED" },
+      select: { hardSkills: true, softSkills: true },
+    });
+
+    const lowerGapNames = gapSkillNames.map((s) => s.toLowerCase());
+
+    matchingRoleCount = publishedRoles.filter((role) => {
+      const hard: Array<{ name: string }> = JSON.parse(role.hardSkills);
+      const soft: Array<{ name: string }> = JSON.parse(role.softSkills);
+      const allSkills = [...hard, ...soft];
+      return allSkills.some((s) =>
+        lowerGapNames.includes(s.name.toLowerCase())
+      );
+    }).length;
+  }
+
+  const gapCount = gapSkillNames.length;
+  const primaryGapSkill = gapSkillNames[0] ?? "your gap skills";
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold">Gap Report</h1>
-          <p className="text-muted-foreground">
-            {application.role.title} at {application.role.company.name}
-          </p>
-        </div>
-        <div className="flex items-center gap-3">
-          {application.matchScore !== null && (
-            <MatchScoreBadge score={application.matchScore} />
-          )}
-          <StageBadge stage={application.stage} />
-          <Button variant="outline" asChild>
-            <Link href="/dashboard/candidate/matches">Back to Matches</Link>
-          </Button>
-        </div>
+      {/* ── Header ── */}
+      <div>
+        <h1 className="text-2xl font-bold tracking-tight">
+          Not this time — here&apos;s exactly why
+        </h1>
+        <p className="text-muted-foreground mt-1">
+          {application.role.title} &middot; {application.role.company.name} &middot;{" "}
+          <span className="inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-xs font-medium">
+            closed
+          </span>
+        </p>
+
+        <Button variant="ghost" size="sm" className="mt-3 -ml-2 gap-1.5" asChild>
+          <Link href="/dashboard/candidate/matches">
+            <ArrowLeft className="h-4 w-4" />
+            Back to Matches
+          </Link>
+        </Button>
       </div>
 
+      {/* ── Two-column skill panels ── */}
       <div className="grid gap-6 lg:grid-cols-2">
-        {/* Radar chart */}
-        {radarPoints.length >= 3 && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Skills Match</CardTitle>
-              <CardDescription>
-                Your profile vs. role requirements
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="flex justify-center">
-              <SkillRadarChart points={radarPoints} size={320} />
-            </CardContent>
-          </Card>
-        )}
+        {/* Hard skills */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Hard skills</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-5">
+            {hardGaps.length === 0 && (
+              <p className="text-sm text-muted-foreground">
+                No hard skill data for this role.
+              </p>
+            )}
+            {hardGaps.map((gap) => (
+              <SkillBar key={gap.id} gap={gap} />
+            ))}
+          </CardContent>
+        </Card>
 
-        {/* Score breakdown */}
-        {breakdown && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Score Breakdown</CardTitle>
-              <CardDescription>
-                How your overall score is calculated
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <MatchBreakdown scores={breakdown} weights={weights} />
-            </CardContent>
-          </Card>
-        )}
+        {/* Soft skills */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Soft skills</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-5">
+            {softGaps.length === 0 && (
+              <p className="text-sm text-muted-foreground">
+                No soft skill data for this role.
+              </p>
+            )}
+            {softGaps.map((gap) => (
+              <SkillBar key={gap.id} gap={gap} showStrength />
+            ))}
+          </CardContent>
+        </Card>
       </div>
 
-      {(application.stage === "OFFER" || application.stage === "HIRED") && (
-        <Card>
-          <CardContent className="pt-6">
-            <HireConfirmation
-              applicationId={application.id}
-              hmConfirmed={application.hmConfirmed}
-              candidateConfirmed={application.candidateConfirmed}
-              role="CANDIDATE"
-            />
+      {/* ── CTA panel ── */}
+      {gapCount > 0 && (
+        <Card className="border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/30">
+          <CardContent className="flex flex-col gap-4 pt-6 sm:flex-row sm:items-center sm:justify-between">
+            <div className="space-y-1">
+              <h2 className="flex items-center gap-2 text-base font-semibold">
+                <TrendingUp className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+                Close the {gapCount === 1 ? "one gap" : `${gapCount} gaps`} — re-match
+                next time
+              </h2>
+              <p className="text-sm text-muted-foreground">
+                {gapCount} short{" "}
+                {gapCount === 1 ? "program matches" : "programs match"}{" "}
+                {primaryGapSkill} at scale. Finish one and you&apos;d clear the bar
+                for {matchingRoleCount > 0 ? matchingRoleCount : "several"} open{" "}
+                {matchingRoleCount === 1 ? "role" : "roles"}.
+              </p>
+            </div>
+            <Button asChild className="shrink-0">
+              <Link href="/dashboard/candidate/matches">See growth paths</Link>
+            </Button>
           </CardContent>
         </Card>
       )}
+    </div>
+  );
+}
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Skill Gap Analysis</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <GapReportView gaps={application.skillGaps} />
-        </CardContent>
-      </Card>
+/* ─────────────────────────────────────────────
+   Internal helper — renders a single skill row
+   ───────────────────────────────────────────── */
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Improve Your Profile</CardTitle>
-          <CardDescription>
-            Targeted training courses and job opportunities to close your skill gaps
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <ImprovementActions gaps={application.skillGaps} />
-        </CardContent>
-      </Card>
+interface SkillGapRow {
+  id: string;
+  skill: string;
+  currentLevel: number;
+  requiredLevel: number;
+  status: string;
+  category: string;
+}
+
+function SkillBar({
+  gap,
+  showStrength = false,
+}: {
+  gap: SkillGapRow;
+  showStrength?: boolean;
+}) {
+  const youWidth = `${(gap.currentLevel / 5) * 100}%`;
+  const roleWidth = `${(gap.requiredLevel / 5) * 100}%`;
+
+  const isMet = gap.status === "MET";
+  const isAboveBar = gap.currentLevel >= gap.requiredLevel;
+
+  return (
+    <div className="space-y-1.5">
+      <span className="text-sm font-medium">{gap.skill}</span>
+
+      {/* "You" bar */}
+      <div className="flex items-center gap-2">
+        <span className="w-8 shrink-0 text-[11px] text-muted-foreground">You</span>
+        <div className="h-3 w-full rounded-full bg-muted">
+          <div
+            className="h-3 rounded-full bg-primary"
+            style={{ width: youWidth }}
+          />
+        </div>
+      </div>
+
+      {/* "Role" bar — hatched */}
+      <div className="flex items-center gap-2">
+        <span className="w-8 shrink-0 text-[11px] text-muted-foreground">Role</span>
+        <div className="h-3 w-full rounded-full bg-muted">
+          <div
+            className="h-3 rounded-full bg-primary/30"
+            style={{
+              width: roleWidth,
+              backgroundImage:
+                "repeating-linear-gradient(45deg, transparent, transparent 3px, rgba(0,0,0,0.12) 3px, rgba(0,0,0,0.12) 4px)",
+            }}
+          />
+        </div>
+      </div>
+
+      {/* Status pill */}
+      {isMet ? (
+        showStrength && isAboveBar ? (
+          <span className="mt-1 inline-flex items-center gap-1 rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800 dark:bg-green-900/30 dark:text-green-200">
+            <CheckCircle2 className="h-3 w-3" />
+            Above bar — a strength
+          </span>
+        ) : (
+          <span className="mt-1 inline-flex items-center gap-1 rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800 dark:bg-green-900/30 dark:text-green-200">
+            <CheckCircle2 className="h-3 w-3" />
+            Met
+          </span>
+        )
+      ) : (
+        <span className="mt-1 inline-flex items-center gap-1 rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-medium text-amber-800 dark:bg-amber-900/30 dark:text-amber-200">
+          <AlertTriangle className="h-3 w-3" />
+          Gap: {gap.skill}
+        </span>
+      )}
     </div>
   );
 }

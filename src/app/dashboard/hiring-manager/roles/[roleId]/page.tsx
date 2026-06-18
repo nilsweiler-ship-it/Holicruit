@@ -2,18 +2,8 @@ import { auth } from "@/lib/auth";
 import { redirect, notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
-import Link from "next/link";
 import { PipelineBoard } from "@/components/pipeline/pipeline-board";
-import type { Skill, RoleWeights } from "@/types";
+import { Info } from "lucide-react";
 
 export default async function RoleDetailPage({
   params,
@@ -33,7 +23,7 @@ export default async function RoleDetailPage({
       applications: {
         include: {
           candidate: {
-            include: { user: { select: { name: true, email: true } } },
+            include: { user: { select: { id: true, name: true, email: true } } },
           },
         },
         orderBy: { matchScore: "desc" },
@@ -43,141 +33,78 @@ export default async function RoleDetailPage({
 
   if (!role || role.createdById !== session.user.id) notFound();
 
-  const hardSkills: Skill[] = JSON.parse(role.hardSkills);
-  const softSkills: Skill[] = JSON.parse(role.softSkills);
-  const weights: RoleWeights = JSON.parse(role.weights);
+  // Determine which candidates have messages with this HM
+  const candidateUserIds = role.applications.map(
+    (app) => app.candidate.user.id
+  );
+
+  const messageCounts = candidateUserIds.length > 0
+    ? await prisma.message.groupBy({
+        by: ["senderId"],
+        where: {
+          OR: [
+            { senderId: { in: candidateUserIds }, receiverId: session.user.id },
+            { senderId: session.user.id, receiverId: { in: candidateUserIds } },
+          ],
+        },
+        _count: true,
+      })
+    : [];
+
+  const userIdsWithMessages = new Set(
+    messageCounts.map((m) => m.senderId)
+  );
+  // Also check if the HM sent messages to the candidate
+  const sentMessages = candidateUserIds.length > 0
+    ? await prisma.message.groupBy({
+        by: ["receiverId"],
+        where: {
+          senderId: session.user.id,
+          receiverId: { in: candidateUserIds },
+        },
+        _count: true,
+      })
+    : [];
+  for (const m of sentMessages) {
+    userIdsWithMessages.add(m.receiverId);
+  }
+
+  const totalMatched = role.applications.length;
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <div className="flex items-center gap-3">
-            <h1 className="text-2xl font-bold">{role.title}</h1>
-            <Badge
-              variant={
-                role.status === "PUBLISHED"
-                  ? "default"
-                  : role.status === "CLOSED"
-                    ? "destructive"
-                    : "secondary"
-              }
-            >
-              {role.status}
-            </Badge>
-            {role.roleType !== "PERMANENT" && (
-              <Badge variant="outline" className="text-xs">
-                {role.roleType === "CONTRACT_SHORT" ? "Contract <3mo" : role.roleType === "CONTRACT_MEDIUM" ? "Contract 3-6mo" : "Contract 6mo+"}
-              </Badge>
-            )}
-          </div>
-          <p className="text-muted-foreground">
-            {role.company.name}
-            {role.contractStart && role.contractEnd && (
-              <span className="text-xs ml-2">
-                ({new Date(role.contractStart).toLocaleDateString()} &ndash; {new Date(role.contractEnd).toLocaleDateString()})
-              </span>
-            )}
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <Button variant="outline" asChild>
-            <Link
-              href={`/dashboard/hiring-manager/roles/${role.id}/shortlist`}
-            >
-              View Shortlist
-            </Link>
-          </Button>
-        </div>
-      </div>
-
-      <div className="grid gap-4 md:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Description</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm whitespace-pre-wrap">{role.description}</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Scoring Configuration</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <div className="grid grid-cols-2 gap-2 text-sm">
-              {Object.entries(weights).map(([key, value]) => (
-                <div key={key} className="flex justify-between">
-                  <span className="capitalize text-muted-foreground">
-                    {key.replace(/([A-Z])/g, " $1")}
-                  </span>
-                  <span className="font-medium">{value}%</span>
-                </div>
-              ))}
-            </div>
-            <Separator />
-            <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">Threshold</span>
-              <span className="font-medium">{role.threshold}%</span>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      <div className="grid gap-4 md:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">
-              Hard Skills ({hardSkills.length})
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex flex-wrap gap-2">
-              {hardSkills.map((skill, i) => (
-                <Badge key={i} variant="outline">
-                  {skill.name} (L{skill.level})
-                  {skill.required ? " *" : ""}
-                </Badge>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">
-              Soft Skills ({softSkills.length})
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex flex-wrap gap-2">
-              {softSkills.map((skill, i) => (
-                <Badge key={i} variant="secondary">
-                  {skill.name} (L{skill.level})
-                </Badge>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      <Separator />
-
+      {/* Header */}
       <div>
-        <h2 className="text-xl font-bold mb-4">
-          Pipeline ({role.applications.length} candidates)
-        </h2>
-        <PipelineBoard
-          applications={role.applications.map((app) => ({
-            id: app.id,
-            candidateName: app.candidate.user.name,
-            matchScore: app.matchScore,
-            stage: app.stage,
-            createdAt: app.createdAt.toISOString(),
-            roleId: role.id,
-          }))}
-          roleId={role.id}
-        />
+        <div className="flex items-center gap-3 mb-1">
+          <h1 className="text-2xl font-bold">{role.title}</h1>
+          <Badge variant="secondary" className="text-xs">
+            {totalMatched} matched
+          </Badge>
+        </div>
+        <p className="text-sm text-muted-foreground">{role.company.name}</p>
+      </div>
+
+      {/* Kanban board */}
+      <PipelineBoard
+        applications={role.applications.map((app) => ({
+          id: app.id,
+          candidateName: app.candidate.user.name,
+          matchScore: app.matchScore,
+          stage: app.stage,
+          createdAt: app.createdAt.toISOString(),
+          roleId: role.id,
+          hasMessages: userIdsWithMessages.has(app.candidate.user.id),
+        }))}
+        roleId={role.id}
+      />
+
+      {/* Footer banner */}
+      <div className="rounded-lg border border-primary/20 bg-primary/5 px-4 py-3 flex items-center gap-3">
+        <Info className="h-4 w-4 text-primary shrink-0" />
+        <p className="text-sm text-foreground">
+          Auto-feedback drafted for everyone you pass &mdash; review &amp; send
+          in one click.
+        </p>
       </div>
     </div>
   );

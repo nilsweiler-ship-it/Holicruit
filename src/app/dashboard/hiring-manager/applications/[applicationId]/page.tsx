@@ -1,22 +1,25 @@
 import { auth } from "@/lib/auth";
 import { redirect, notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
-import { getHMPlan, HM_PLANS } from "@/lib/plans";
-import { MatchScoreBadge } from "@/components/matching/match-score-badge";
-import { MatchBreakdown } from "@/components/matching/match-breakdown";
-import { SkillRadarChart } from "@/components/matching/skill-radar-chart";
-import { GapReportView } from "@/components/matching/gap-report-view";
-import { GapReportGate } from "@/components/billing/gap-report-gate";
-import { HireConfirmation } from "@/components/pipeline/hire-confirmation";
-import { StageBadge } from "@/components/pipeline/stage-badge";
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import type { RoleWeights } from "@/types";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import Link from "next/link";
+import {
+  User,
+  MessageCircle,
+  ArrowRight,
+  CheckCircle2,
+  FileText,
+  Users,
+  Briefcase,
+} from "lucide-react";
+import { PassFeedbackButton } from "@/components/pipeline/pass-feedback-button";
 
 export default async function ApplicationDetailPage({
   params,
@@ -36,147 +39,135 @@ export default async function ApplicationDetailPage({
         include: { user: { select: { name: true, email: true } } },
       },
       role: true,
-      skillGaps: true,
     },
   });
 
   if (!application || application.role.createdById !== session.user.id)
     notFound();
 
-  const tier = await getHMPlan(session.user.id);
-  const plan = HM_PLANS[tier];
-
-  const breakdown = application.scoreBreakdown
+  const breakdown: {
+    hardSkills: number;
+    softSkills: number;
+    experience: number;
+    education: number;
+  } | null = application.scoreBreakdown
     ? JSON.parse(application.scoreBreakdown)
     : null;
-  const weights: RoleWeights = JSON.parse(application.role.weights);
-  const auditLog: Array<{
-    timestamp: string;
-    action: string;
-    actor: string;
-    details?: string;
-  }> = JSON.parse(application.auditLog);
 
-  const candidateSkills: Array<{ name: string; level: number; category?: string }> =
-    JSON.parse(application.candidate.skills || "[]");
-  const roleHardSkills: Array<{ name: string; level: number }> =
-    JSON.parse(application.role.hardSkills);
-  const roleSoftSkills: Array<{ name: string; level: number }> =
-    JSON.parse(application.role.softSkills);
-  const allRequiredSkills = [...roleHardSkills, ...roleSoftSkills];
+  const hardScore = breakdown ? Math.round(breakdown.hardSkills) : null;
+  const softScore = breakdown ? Math.round(breakdown.softSkills) : null;
+  const fitPercent = application.matchScore;
 
-  const radarPoints = allRequiredSkills.map((req) => {
-    const match = candidateSkills.find(
-      (s) => s.name.toLowerCase().trim() === req.name.toLowerCase().trim()
-    );
-    return {
-      label: req.name,
-      candidate: match?.level || 0,
-      required: req.level,
-    };
-  });
+  // Evidence items (placeholder since we don't have evidence data model yet)
+  const evidenceItems = [
+    {
+      icon: FileText,
+      label: "Skill scenario score + recording",
+      available: true,
+    },
+    {
+      icon: Users,
+      label: "Peer endorsements (verified)",
+      available: true,
+    },
+    {
+      icon: Briefcase,
+      label: "Portfolio & work samples",
+      available: true,
+    },
+  ];
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold">
+    <div className="max-w-2xl mx-auto space-y-6">
+      {/* Header: avatar + name + fit % */}
+      <div className="flex items-center gap-4">
+        <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-muted">
+          <User className="h-7 w-7 text-muted-foreground" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <h1 className="text-2xl font-bold truncate">
             {application.candidate.user.name}
           </h1>
-          <p className="text-muted-foreground">
-            Applied for: {application.role.title}
+          <p className="text-sm text-muted-foreground">
+            {application.candidate.user.email} &middot; Applied for{" "}
+            {application.role.title}
           </p>
         </div>
-        <div className="flex items-center gap-3">
-          {application.matchScore !== null && (
-            <MatchScoreBadge score={application.matchScore} />
-          )}
-          <StageBadge stage={application.stage} />
-        </div>
-      </div>
-
-      <div className="grid gap-6 lg:grid-cols-2">
-        {/* Radar chart */}
-        {radarPoints.length >= 3 && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Skills Match</CardTitle>
-              <CardDescription>
-                Candidate profile vs. role requirements
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="flex justify-center">
-              <SkillRadarChart points={radarPoints} size={320} />
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Score breakdown */}
-        {breakdown && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Score Breakdown</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <MatchBreakdown scores={breakdown} weights={weights} />
-            </CardContent>
-          </Card>
+        {fitPercent !== null && (
+          <div className="text-right">
+            <span className="text-4xl font-bold tabular-nums text-primary">
+              {fitPercent}
+            </span>
+            <span className="text-lg text-muted-foreground">%</span>
+            <p className="text-xs text-muted-foreground">Fit</p>
+          </div>
         )}
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Skill Gap Analysis</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {plan.gapAnalysis ? (
-            <GapReportView gaps={application.skillGaps} />
-          ) : (
-            <GapReportGate />
-          )}
-        </CardContent>
-      </Card>
-
-      {(application.stage === "OFFER" || application.stage === "HIRED") && (
+      {/* Score tiles */}
+      <div className="grid grid-cols-3 gap-3">
         <Card>
-          <CardContent className="pt-6">
-            <HireConfirmation
-              applicationId={application.id}
-              hmConfirmed={application.hmConfirmed}
-              candidateConfirmed={application.candidateConfirmed}
-              role="HIRING_MANAGER"
-            />
+          <CardContent className="p-4 text-center">
+            <p className="text-xs text-muted-foreground mb-1">Hard</p>
+            <p className="text-2xl font-bold tabular-nums">
+              {hardScore ?? "—"}
+            </p>
           </CardContent>
         </Card>
-      )}
-
-      {auditLog.length > 0 && (
         <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Audit Log</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              {auditLog.map((entry, i) => (
-                <div key={i} className="flex items-start gap-3 text-sm">
-                  <span className="text-xs text-muted-foreground whitespace-nowrap">
-                    {new Date(entry.timestamp).toLocaleString()}
-                  </span>
-                  <span>
-                    <span className="font-medium">{entry.action}</span>
-                    {entry.details && (
-                      <span className="text-muted-foreground">
-                        {" "}
-                        — {entry.details}
-                      </span>
-                    )}
-                  </span>
-                </div>
-              ))}
+          <CardContent className="p-4 text-center">
+            <p className="text-xs text-muted-foreground mb-1">Soft</p>
+            <p className="text-2xl font-bold tabular-nums">
+              {softScore ?? "—"}
+            </p>
+          </CardContent>
+        </Card>
+        <Card className="border-primary/30 bg-primary/5">
+          <CardContent className="p-4 text-center">
+            <p className="text-xs text-muted-foreground mb-1">Verified</p>
+            <div className="flex items-center justify-center">
+              <CheckCircle2 className="h-6 w-6 text-primary" />
             </div>
           </CardContent>
         </Card>
-      )}
+      </div>
+
+      {/* Evidence list */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">
+            Evidence, not claims
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <ul className="space-y-3">
+            {evidenceItems.map((item, i) => (
+              <li key={i} className="flex items-center gap-3">
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-muted">
+                  <item.icon className="h-4 w-4 text-muted-foreground" />
+                </div>
+                <span className="text-sm">{item.label}</span>
+                {item.available && (
+                  <Badge variant="secondary" className="ml-auto text-xs">
+                    Available
+                  </Badge>
+                )}
+              </li>
+            ))}
+          </ul>
+        </CardContent>
+      </Card>
+
+      {/* Action buttons */}
+      <div className="flex flex-col sm:flex-row gap-3">
+        <Button asChild className="flex-1 gap-2">
+          <Link href="/dashboard/messages">
+            <MessageCircle className="h-4 w-4" />
+            Open direct chat
+          </Link>
+        </Button>
+        <PassFeedbackButton applicationId={application.id} />
+      </div>
     </div>
   );
 }

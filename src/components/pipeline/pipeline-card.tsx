@@ -1,7 +1,7 @@
 "use client";
 
-import { Badge } from "@/components/ui/badge";
-import { MatchScoreBadge } from "@/components/matching/match-score-badge";
+import { Card, CardContent } from "@/components/ui/card";
+import { User } from "lucide-react";
 import Link from "next/link";
 
 interface PipelineCardProps {
@@ -15,26 +15,33 @@ interface PipelineCardProps {
   };
 }
 
+/**
+ * Standalone pipeline card for use outside the main board.
+ * The main kanban board (PipelineBoard) renders its own inline cards.
+ */
 export function PipelineCard({ application }: PipelineCardProps) {
-  const daysInStage = Math.floor(
-    (Date.now() - new Date(application.createdAt).getTime()) /
-      (1000 * 60 * 60 * 24)
-  );
-
   return (
     <Link
       href={`/dashboard/hiring-manager/applications/${application.id}`}
-      className="block rounded-lg border p-3 hover:bg-accent/50 transition-colors"
+      className="block"
     >
-      <div className="flex items-center justify-between mb-1">
-        <span className="font-medium text-sm">{application.candidateName}</span>
-        {application.matchScore !== null && (
-          <MatchScoreBadge score={application.matchScore} />
-        )}
-      </div>
-      <div className="text-xs text-muted-foreground">
-        {daysInStage}d in stage
-      </div>
+      <Card className="transition-colors hover:border-primary/40 hover:shadow-sm">
+        <CardContent className="p-3">
+          <div className="flex items-center gap-3">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-muted">
+              <User className="h-4 w-4 text-muted-foreground" />
+            </div>
+            <span className="text-sm font-medium truncate flex-1">
+              {application.candidateName}
+            </span>
+            {application.matchScore !== null && (
+              <span className="text-lg font-bold tabular-nums text-foreground">
+                {application.matchScore}
+              </span>
+            )}
+          </div>
+        </CardContent>
+      </Card>
     </Link>
   );
 }
