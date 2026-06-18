@@ -1,16 +1,8 @@
 import { auth } from "@/lib/auth";
 import { redirect, notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
 import Link from "next/link";
 import {
   ArrowLeft,
@@ -20,6 +12,7 @@ import {
   AlertTriangle,
   MapPin,
   Building2,
+  Handshake,
 } from "lucide-react";
 
 export default async function MatchDetailPage({
@@ -81,198 +74,139 @@ export default async function MatchDetailPage({
     (g) => g.status === "PARTIAL" || g.status === "MISSING"
   );
 
-  const hardStrengths = strengths.filter((g) => g.category === "HARD");
-  const softStrengths = strengths.filter((g) => g.category === "SOFT");
-  const hardStretches = stretches.filter((g) => g.category === "HARD");
-  const softStretches = stretches.filter((g) => g.category === "SOFT");
-
-  const hiringManagerName = application.role.createdBy?.name ?? "Hiring manager";
+  const hiringManagerName =
+    application.role.createdBy?.name ?? "Hiring manager";
+  const hiringManagerRole = "Hiring Manager";
 
   return (
     <div className="space-y-6">
+      {/* Back link */}
+      <Link
+        href="/dashboard/candidate/matches"
+        className="inline-flex items-center gap-1 text-sm text-muted-foreground transition-colors hover:text-foreground"
+      >
+        <ArrowLeft className="h-4 w-4" />
+        Back to matches
+      </Link>
+
       {/* Header */}
-      <div>
-        <Link
-          href="/dashboard/candidate/matches"
-          className="mb-3 inline-flex items-center gap-1 text-sm text-muted-foreground transition-colors hover:text-foreground"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          Back to matches
-        </Link>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold">
+            {application.role.title}{" "}
+            <span className="font-normal text-muted-foreground">
+              &middot; {application.role.company.name}
+            </span>
+          </h1>
+          <p className="flex items-center gap-1 text-sm text-muted-foreground mt-1">
+            <MapPin className="h-3.5 w-3.5" />
+            Remote
+          </p>
+        </div>
 
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-bold">{application.role.title}</h1>
-            <p className="flex items-center gap-1 text-sm text-muted-foreground">
-              <Building2 className="h-3.5 w-3.5" />
-              {application.role.company.name}
-              <span aria-hidden="true">&middot;</span>
-              <MapPin className="h-3.5 w-3.5" />
-              Remote
-            </p>
-          </div>
-
-          <div className="text-right">
-            <p className="text-4xl font-bold text-primary">{mutualFit}%</p>
-            <p className="text-sm text-muted-foreground">mutual fit</p>
-          </div>
+        <div className="text-right shrink-0">
+          <p className="text-4xl font-bold">{mutualFit}%</p>
+          <p className="text-sm text-muted-foreground">mutual fit</p>
         </div>
       </div>
 
-      {/* Fit Breakdown */}
+      {/* Fit Breakdown panel */}
       <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Fit breakdown</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {/* Hard skill evidence */}
-          {(hardStrengths.length > 0 || hardStretches.length > 0) && (
-            <div className="space-y-2">
-              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                Hard skills
-              </p>
-              <ul className="space-y-1.5">
-                {hardStrengths.map((gap) => (
-                  <li key={gap.id} className="flex items-center gap-2 text-sm">
-                    <CheckCircle2 className="h-4 w-4 shrink-0 text-green-600" />
-                    <span>{gap.skill}</span>
-                    <span className="text-muted-foreground">Strength</span>
-                  </li>
-                ))}
-                {hardStretches.map((gap) => (
-                  <li key={gap.id} className="flex items-center gap-2 text-sm">
-                    <AlertTriangle className="h-4 w-4 shrink-0 text-amber-500" />
-                    <span>{gap.skill}</span>
-                    <span className="text-muted-foreground">
-                      {gap.status === "MISSING" ? "Gap" : "Stretch"}
-                    </span>
-                  </li>
-                ))}
-              </ul>
+        <CardContent className="pt-0">
+          <div className="flex items-start gap-6">
+            {/* Left: fit radar placeholder */}
+            <div className="flex h-24 w-24 shrink-0 items-center justify-center rounded-full border-2 border-dashed border-muted-foreground/30 bg-muted">
+              <span className="text-xs text-muted-foreground text-center leading-tight">
+                fit
+                <br />
+                radar
+              </span>
             </div>
-          )}
 
-          {/* Separator between hard and soft */}
-          {(hardStrengths.length > 0 || hardStretches.length > 0) &&
-            (softStrengths.length > 0 || softStretches.length > 0) && (
-              <Separator />
-            )}
-
-          {/* Soft skill evidence */}
-          {(softStrengths.length > 0 || softStretches.length > 0) && (
-            <div className="space-y-2">
-              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                Soft skills
-              </p>
-              <ul className="space-y-1.5">
-                {softStrengths.map((gap) => (
-                  <li key={gap.id} className="flex items-center gap-2 text-sm">
-                    <CheckCircle2 className="h-4 w-4 shrink-0 text-green-600" />
-                    <span>{gap.skill}</span>
-                    <span className="text-muted-foreground">Strength</span>
-                  </li>
-                ))}
-                {softStretches.map((gap) => (
-                  <li key={gap.id} className="flex items-center gap-2 text-sm">
-                    <AlertTriangle className="h-4 w-4 shrink-0 text-amber-500" />
-                    <span>{gap.skill}</span>
+            {/* Right: evidence bullets */}
+            <ul className="space-y-2 flex-1 min-w-0">
+              {strengths.map((gap) => (
+                <li
+                  key={gap.id}
+                  className="flex items-start gap-2 text-sm"
+                >
+                  <span className="mt-0.5 text-green-700 shrink-0">
+                    <CheckCircle2 className="h-4 w-4" />
+                  </span>
+                  <span>
+                    <span className="font-medium">{gap.skill}</span>
+                    {" "}
                     <span className="text-muted-foreground">
-                      {gap.status === "MISSING" ? "Gap" : "Stretch"}
+                      &mdash; strength
                     </span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-
-          {/* Overall scores */}
-          {(hardScore !== null || softScore !== null) && (
-            <>
-              <Separator />
-              <div className="flex items-center gap-6">
-                {hardScore !== null && (
-                  <div className="text-sm">
-                    <span className="text-muted-foreground">Hard skills </span>
-                    <span className="font-semibold">{hardScore}%</span>
-                  </div>
-                )}
-                {softScore !== null && (
-                  <div className="text-sm">
-                    <span className="text-muted-foreground">Soft skills </span>
-                    <span className="font-semibold">{softScore}%</span>
-                  </div>
-                )}
-              </div>
-            </>
-          )}
+                  </span>
+                </li>
+              ))}
+              {stretches.map((gap) => (
+                <li
+                  key={gap.id}
+                  className="flex items-start gap-2 text-sm"
+                >
+                  <span className="mt-0.5 text-amber-600 shrink-0">
+                    <AlertTriangle className="h-4 w-4" />
+                  </span>
+                  <span>
+                    <span className="font-medium">{gap.skill}</span>
+                    {" "}
+                    <span className="text-muted-foreground">
+                      &mdash; {gap.status === "MISSING" ? "gap" : "stretch"}
+                    </span>
+                  </span>
+                </li>
+              ))}
+              {strengths.length === 0 && stretches.length === 0 && (
+                <li className="text-sm text-muted-foreground">
+                  No skill evidence available yet.
+                </li>
+              )}
+            </ul>
+          </div>
         </CardContent>
       </Card>
 
-      {/* Direct Line */}
-      <Card className="bg-accent border-primary/20">
-        <CardHeader>
-          <CardTitle className="text-base">
-            Direct line to the hiring manager
-          </CardTitle>
-          <CardDescription>
-            {hiringManagerName} is hiring for this role.
-          </CardDescription>
-        </CardHeader>
+      {/* Direct Line panel */}
+      <Card className="border-amber-200 bg-amber-50">
         <CardContent className="space-y-4">
-          <p className="text-sm text-muted-foreground">
-            Skip the queue. This match is strong enough for a direct
-            introduction.
+          <div className="flex items-center gap-2">
+            <Handshake className="h-5 w-5 text-amber-700" />
+            <h2 className="font-bold">
+              Direct line to the hiring manager
+            </h2>
+          </div>
+          <p className="text-sm text-foreground/80">
+            You&apos;ll talk to{" "}
+            <span className="font-medium">{hiringManagerName}</span>,{" "}
+            {hiringManagerRole} &mdash; the person you&apos;d actually work
+            with. No recruiter relay.
           </p>
           <div className="flex items-center gap-3">
-            <Button asChild>
+            <Button asChild className="bg-foreground text-background hover:bg-foreground/90">
               <Link href="#">
-                Request intro
-                <ArrowRight className="ml-1.5 h-4 w-4" />
+                Request intro <ArrowRight className="ml-1 h-4 w-4" />
               </Link>
             </Button>
             <Button variant="outline">
               <Bookmark className="mr-1.5 h-4 w-4" />
-              Save for later
+              Save
             </Button>
           </div>
         </CardContent>
       </Card>
 
-      {/* Gap Summary */}
+      {/* Gap Summary link */}
       {stretches.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Areas to develop</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <ul className="space-y-3">
-              {stretches.map((gap) => (
-                <li key={gap.id} className="space-y-1">
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="font-medium">{gap.skill}</span>
-                    <span className="text-muted-foreground">
-                      {gap.currentLevel} / {gap.requiredLevel}
-                    </span>
-                  </div>
-                  <div className="flex h-2 overflow-hidden rounded-full bg-muted">
-                    <div
-                      className="rounded-full bg-amber-500"
-                      style={{
-                        width: `${gap.requiredLevel > 0 ? Math.round((gap.currentLevel / gap.requiredLevel) * 100) : 0}%`,
-                      }}
-                    />
-                  </div>
-                </li>
-              ))}
-            </ul>
-
-            <Button variant="outline" asChild className="w-full">
-              <Link href={`/dashboard/candidate/gaps/${applicationId}`}>
-                See full growth report
-              </Link>
-            </Button>
-          </CardContent>
-        </Card>
+        <div className="text-center">
+          <Button variant="outline" asChild>
+            <Link href={`/dashboard/candidate/gaps/${applicationId}`}>
+              See full growth report
+            </Link>
+          </Button>
+        </div>
       )}
     </div>
   );

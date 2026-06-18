@@ -3,7 +3,6 @@ import { redirect, notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { Badge } from "@/components/ui/badge";
 import { PipelineBoard } from "@/components/pipeline/pipeline-board";
-import { Info } from "lucide-react";
 
 export default async function RoleDetailPage({
   params,
@@ -74,14 +73,11 @@ export default async function RoleDetailPage({
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div>
-        <div className="flex items-center gap-3 mb-1">
-          <h1 className="text-2xl font-bold">{role.title}</h1>
-          <Badge variant="secondary" className="text-xs">
-            {totalMatched} matched
-          </Badge>
-        </div>
-        <p className="text-sm text-muted-foreground">{role.company.name}</p>
+      <div className="flex items-center gap-3">
+        <h1 className="text-2xl font-bold">{role.title}</h1>
+        <Badge variant="secondary" className="text-xs tabular-nums">
+          {totalMatched} matched
+        </Badge>
       </div>
 
       {/* Kanban board */}
@@ -98,12 +94,11 @@ export default async function RoleDetailPage({
         roleId={role.id}
       />
 
-      {/* Footer banner */}
-      <div className="rounded-lg border border-primary/20 bg-primary/5 px-4 py-3 flex items-center gap-3">
-        <Info className="h-4 w-4 text-primary shrink-0" />
-        <p className="text-sm text-foreground">
-          Auto-feedback drafted for everyone you pass &mdash; review &amp; send
-          in one click.
+      {/* Auto-feedback footer */}
+      <div className="border-t border-dashed pt-3 px-1">
+        <p className="text-sm text-muted-foreground">
+          &#9889; Auto-feedback drafted for everyone you pass &mdash; review
+          &amp; send in one click.
         </p>
       </div>
     </div>

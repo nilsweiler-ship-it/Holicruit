@@ -1,9 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { MessageCircle, Star, User } from "lucide-react";
 
 interface ApplicationItem {
   id: string;
@@ -29,9 +26,9 @@ type KanbanColumn = {
 };
 
 const COLUMNS: KanbanColumn[] = [
-  { key: "new", label: "New", stages: ["APPLIED", "SCREENING", "SHORTLISTED"] },
-  { key: "talking", label: "Talking", stages: ["INTERVIEW"], indicator: "chat" },
-  { key: "offer", label: "Offer", stages: ["OFFER", "HIRED"], indicator: "star" },
+  { key: "new", label: "NEW", stages: ["APPLIED", "SCREENING", "SHORTLISTED"] },
+  { key: "talking", label: "TALKING", stages: ["INTERVIEW"], indicator: "chat" },
+  { key: "offer", label: "OFFER", stages: ["OFFER", "HIRED"], indicator: "star" },
 ];
 
 export function PipelineBoard({
@@ -40,76 +37,72 @@ export function PipelineBoard({
   highlightedId,
 }: PipelineBoardProps) {
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
       {COLUMNS.map((col) => {
         const colApps = applications.filter((a) =>
           col.stages.includes(a.stage)
         );
         return (
-          <div key={col.key} className="space-y-3">
+          <div key={col.key}>
             {/* Column header */}
-            <div className="flex items-center justify-between px-1">
-              <h3 className="text-sm font-semibold text-foreground">
-                {col.label}
-              </h3>
-              <Badge variant="secondary" className="text-xs tabular-nums">
-                {colApps.length}
-              </Badge>
-            </div>
+            <p className="text-xs font-medium tracking-widest text-muted-foreground mb-3">
+              {col.label} ({colApps.length})
+            </p>
 
-            {/* Column body */}
-            <div className="rounded-xl bg-muted/40 p-3 min-h-[200px] space-y-2">
+            {/* Stacked cards */}
+            <div className="space-y-2">
               {colApps.length === 0 && (
-                <p className="text-xs text-muted-foreground text-center py-8">
+                <p className="text-xs text-muted-foreground py-8 text-center">
                   No candidates
                 </p>
               )}
               {colApps.map((app) => {
                 const isHighlighted = app.id === highlightedId;
+                const isTalkingActive =
+                  col.indicator === "chat" && app.hasMessages;
+
                 return (
                   <Link
                     key={app.id}
                     href={`/dashboard/hiring-manager/applications/${app.id}`}
                     className="block"
                   >
-                    <Card
-                      className={`transition-colors hover:border-primary/40 hover:shadow-sm ${
-                        isHighlighted
+                    <div
+                      className={`rounded-lg border px-3 py-2.5 transition-colors hover:border-foreground/20 ${
+                        isHighlighted || isTalkingActive
                           ? "bg-amber-50 border-amber-200 dark:bg-amber-950/30 dark:border-amber-800"
                           : ""
                       }`}
                     >
-                      <CardContent className="p-3">
-                        <div className="flex items-center gap-3">
-                          {/* Avatar placeholder */}
-                          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-muted">
-                            <User className="h-4 w-4 text-muted-foreground" />
-                          </div>
+                      <div className="flex items-center gap-3">
+                        {/* Avatar circle */}
+                        <div className="h-6 w-6 shrink-0 rounded-full bg-muted" />
 
-                          {/* Name + indicator */}
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-1.5">
-                              <span className="text-sm font-medium truncate">
-                                {app.candidateName}
-                              </span>
-                              {col.indicator === "chat" && app.hasMessages && (
-                                <MessageCircle className="h-3.5 w-3.5 text-primary shrink-0" />
-                              )}
-                              {col.indicator === "star" && (
-                                <Star className="h-3.5 w-3.5 text-amber-500 fill-amber-500 shrink-0" />
-                              )}
-                            </div>
-                          </div>
-
-                          {/* Fit score */}
-                          {app.matchScore !== null && (
-                            <span className="text-lg font-bold tabular-nums text-foreground">
-                              {app.matchScore}
+                        {/* Name placeholder + indicator */}
+                        <div className="flex-1 min-w-0 flex items-center gap-1.5">
+                          <span className="text-sm font-medium truncate">
+                            {app.candidateName}
+                          </span>
+                          {col.indicator === "chat" && app.hasMessages && (
+                            <span className="shrink-0 text-xs" aria-label="Active conversation">
+                              &#x1F4AC;
+                            </span>
+                          )}
+                          {col.indicator === "star" && (
+                            <span className="shrink-0 text-xs text-amber-500" aria-label="Offer">
+                              &#9733;
                             </span>
                           )}
                         </div>
-                      </CardContent>
-                    </Card>
+
+                        {/* Fit score */}
+                        {app.matchScore !== null && (
+                          <span className="text-lg font-bold tabular-nums text-foreground">
+                            {app.matchScore}
+                          </span>
+                        )}
+                      </div>
+                    </div>
                   </Link>
                 );
               })}

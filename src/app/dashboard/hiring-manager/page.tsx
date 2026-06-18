@@ -2,10 +2,9 @@ import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
 import Link from "next/link";
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Info } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Plus } from "lucide-react";
 
 export default async function HiringManagerDashboard() {
   const session = await auth();
@@ -52,8 +51,8 @@ export default async function HiringManagerDashboard() {
                 href={`/dashboard/hiring-manager/roles/${role.id}`}
                 className="block"
               >
-                <Card className="hover:bg-accent/50 transition-colors">
-                  <CardContent className="flex items-center justify-between py-4">
+                <div className="rounded-lg border px-4 py-4 hover:bg-accent/50 transition-colors">
+                  <div className="flex items-center justify-between">
                     {/* Left side */}
                     <div className="space-y-2">
                       <div className="flex items-center gap-2">
@@ -72,52 +71,48 @@ export default async function HiringManagerDashboard() {
                         </Badge>
                       </div>
                       <div className="flex items-center gap-2">
-                        <Badge variant="outline" className="text-xs">
+                        <span className="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs text-muted-foreground">
                           {newCount} new
-                        </Badge>
-                        <Badge variant="outline" className="text-xs">
+                        </span>
+                        <span className="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs text-muted-foreground">
                           {talkingCount} talking
-                        </Badge>
-                        <Badge variant="outline" className="text-xs">
+                        </span>
+                        <span className="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs text-muted-foreground">
                           {offerCount} offer
-                        </Badge>
+                        </span>
                       </div>
                     </div>
 
-                    {/* Right side */}
-                    <div className="text-right">
-                      <p className="text-2xl font-bold text-primary">
+                    {/* Right side — large matched count */}
+                    <div className="text-right pl-4">
+                      <p className="text-3xl font-bold tabular-nums">
                         {matched}
                       </p>
                       <p className="text-xs text-muted-foreground">matched</p>
                     </div>
-                  </CardContent>
-                </Card>
+                  </div>
+                </div>
               </Link>
             );
           })}
         </div>
       ) : (
-        /* Empty state */
-        <Card>
-          <CardContent className="flex flex-col items-center justify-center py-12 text-center">
-            <p className="text-muted-foreground mb-4">No roles yet.</p>
-            <Button asChild>
-              <Link href="/dashboard/hiring-manager/roles/new">
-                <Plus className="mr-2 h-4 w-4" />
-                Create your first role
-              </Link>
-            </Button>
-          </CardContent>
-        </Card>
+        <div className="rounded-lg border px-4 py-12 text-center">
+          <p className="text-muted-foreground mb-4">No roles yet.</p>
+          <Button asChild>
+            <Link href="/dashboard/hiring-manager/roles/new">
+              <Plus className="mr-2 h-4 w-4" />
+              Create your first role
+            </Link>
+          </Button>
+        </div>
       )}
 
-      {/* Footer banner */}
-      <div className="rounded-lg border border-primary/20 bg-primary/5 px-4 py-3 flex items-center gap-3">
-        <Info className="h-4 w-4 text-primary shrink-0" />
-        <p className="text-sm text-foreground">
-          Auto-feedback drafted for everyone you pass &mdash; review &amp; send
-          in one click.
+      {/* Auto-feedback footer */}
+      <div className="border-t border-dashed pt-3 px-1">
+        <p className="text-sm text-muted-foreground">
+          &#9889; Auto-feedback drafted for everyone you pass &mdash; review
+          &amp; send in one click.
         </p>
       </div>
     </div>

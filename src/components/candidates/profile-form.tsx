@@ -4,18 +4,9 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { toast } from "sonner";
-import { Check, Plus, Zap } from "lucide-react";
+import { ArrowRight, Check, Plus } from "lucide-react";
 import type { Skill } from "@/types";
 
 interface ProfileFormProps {
@@ -34,51 +25,52 @@ interface ProfileFormProps {
 }
 
 function CompletenessRing({ percentage }: { percentage: number }) {
-  const size = 120;
-  const strokeWidth = 10;
+  const size = 56;
+  const strokeWidth = 5;
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
   const dashoffset = circumference * (1 - percentage / 100);
 
   return (
-    <div className="flex flex-col items-center gap-2">
-      <svg width={size} height={size} className="-rotate-90">
-        {/* Background track */}
-        <circle
-          cx={size / 2}
-          cy={size / 2}
-          r={radius}
-          fill="none"
-          stroke="currentColor"
-          strokeWidth={strokeWidth}
-          className="text-muted/40"
-        />
-        {/* Filled arc */}
-        <circle
-          cx={size / 2}
-          cy={size / 2}
-          r={radius}
-          fill="none"
-          stroke="currentColor"
-          strokeWidth={strokeWidth}
-          strokeLinecap="round"
-          strokeDasharray={circumference}
-          strokeDashoffset={dashoffset}
-          className="text-primary transition-all duration-500"
-        />
-        {/* Percentage text (rotated back to upright) */}
-        <text
-          x={size / 2}
-          y={size / 2}
-          textAnchor="middle"
-          dominantBaseline="central"
-          className="fill-foreground rotate-90 origin-center text-xl font-bold"
-        >
-          {percentage}%
-        </text>
-      </svg>
-      <span className="text-sm text-muted-foreground">Profile completeness</span>
-    </div>
+    <svg
+      width={size}
+      height={size}
+      className="-rotate-90 shrink-0"
+    >
+      {/* Background track */}
+      <circle
+        cx={size / 2}
+        cy={size / 2}
+        r={radius}
+        fill="none"
+        stroke="currentColor"
+        strokeWidth={strokeWidth}
+        className="text-muted"
+      />
+      {/* Filled arc */}
+      <circle
+        cx={size / 2}
+        cy={size / 2}
+        r={radius}
+        fill="none"
+        stroke="currentColor"
+        strokeWidth={strokeWidth}
+        strokeLinecap="round"
+        strokeDasharray={circumference}
+        strokeDashoffset={dashoffset}
+        className="text-primary transition-all duration-500"
+      />
+      {/* Percentage text */}
+      <text
+        x={size / 2}
+        y={size / 2}
+        textAnchor="middle"
+        dominantBaseline="central"
+        className="fill-foreground rotate-90 origin-center text-xs font-bold"
+      >
+        {percentage}%
+      </text>
+    </svg>
   );
 }
 
@@ -147,139 +139,134 @@ export function ProfileForm({
   }
 
   const bio = profile.bio;
-  const headline = bio && bio.trim().length > 0 ? bio.trim() : "Full-stack Developer";
+  const headline =
+    bio && bio.trim().length > 0 ? bio.trim() : "Full-stack Developer";
 
   return (
     <div className="space-y-6">
-      {/* A) Hero section */}
-      <Card>
-        <CardContent className="flex items-center justify-between py-6">
-          <div className="flex items-center gap-4">
-            <Avatar className="size-20 text-2xl">
-              <AvatarFallback className="text-2xl">
-                {getInitials(userName)}
-              </AvatarFallback>
-            </Avatar>
-            <div>
-              <h1 className="text-2xl font-bold">{userName}</h1>
-              <p className="text-muted-foreground">{headline}</p>
-            </div>
-          </div>
-          <CompletenessRing percentage={completeness} />
-        </CardContent>
-      </Card>
+      {/* A) Hero section: avatar + name + completeness ring in one row */}
+      <div className="flex items-center gap-4 rounded-xl border bg-card p-5">
+        <Avatar className="size-[58px] text-xl shrink-0">
+          <AvatarFallback className="text-xl">
+            {getInitials(userName)}
+          </AvatarFallback>
+        </Avatar>
+        <div className="flex-1 min-w-0">
+          <h1 className="text-xl font-bold truncate">{userName}</h1>
+          <p className="text-sm text-muted-foreground truncate">{headline}</p>
+        </div>
+        <CompletenessRing percentage={completeness} />
+      </div>
 
       {/* B) Hard Skills section */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Hard skills</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-wrap items-center gap-2">
-            {hardSkills.map((skill, index) => {
-              const isVerified = skill.level >= 4;
-              return (
-                <Badge
-                  key={`${skill.name}-${index}`}
-                  variant={isVerified ? "default" : "outline"}
-                  className="gap-1 px-3 py-1.5 text-sm"
-                >
-                  {isVerified && <Check className="size-3" />}
-                  {skill.name}
-                </Badge>
-              );
-            })}
+      <div className="space-y-3">
+        <h2 className="text-sm font-semibold">Hard skills</h2>
+        <div className="flex flex-wrap items-center gap-2">
+          {hardSkills.map((skill, index) => {
+            const isVerified = skill.level >= 4;
+            return (
+              <span
+                key={`${skill.name}-${index}`}
+                className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-sm ${
+                  isVerified
+                    ? "bg-amber-100 border-amber-300 text-amber-900"
+                    : "border-border text-foreground"
+                }`}
+              >
+                <Check className="size-3.5" />
+                {skill.name}
+                {isVerified && (
+                  <span className="text-amber-700 text-xs">
+                    &middot; peer-verified
+                  </span>
+                )}
+              </span>
+            );
+          })}
 
-            {showAddSkill ? (
-              <div className="flex items-center gap-2">
-                <Input
-                  value={newSkillName}
-                  onChange={(e) => setNewSkillName(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") {
-                      e.preventDefault();
-                      handleAddSkill();
-                    }
-                    if (e.key === "Escape") {
-                      setShowAddSkill(false);
-                      setNewSkillName("");
-                    }
-                  }}
-                  placeholder="Skill name"
-                  className="h-8 w-40"
-                  autoFocus
-                />
-                <Button
-                  type="button"
-                  size="sm"
-                  onClick={handleAddSkill}
-                  disabled={loading || !newSkillName.trim()}
-                >
-                  Add
-                </Button>
-              </div>
-            ) : (
+          {showAddSkill ? (
+            <div className="flex items-center gap-2">
+              <Input
+                value={newSkillName}
+                onChange={(e) => setNewSkillName(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    handleAddSkill();
+                  }
+                  if (e.key === "Escape") {
+                    setShowAddSkill(false);
+                    setNewSkillName("");
+                  }
+                }}
+                placeholder="Skill name"
+                className="h-8 w-40"
+                autoFocus
+              />
               <Button
                 type="button"
-                variant="outline"
                 size="sm"
-                className="gap-1"
-                onClick={() => setShowAddSkill(true)}
+                onClick={handleAddSkill}
+                disabled={loading || !newSkillName.trim()}
               >
-                <Plus className="size-3.5" />
-                Add skill
+                Add
               </Button>
-            )}
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* C) Soft Skills section */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Soft skills</CardTitle>
-          <CardDescription>
-            From a short scenario test, not self-rated
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {softSkills.length > 0 ? (
-            <div className="space-y-4">
-              {softSkills.map((skill, index) => (
-                <div
-                  key={`${skill.name}-${index}`}
-                  className="flex items-center gap-4"
-                >
-                  <span className="w-32 shrink-0 text-sm font-medium">
-                    {skill.name}
-                  </span>
-                  <Progress
-                    value={(skill.level / 5) * 100}
-                    className="flex-1"
-                  />
-                  <span className="w-10 shrink-0 text-right text-sm text-muted-foreground">
-                    {skill.level}/5
-                  </span>
-                </div>
-              ))}
             </div>
           ) : (
-            <p className="text-sm text-muted-foreground">
-              No soft skill scores yet. Complete a scenario test to get your
-              results.
-            </p>
+            <button
+              type="button"
+              onClick={() => setShowAddSkill(true)}
+              className="inline-flex items-center gap-1 rounded-full border border-dashed border-border px-3 py-1 text-sm text-muted-foreground hover:border-foreground hover:text-foreground transition-colors"
+            >
+              <Plus className="size-3.5" />
+              add
+            </button>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </div>
+
+      {/* C) Soft Skills section */}
+      <div className="space-y-3">
+        <div>
+          <h2 className="text-sm font-semibold">Soft skills</h2>
+          <p className="text-xs text-muted-foreground">
+            from a short scenario test, not self-rated
+          </p>
+        </div>
+
+        {softSkills.length > 0 ? (
+          <div className="space-y-3">
+            {softSkills.map((skill, index) => (
+              <div
+                key={`${skill.name}-${index}`}
+                className="flex items-center gap-3"
+              >
+                <span className="w-28 shrink-0 text-sm">{skill.name}</span>
+                <div className="flex-1 h-2.5 rounded-full bg-muted overflow-hidden">
+                  <div
+                    className="h-full rounded-full bg-foreground transition-all duration-500"
+                    style={{ width: `${(skill.level / 5) * 100}%` }}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="text-sm text-muted-foreground">
+            No soft skill scores yet. Complete a scenario test to get your
+            results.
+          </p>
+        )}
+      </div>
 
       {/* D) Primary CTA */}
       <Button
         size="lg"
-        className="w-full gap-2 py-6 text-base"
+        className="w-full py-6 text-base font-bold bg-foreground text-background hover:bg-foreground/90"
         onClick={() => toast("Coming soon!")}
       >
-        <Zap className="size-5" />
         Take the 8-min skill scenario
+        <ArrowRight className="size-4 ml-1" />
       </Button>
     </div>
   );

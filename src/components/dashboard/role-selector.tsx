@@ -1,9 +1,13 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { User, Briefcase, Target } from "lucide-react";
-import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
-import { cn } from "@/lib/utils";
+import { User, Briefcase, Target, ChevronRight } from "lucide-react";
+import {
+  Card,
+  CardContent,
+  CardFooter,
+  CardHeader,
+} from "@/components/ui/card";
 
 interface RoleOption {
   role: string;
@@ -45,71 +49,48 @@ export function RoleSelector({ userRole }: { userRole: string }) {
   const router = useRouter();
 
   return (
-    <div className="flex min-h-[60vh] items-center justify-center">
+    <div className="flex min-h-[70vh] items-center justify-center px-4">
       <Card className="w-full max-w-md">
-        <CardHeader className="items-center text-center">
-          <div className="text-2xl font-bold tracking-tight text-primary">
+        <CardHeader className="items-center pb-2 text-center">
+          <div className="text-3xl font-extrabold tracking-tight text-primary">
             holicruit
           </div>
-          <p className="mt-2 text-sm text-muted-foreground">
+          <p className="mt-3 text-base text-muted-foreground">
             Who are you here as today?
           </p>
         </CardHeader>
-        <CardContent className="flex flex-col gap-3">
+        <CardContent className="flex flex-col gap-3 pt-2">
           {roleOptions.map((option) => {
-            const isActive = option.role === userRole;
             const Icon = option.icon;
 
             return (
               <button
                 key={option.role}
-                disabled={!isActive}
                 onClick={() => router.push(option.href)}
-                className={cn(
-                  "flex w-full items-center gap-4 rounded-lg border p-4 text-left transition-colors",
-                  isActive
-                    ? "border-primary/30 bg-primary/5 hover:bg-primary/10 cursor-pointer"
-                    : "border-muted bg-muted/30 opacity-50 cursor-not-allowed"
-                )}
+                className="group flex w-full items-center gap-4 rounded-xl border-2 border-border bg-card p-5 text-left transition-all hover:border-primary/40 hover:bg-primary/5 hover:shadow-sm active:scale-[0.98] cursor-pointer"
               >
-                <div
-                  className={cn(
-                    "flex h-10 w-10 shrink-0 items-center justify-center rounded-full",
-                    isActive
-                      ? "bg-primary/10 text-primary"
-                      : "bg-muted text-muted-foreground"
-                  )}
-                >
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary transition-colors group-hover:bg-primary/15">
                   <Icon className="h-5 w-5" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <span
-                      className={cn(
-                        "text-sm font-semibold",
-                        isActive ? "text-foreground" : "text-muted-foreground"
-                      )}
-                    >
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-base font-bold text-foreground">
                       {option.label}
                     </span>
-                    <span className="text-xs text-muted-foreground">
+                    <span className="text-sm text-muted-foreground">
                       &mdash; {option.subtitle}
                     </span>
                   </div>
-                  <p className="text-xs text-muted-foreground mt-0.5">
+                  <p className="text-sm text-muted-foreground mt-0.5">
                     {option.description}
                   </p>
                 </div>
-                {!isActive && (
-                  <span className="shrink-0 rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
-                    Soon
-                  </span>
-                )}
+                <ChevronRight className="h-5 w-5 shrink-0 text-muted-foreground/50 transition-transform group-hover:translate-x-0.5 group-hover:text-primary" />
               </button>
             );
           })}
         </CardContent>
-        <CardFooter className="justify-center">
+        <CardFooter className="justify-center pt-1 pb-6">
           <p className="text-xs text-muted-foreground text-center">
             You can switch hats anytime &mdash; one account, many roles
           </p>

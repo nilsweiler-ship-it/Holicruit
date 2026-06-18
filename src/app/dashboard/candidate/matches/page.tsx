@@ -1,14 +1,7 @@
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { Building2, ChevronDown, MapPin } from "lucide-react";
@@ -125,7 +118,7 @@ export default async function CandidateMatchesPage() {
             ranked by mutual fit
           </span>
         </div>
-        <p className="text-sm text-muted-foreground">
+        <p className="text-sm text-muted-foreground mt-1">
           Both sides opted in. No cold applications.
         </p>
       </div>
@@ -138,9 +131,7 @@ export default async function CandidateMatchesPage() {
               No matches yet. Complete your profile to get matched!
             </p>
             <Button asChild className="mt-4">
-              <Link href="/dashboard/candidate/profile">
-                Complete profile
-              </Link>
+              <Link href="/dashboard/candidate/profile">Complete profile</Link>
             </Button>
           </CardContent>
         </Card>
@@ -152,18 +143,20 @@ export default async function CandidateMatchesPage() {
               href={`/dashboard/candidate/matches/${app.id}`}
               className="block"
             >
-              <Card className="transition-colors hover:bg-muted/50">
-                <CardContent className="space-y-3">
-                  {/* Top section */}
+              <Card className="rounded-xl transition-colors hover:bg-muted/50">
+                <CardContent className="space-y-4">
+                  {/* Top row: logo + info + fit score */}
                   <div className="flex items-start justify-between gap-4">
-                    {/* Left: logo + info */}
+                    {/* Left: square logo placeholder + role info */}
                     <div className="flex items-start gap-3">
                       <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-muted">
                         <Building2 className="h-5 w-5 text-muted-foreground" />
                       </div>
                       <div>
-                        <p className="font-semibold">{app.role.title}</p>
-                        <p className="flex items-center gap-1 text-sm text-muted-foreground">
+                        <p className="font-bold leading-tight">
+                          {app.role.title}
+                        </p>
+                        <p className="flex items-center gap-1 text-sm text-muted-foreground mt-0.5">
                           {app.role.company.name}
                           <span aria-hidden="true">&middot;</span>
                           <MapPin className="h-3 w-3" />
@@ -172,34 +165,34 @@ export default async function CandidateMatchesPage() {
                       </div>
                     </div>
 
-                    {/* Right: mutual fit score */}
-                    <div className="text-right">
-                      <p className="text-3xl font-bold text-primary">
-                        {app.mutualFit}%
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        mutual fit
-                      </p>
-                    </div>
+                    {/* Right: large mutual fit percentage */}
+                    <p className="text-4xl font-bold tabular-nums">
+                      {app.mutualFit}%
+                    </p>
                   </div>
 
-                  {/* Bottom strip: badges */}
-                  <div className="flex flex-wrap items-center gap-2">
-                    <Badge variant="outline">
+                  {/* Bottom row: three equal-width pills */}
+                  <div className="flex items-center gap-2">
+                    <span className="flex-1 rounded-lg border border-border py-1.5 text-center text-xs font-medium">
                       hard {app.hardScore !== null ? app.hardScore : "—"}
-                    </Badge>
-                    <Badge variant="outline">
+                    </span>
+                    <span className="flex-1 rounded-lg border border-border py-1.5 text-center text-xs font-medium">
                       soft {app.softScore !== null ? app.softScore : "—"}
-                    </Badge>
+                    </span>
                     {app.candidateRank <= 3 ? (
-                      <Badge className="bg-primary text-primary-foreground">
+                      <span className="flex-1 rounded-lg border border-amber-300 bg-amber-100 py-1.5 text-center text-xs font-medium text-amber-900">
                         you&apos;re top 3
-                      </Badge>
+                      </span>
                     ) : app.totalGaps > 0 ? (
-                      <Badge variant="secondary">
-                        {app.totalGaps} gap{app.totalGaps !== 1 ? "s" : ""}
-                      </Badge>
-                    ) : null}
+                      <span className="flex-1 rounded-lg border border-border bg-muted py-1.5 text-center text-xs font-medium text-muted-foreground">
+                        {app.totalGaps} gap{app.totalGaps !== 1 ? "s" : ""}{" "}
+                        &rarr;
+                      </span>
+                    ) : (
+                      <span className="flex-1 rounded-lg border border-border py-1.5 text-center text-xs font-medium text-muted-foreground">
+                        &mdash;
+                      </span>
+                    )}
                   </div>
                 </CardContent>
               </Card>
@@ -209,8 +202,11 @@ export default async function CandidateMatchesPage() {
           {/* Footer: more matches */}
           {remainingCount > 0 && (
             <div className="flex items-center justify-center gap-1 py-2 text-sm text-muted-foreground">
-              <span>{remainingCount} more matches</span>
               <ChevronDown className="h-4 w-4" />
+              <span>
+                {remainingCount} more match
+                {remainingCount !== 1 ? "es" : ""}
+              </span>
             </div>
           )}
         </div>

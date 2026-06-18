@@ -2,15 +2,7 @@ import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
 import Link from "next/link";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Users, MessageCircle, TrendingUp, DollarSign } from "lucide-react";
 
 const ACTIVE_STAGES = ["APPLIED", "SHORTLISTED", "INTERVIEW"];
 
@@ -21,13 +13,13 @@ function stagePill(stage: string) {
     case "OFFER":
       return (
         <Badge variant="default" className="bg-primary text-primary-foreground">
-          offer ★
+          offer
         </Badge>
       );
     case "HIRED":
       return (
         <Badge variant="default" className="bg-primary text-primary-foreground">
-          hired ★
+          hired
         </Badge>
       );
     default:
@@ -91,125 +83,81 @@ export default async function HeadhunterDashboard() {
 
   return (
     <div className="space-y-8">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">
-            Recruiter Desk
-          </h1>
-          <p className="text-sm text-muted-foreground">
-            Welcome back, {session.user.name}
-          </p>
-        </div>
-        <Button asChild>
-          <Link href="/dashboard/headhunter/roles">Browse Roles</Link>
-        </Button>
-      </div>
-
       {/* Stat tiles */}
       <div className="grid gap-4 md:grid-cols-3">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Active Intros</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{activeCount}</div>
-            <p className="text-xs text-muted-foreground">
-              candidates in pipeline
-            </p>
-          </CardContent>
-        </Card>
+        {/* Active intros */}
+        <div className="rounded-lg border px-4 py-6 text-center">
+          <p className="text-3xl font-bold tabular-nums">{activeCount}</p>
+          <p className="text-sm text-muted-foreground mt-1">active intros</p>
+        </div>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">In Interview</CardTitle>
-            <MessageCircle className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{interviewCount}</div>
-            <p className="text-xs text-muted-foreground">
-              actively interviewing
-            </p>
-          </CardContent>
-        </Card>
+        {/* In interview */}
+        <div className="rounded-lg border px-4 py-6 text-center">
+          <p className="text-3xl font-bold tabular-nums">{interviewCount}</p>
+          <p className="text-sm text-muted-foreground mt-1">in interview</p>
+        </div>
 
-        <Card className="bg-primary text-primary-foreground">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-primary-foreground/80">
-              Earned on Hires
-            </CardTitle>
-            <DollarSign className="h-4 w-4 text-primary-foreground/60" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">&euro;{totalEarnedEur}</div>
-            <p className="text-xs text-primary-foreground/70">
-              {placements.length} placement{placements.length !== 1 ? "s" : ""}
-            </p>
-          </CardContent>
-        </Card>
+        {/* Earned — amber highlight */}
+        <div className="rounded-lg bg-amber-100 px-4 py-6 text-center">
+          <p className="text-3xl font-bold tabular-nums text-amber-900">
+            &euro;{totalEarnedEur}
+          </p>
+          <p className="text-sm text-amber-700 mt-1">earned on hires</p>
+        </div>
       </div>
 
       {/* Where you add value */}
       <section>
-        <div className="flex items-center gap-2 mb-4">
-          <TrendingUp className="h-5 w-5 text-primary" />
-          <h2 className="text-lg font-semibold">Where you add value</h2>
-        </div>
+        <h2 className="text-lg font-semibold mb-4">Where you add value</h2>
 
         {activeIntroductions.length > 0 ? (
           <div className="space-y-2">
             {activeIntroductions.map((app) => (
-              <Card key={app.id} className="p-0">
-                <div className="flex items-center gap-4 px-4 py-3">
-                  {/* Avatar placeholder */}
-                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-muted text-sm font-semibold text-muted-foreground">
-                    {app.candidate.user.name
-                      ? app.candidate.user.name.charAt(0).toUpperCase()
-                      : "?"}
-                  </div>
+              <div
+                key={app.id}
+                className="flex items-center gap-4 rounded-lg border px-4 py-3"
+              >
+                {/* Avatar circle */}
+                <div className="h-9 w-9 shrink-0 rounded-full bg-muted" />
 
-                  {/* Intro details */}
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium truncate">
-                      {app.candidate.user.name} &rarr; {app.role.title}
-                      {app.role.company?.name
-                        ? ` @ ${app.role.company.name}`
-                        : ""}
-                    </p>
-                    <p className="text-xs text-muted-foreground truncate">
-                      You facilitated this match
-                    </p>
-                  </div>
-
-                  {/* Stage pill */}
-                  <div className="shrink-0">{stagePill(app.stage)}</div>
+                {/* Intro details */}
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium truncate">
+                    {app.candidate.user.name} &rarr; {app.role.title}
+                    {app.role.company?.name
+                      ? ` @ ${app.role.company.name}`
+                      : ""}
+                  </p>
+                  <p className="text-xs text-muted-foreground truncate">
+                    you spotted the soft-skill fit&hellip;
+                  </p>
                 </div>
-              </Card>
+
+                {/* Stage pill */}
+                <div className="shrink-0">{stagePill(app.stage)}</div>
+              </div>
             ))}
           </div>
         ) : (
-          <Card>
-            <CardContent className="py-8 text-center">
-              <p className="text-muted-foreground">
-                No active introductions yet.{" "}
-                <Link
-                  href="/dashboard/headhunter/roles"
-                  className="underline hover:text-primary"
-                >
-                  Browse roles to get started
-                </Link>
-              </p>
-            </CardContent>
-          </Card>
+          <div className="rounded-lg border px-4 py-8 text-center">
+            <p className="text-muted-foreground">
+              No active introductions yet.{" "}
+              <Link
+                href="/dashboard/headhunter/roles"
+                className="underline hover:text-primary"
+              >
+                Browse roles to get started
+              </Link>
+            </p>
+          </div>
         )}
       </section>
 
-      {/* Footer banner */}
-      <div className="rounded-lg border border-primary/20 bg-primary/5 px-6 py-4 text-center">
+      {/* Footer */}
+      <div className="border-t border-dashed pt-3 px-1">
         <p className="text-sm text-muted-foreground">
-          No retainers, no exclusivity. A success fee only when your intro gets
-          hired.
+          &#x1F4B0; No retainers, no exclusivity. A success fee only when your
+          intro gets hired.
         </p>
       </div>
     </div>

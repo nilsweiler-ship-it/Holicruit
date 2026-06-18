@@ -7,9 +7,13 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, AlertTriangle, CheckCircle2, TrendingUp } from "lucide-react";
+import {
+  ArrowLeft,
+  ArrowRight,
+  AlertTriangle,
+  CheckCircle2,
+} from "lucide-react";
 import Link from "next/link";
 
 export default async function CandidateGapReportPage({
@@ -70,27 +74,30 @@ export default async function CandidateGapReportPage({
 
   return (
     <div className="space-y-6">
-      {/* ── Header ── */}
+      {/* Back link */}
+      <Link
+        href="/dashboard/candidate/matches"
+        className="inline-flex items-center gap-1 text-sm text-muted-foreground transition-colors hover:text-foreground"
+      >
+        <ArrowLeft className="h-4 w-4" />
+        Back to Matches
+      </Link>
+
+      {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">
-          Not this time — here&apos;s exactly why
+        <h1 className="text-xl font-bold tracking-tight">
+          Not this time &mdash; here&apos;s exactly why
         </h1>
-        <p className="text-muted-foreground mt-1">
-          {application.role.title} &middot; {application.role.company.name} &middot;{" "}
+        <p className="text-sm text-muted-foreground mt-1">
+          {application.role.title} &middot;{" "}
+          {application.role.company.name} &middot;{" "}
           <span className="inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-xs font-medium">
             closed
           </span>
         </p>
-
-        <Button variant="ghost" size="sm" className="mt-3 -ml-2 gap-1.5" asChild>
-          <Link href="/dashboard/candidate/matches">
-            <ArrowLeft className="h-4 w-4" />
-            Back to Matches
-          </Link>
-        </Button>
       </div>
 
-      {/* ── Two-column skill panels ── */}
+      {/* Two-column skill panels */}
       <div className="grid gap-6 lg:grid-cols-2">
         {/* Hard skills */}
         <Card>
@@ -121,42 +128,43 @@ export default async function CandidateGapReportPage({
               </p>
             )}
             {softGaps.map((gap) => (
-              <SkillBar key={gap.id} gap={gap} showStrength />
+              <SkillBar key={gap.id} gap={gap} />
             ))}
           </CardContent>
         </Card>
       </div>
 
-      {/* ── CTA panel ── */}
+      {/* CTA panel */}
       {gapCount > 0 && (
-        <Card className="border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/30">
-          <CardContent className="flex flex-col gap-4 pt-6 sm:flex-row sm:items-center sm:justify-between">
-            <div className="space-y-1">
-              <h2 className="flex items-center gap-2 text-base font-semibold">
-                <TrendingUp className="h-5 w-5 text-amber-600 dark:text-amber-400" />
-                Close the {gapCount === 1 ? "one gap" : `${gapCount} gaps`} — re-match
-                next time
-              </h2>
-              <p className="text-sm text-muted-foreground">
-                {gapCount} short{" "}
-                {gapCount === 1 ? "program matches" : "programs match"}{" "}
-                {primaryGapSkill} at scale. Finish one and you&apos;d clear the bar
-                for {matchingRoleCount > 0 ? matchingRoleCount : "several"} open{" "}
-                {matchingRoleCount === 1 ? "role" : "roles"}.
-              </p>
-            </div>
-            <Button asChild className="shrink-0">
-              <Link href="/dashboard/candidate/matches">See growth paths</Link>
-            </Button>
-          </CardContent>
-        </Card>
+        <div className="rounded-xl border border-amber-300 bg-amber-100 p-6 space-y-3">
+          <h2 className="text-base font-bold">
+            Close the {gapCount === 1 ? "one gap" : `${gapCount} gaps`}{" "}
+            &rarr; re-match next time
+          </h2>
+          <p className="text-sm text-foreground/80">
+            {gapCount} short{" "}
+            {gapCount === 1 ? "program matches" : "programs match"}{" "}
+            &lsquo;{primaryGapSkill}&rsquo;. Finish one and you&apos;d
+            clear the bar for{" "}
+            {matchingRoleCount > 0 ? matchingRoleCount : "several"} open{" "}
+            {matchingRoleCount === 1 ? "role" : "roles"}.
+          </p>
+          <Button
+            asChild
+            className="w-full bg-foreground text-background hover:bg-foreground/90"
+          >
+            <Link href="/dashboard/candidate/matches">
+              See growth paths <ArrowRight className="ml-1 h-4 w-4" />
+            </Link>
+          </Button>
+        </div>
       )}
     </div>
   );
 }
 
 /* ─────────────────────────────────────────────
-   Internal helper — renders a single skill row
+   SkillBar — renders a You vs Role bar comparison
    ───────────────────────────────────────────── */
 
 interface SkillGapRow {
@@ -168,15 +176,10 @@ interface SkillGapRow {
   category: string;
 }
 
-function SkillBar({
-  gap,
-  showStrength = false,
-}: {
-  gap: SkillGapRow;
-  showStrength?: boolean;
-}) {
-  const youWidth = `${(gap.currentLevel / 5) * 100}%`;
-  const roleWidth = `${(gap.requiredLevel / 5) * 100}%`;
+function SkillBar({ gap }: { gap: SkillGapRow }) {
+  const maxLevel = 5;
+  const youPct = (gap.currentLevel / maxLevel) * 100;
+  const rolePct = (gap.requiredLevel / maxLevel) * 100;
 
   const isMet = gap.status === "MET";
   const isAboveBar = gap.currentLevel >= gap.requiredLevel;
@@ -185,48 +188,45 @@ function SkillBar({
     <div className="space-y-1.5">
       <span className="text-sm font-medium">{gap.skill}</span>
 
-      {/* "You" bar */}
+      {/* "You" bar — solid */}
       <div className="flex items-center gap-2">
-        <span className="w-8 shrink-0 text-[11px] text-muted-foreground">You</span>
+        <span className="w-8 shrink-0 text-[11px] text-muted-foreground">
+          You
+        </span>
         <div className="h-3 w-full rounded-full bg-muted">
           <div
-            className="h-3 rounded-full bg-primary"
-            style={{ width: youWidth }}
+            className="h-3 rounded-full bg-foreground/80"
+            style={{ width: `${youPct}%` }}
           />
         </div>
       </div>
 
-      {/* "Role" bar — hatched */}
+      {/* "Role" bar — hatched pattern */}
       <div className="flex items-center gap-2">
-        <span className="w-8 shrink-0 text-[11px] text-muted-foreground">Role</span>
+        <span className="w-8 shrink-0 text-[11px] text-muted-foreground">
+          Role
+        </span>
         <div className="h-3 w-full rounded-full bg-muted">
           <div
-            className="h-3 rounded-full bg-primary/30"
+            className="h-3 rounded-full border border-foreground/20"
             style={{
-              width: roleWidth,
+              width: `${rolePct}%`,
               backgroundImage:
-                "repeating-linear-gradient(45deg, transparent, transparent 3px, rgba(0,0,0,0.12) 3px, rgba(0,0,0,0.12) 4px)",
+                "repeating-linear-gradient(45deg, transparent, transparent 3px, rgba(0,0,0,0.15) 3px, rgba(0,0,0,0.15) 4px)",
             }}
           />
         </div>
       </div>
 
-      {/* Status pill */}
-      {isMet ? (
-        showStrength && isAboveBar ? (
-          <span className="mt-1 inline-flex items-center gap-1 rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800 dark:bg-green-900/30 dark:text-green-200">
-            <CheckCircle2 className="h-3 w-3" />
-            Above bar — a strength
-          </span>
-        ) : (
-          <span className="mt-1 inline-flex items-center gap-1 rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800 dark:bg-green-900/30 dark:text-green-200">
-            <CheckCircle2 className="h-3 w-3" />
-            Met
-          </span>
-        )
+      {/* Status callout */}
+      {isMet || isAboveBar ? (
+        <span className="mt-1 inline-flex items-center gap-1 text-xs font-medium text-green-700">
+          <CheckCircle2 className="h-3.5 w-3.5" />
+          Above bar &mdash; a strength
+        </span>
       ) : (
-        <span className="mt-1 inline-flex items-center gap-1 rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-medium text-amber-800 dark:bg-amber-900/30 dark:text-amber-200">
-          <AlertTriangle className="h-3 w-3" />
+        <span className="mt-1 inline-flex items-center gap-1 text-xs font-medium text-amber-600">
+          <AlertTriangle className="h-3.5 w-3.5" />
           Gap: {gap.skill}
         </span>
       )}
