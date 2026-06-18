@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useSession } from "next-auth/react";
+import { ArrowLeftRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { PlanBadge } from "@/components/billing/plan-badge";
 
@@ -118,11 +119,18 @@ export function Sidebar() {
             );
           })}
         </nav>
-        {plan && (
-          <div className="pt-4 border-t mt-4">
-            <PlanBadge plan={plan} />
-          </div>
-        )}
+        <div className="pt-4 border-t mt-4 flex flex-col gap-2">
+          {session.user.role !== "ADMIN" && (
+            <Link
+              href="/dashboard"
+              className="flex items-center gap-2 rounded-md px-3 py-2 text-xs font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+            >
+              <ArrowLeftRight className="h-3.5 w-3.5" />
+              Switch hat
+            </Link>
+          )}
+          {plan && <PlanBadge plan={plan} />}
+        </div>
       </aside>
     </>
   );

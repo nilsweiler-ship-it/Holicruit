@@ -1,5 +1,13 @@
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
+import { RoleSelector } from "@/components/dashboard/role-selector";
+
+const roleRedirects: Record<string, string> = {
+  CANDIDATE: "/dashboard/candidate",
+  HIRING_MANAGER: "/dashboard/hiring-manager",
+  HEADHUNTER: "/dashboard/headhunter",
+  ADMIN: "/dashboard/admin",
+};
 
 export default async function DashboardPage() {
   const session = await auth();
@@ -8,12 +16,10 @@ export default async function DashboardPage() {
     redirect("/login");
   }
 
-  const roleRedirects: Record<string, string> = {
-    CANDIDATE: "/dashboard/candidate",
-    HIRING_MANAGER: "/dashboard/hiring-manager",
-    HEADHUNTER: "/dashboard/headhunter",
-    ADMIN: "/dashboard/admin",
-  };
+  // Admin always goes straight to admin dashboard
+  if (session.user.role === "ADMIN") {
+    redirect(roleRedirects.ADMIN);
+  }
 
-  redirect(roleRedirects[session.user.role] || "/login");
+  return <RoleSelector userRole={session.user.role} />;
 }
