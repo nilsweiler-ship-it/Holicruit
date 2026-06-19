@@ -67,7 +67,7 @@ export function ChatThread({
   return (
     <div className="flex flex-col h-full">
       {/* Chat header */}
-      <div className="flex items-center gap-3 border-b px-4 py-3">
+      <div className="flex items-center gap-3 border-b-2 border-foreground/15 px-4 py-3">
         <Avatar className="size-8">
           <AvatarFallback className="text-xs">
             {getInitials(partner.name)}
@@ -124,14 +124,14 @@ export function ChatThread({
         ))}
 
         {/* Interview scheduled panel */}
-        <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 space-y-3">
+        <div className="rounded-xl border-2 border-foreground/15 bg-[#FFF8E0] p-4 space-y-3">
           <div className="flex items-start gap-3">
-            <CalendarCheck className="h-5 w-5 text-amber-600 mt-0.5 shrink-0" />
+            <span className="text-lg mt-0.5 shrink-0">&#x1F4C5;</span>
             <div>
-              <p className="text-sm font-bold text-amber-900">
+              <p className="text-sm font-bold">
                 Interview scheduled
               </p>
-              <p className="text-sm text-amber-800 mt-0.5">
+              <p className="text-sm text-foreground/80 mt-0.5">
                 Thu &middot; 2:00 pm &middot; video &mdash; no back-and-forth,
                 no scheduler email chain.
               </p>
@@ -139,7 +139,7 @@ export function ChatThread({
           </div>
           <Button
             variant="outline"
-            className="w-full gap-1 border-amber-300 text-amber-900 hover:bg-amber-100"
+            className="w-full gap-1"
           >
             Add structured score sheet
             <ArrowRight className="h-3.5 w-3.5 ml-auto" />
@@ -148,7 +148,7 @@ export function ChatThread({
       </div>
 
       {/* Reply input */}
-      <div className="border-t px-4 py-3 flex items-end gap-2">
+      <div className="border-t-2 border-foreground/15 px-4 py-3 flex items-end gap-2">
         <Textarea
           placeholder="Type a message..."
           value={replyBody}

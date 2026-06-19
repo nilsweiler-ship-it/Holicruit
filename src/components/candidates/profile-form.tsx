@@ -145,7 +145,7 @@ export function ProfileForm({
   return (
     <div className="space-y-6">
       {/* A) Hero section: avatar + name + completeness ring in one row */}
-      <div className="flex items-center gap-4 rounded-xl border bg-card p-5">
+      <div className="flex items-center gap-4 rounded-xl border-2 border-foreground/15 bg-card p-5">
         <Avatar className="size-[58px] text-xl shrink-0">
           <AvatarFallback className="text-xl">
             {getInitials(userName)}
@@ -160,23 +160,23 @@ export function ProfileForm({
 
       {/* B) Hard Skills section */}
       <div className="space-y-3">
-        <h2 className="text-sm font-semibold">Hard skills</h2>
+        <h2 className="text-sm font-semibold">&#x1F527; Hard skills</h2>
         <div className="flex flex-wrap items-center gap-2">
           {hardSkills.map((skill, index) => {
             const isVerified = skill.level >= 4;
             return (
               <span
                 key={`${skill.name}-${index}`}
-                className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-sm ${
+                className={`inline-flex items-center gap-1.5 rounded-full border-2 px-3 py-1 text-sm ${
                   isVerified
-                    ? "bg-amber-100 border-amber-300 text-amber-900"
-                    : "border-border text-foreground"
+                    ? "bg-[#FFE27A] border-foreground/20 text-foreground"
+                    : "border-foreground/15 text-foreground"
                 }`}
               >
                 <Check className="size-3.5" />
                 {skill.name}
                 {isVerified && (
-                  <span className="text-amber-700 text-xs">
+                  <span className="text-foreground/60 text-xs">
                     &middot; peer-verified
                   </span>
                 )}
@@ -228,7 +228,7 @@ export function ProfileForm({
       {/* C) Soft Skills section */}
       <div className="space-y-3">
         <div>
-          <h2 className="text-sm font-semibold">Soft skills</h2>
+        <h2 className="text-sm font-semibold">&#x2764;&#xFE0F; Soft skills</h2>
           <p className="text-xs text-muted-foreground">
             from a short scenario test, not self-rated
           </p>

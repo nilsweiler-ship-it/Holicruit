@@ -1,8 +1,7 @@
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
-import { ChatThread } from "@/components/messaging/chat-thread";
-import { Card, CardContent } from "@/components/ui/card";
+import { MessagesLayout } from "@/components/messaging/messages-layout";
 
 export default async function MessagesPage() {
   const session = await auth();
@@ -69,36 +68,9 @@ export default async function MessagesPage() {
   const conversations = Array.from(conversationMap.values());
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold">Messages</h1>
-        <p className="text-sm text-muted-foreground">
-          In-platform communication. Contact details are shared only after
-          interview stage.
-        </p>
-      </div>
-
-      {conversations.length === 0 ? (
-        <Card>
-          <CardContent className="py-12 text-center">
-            <p className="text-sm text-muted-foreground">
-              No messages yet. Communication will appear here when hiring
-              managers or headhunters reach out through the platform.
-            </p>
-          </CardContent>
-        </Card>
-      ) : (
-        <div className="space-y-6">
-          {conversations.map((conv) => (
-            <ChatThread
-              key={conv.partner.id}
-              partner={conv.partner}
-              messages={conv.messages}
-              currentUserName={session.user.name}
-            />
-          ))}
-        </div>
-      )}
-    </div>
+    <MessagesLayout
+      conversations={conversations}
+      currentUserName={session.user.name ?? "You"}
+    />
   );
 }

@@ -37,7 +37,7 @@ export function PipelineBoard({
   highlightedId,
 }: PipelineBoardProps) {
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
       {COLUMNS.map((col) => {
         const colApps = applications.filter((a) =>
           col.stages.includes(a.stage)
@@ -68,9 +68,9 @@ export function PipelineBoard({
                     className="block"
                   >
                     <div
-                      className={`rounded-lg border px-3 py-2.5 transition-colors hover:border-foreground/20 ${
+                      className={`rounded-lg border-2 border-foreground/15 px-3 py-2 transition-colors hover:border-foreground/25 ${
                         isHighlighted || isTalkingActive
-                          ? "bg-amber-50 border-amber-200 dark:bg-amber-950/30 dark:border-amber-800"
+                          ? "bg-[#FFF8E0] border-foreground/15"
                           : ""
                       }`}
                     >

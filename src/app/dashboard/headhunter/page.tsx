@@ -86,23 +86,23 @@ export default async function HeadhunterDashboard() {
       {/* Stat tiles */}
       <div className="grid gap-4 md:grid-cols-3">
         {/* Active intros */}
-        <div className="rounded-lg border px-4 py-6 text-center">
-          <p className="text-3xl font-bold tabular-nums">{activeCount}</p>
-          <p className="text-sm text-muted-foreground mt-1">active intros</p>
+        <div className="rounded-xl border-2 border-foreground/20 px-4 py-5 text-center">
+          <p className="text-4xl font-bold tabular-nums leading-none">{activeCount}</p>
+          <p className="text-xs text-muted-foreground mt-2">active intros</p>
         </div>
 
         {/* In interview */}
-        <div className="rounded-lg border px-4 py-6 text-center">
-          <p className="text-3xl font-bold tabular-nums">{interviewCount}</p>
-          <p className="text-sm text-muted-foreground mt-1">in interview</p>
+        <div className="rounded-xl border-2 border-foreground/20 px-4 py-5 text-center">
+          <p className="text-4xl font-bold tabular-nums leading-none">{interviewCount}</p>
+          <p className="text-xs text-muted-foreground mt-2">in interview</p>
         </div>
 
-        {/* Earned — amber highlight */}
-        <div className="rounded-lg bg-amber-100 px-4 py-6 text-center">
-          <p className="text-3xl font-bold tabular-nums text-amber-900">
+        {/* Earned — novel feature yellow */}
+        <div className="rounded-xl border-2 border-foreground/20 bg-[#FFE27A] px-4 py-5 text-center">
+          <p className="text-4xl font-bold tabular-nums leading-none">
             &euro;{totalEarnedEur}
           </p>
-          <p className="text-sm text-amber-700 mt-1">earned on hires</p>
+          <p className="text-xs text-foreground/60 mt-2">earned on hires</p>
         </div>
       </div>
 
@@ -115,7 +115,7 @@ export default async function HeadhunterDashboard() {
             {activeIntroductions.map((app) => (
               <div
                 key={app.id}
-                className="flex items-center gap-4 rounded-lg border px-4 py-3"
+                className="flex items-center gap-4 rounded-xl border-2 border-foreground/15 px-4 py-3"
               >
                 {/* Avatar circle */}
                 <div className="h-9 w-9 shrink-0 rounded-full bg-muted" />

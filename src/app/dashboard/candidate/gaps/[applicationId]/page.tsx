@@ -90,19 +90,16 @@ export default async function CandidateGapReportPage({
         </h1>
         <p className="text-sm text-muted-foreground mt-1">
           {application.role.title} &middot;{" "}
-          {application.role.company.name} &middot;{" "}
-          <span className="inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-xs font-medium">
-            closed
-          </span>
+          {application.role.company.name} &middot; closed
         </p>
       </div>
 
       {/* Two-column skill panels */}
       <div className="grid gap-6 lg:grid-cols-2">
         {/* Hard skills */}
-        <Card>
+        <Card className="border-2 border-foreground/15">
           <CardHeader>
-            <CardTitle className="text-base">Hard skills</CardTitle>
+            <CardTitle className="text-sm font-bold">Hard skills</CardTitle>
           </CardHeader>
           <CardContent className="space-y-5">
             {hardGaps.length === 0 && (
@@ -117,9 +114,9 @@ export default async function CandidateGapReportPage({
         </Card>
 
         {/* Soft skills */}
-        <Card>
+        <Card className="border-2 border-foreground/15">
           <CardHeader>
-            <CardTitle className="text-base">Soft skills</CardTitle>
+            <CardTitle className="text-sm font-bold">Soft skills</CardTitle>
           </CardHeader>
           <CardContent className="space-y-5">
             {softGaps.length === 0 && (
@@ -136,9 +133,9 @@ export default async function CandidateGapReportPage({
 
       {/* CTA panel */}
       {gapCount > 0 && (
-        <div className="rounded-xl border border-amber-300 bg-amber-100 p-6 space-y-3">
+        <div className="rounded-xl border-2 border-foreground/20 bg-[#FFE27A] p-6 space-y-3">
           <h2 className="text-base font-bold">
-            Close the {gapCount === 1 ? "one gap" : `${gapCount} gaps`}{" "}
+            &#127919; Close the {gapCount === 1 ? "one gap" : `${gapCount} gaps`}{" "}
             &rarr; re-match next time
           </h2>
           <p className="text-sm text-foreground/80">

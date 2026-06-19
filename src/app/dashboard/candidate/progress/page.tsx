@@ -76,7 +76,7 @@ export default async function CandidateProgressPage() {
         </p>
       </div>
 
-      <Card>
+      <Card className="border-2 border-foreground/15">
         <CardHeader>
           <CardTitle className="text-base">Skill Growth Over Time</CardTitle>
           <CardDescription>
@@ -94,7 +94,7 @@ export default async function CandidateProgressPage() {
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="border-2 border-foreground/15">
         <CardHeader>
           <CardTitle className="text-base">New Matches For You</CardTitle>
           <CardDescription>

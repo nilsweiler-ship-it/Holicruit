@@ -111,7 +111,7 @@ export default async function MatchDetailPage({
       </div>
 
       {/* Fit Breakdown panel */}
-      <Card>
+      <Card className="border-2 border-foreground/15">
         <CardContent className="pt-0">
           <div className="flex items-start gap-6">
             {/* Left: fit radar placeholder */}
@@ -126,37 +126,13 @@ export default async function MatchDetailPage({
             {/* Right: evidence bullets */}
             <ul className="space-y-2 flex-1 min-w-0">
               {strengths.map((gap) => (
-                <li
-                  key={gap.id}
-                  className="flex items-start gap-2 text-sm"
-                >
-                  <span className="mt-0.5 text-green-700 shrink-0">
-                    <CheckCircle2 className="h-4 w-4" />
-                  </span>
-                  <span>
-                    <span className="font-medium">{gap.skill}</span>
-                    {" "}
-                    <span className="text-muted-foreground">
-                      &mdash; strength
-                    </span>
-                  </span>
+                <li key={gap.id} className="text-sm">
+                  &#10003; Strong: {gap.skill}
                 </li>
               ))}
               {stretches.map((gap) => (
-                <li
-                  key={gap.id}
-                  className="flex items-start gap-2 text-sm"
-                >
-                  <span className="mt-0.5 text-amber-600 shrink-0">
-                    <AlertTriangle className="h-4 w-4" />
-                  </span>
-                  <span>
-                    <span className="font-medium">{gap.skill}</span>
-                    {" "}
-                    <span className="text-muted-foreground">
-                      &mdash; {gap.status === "MISSING" ? "gap" : "stretch"}
-                    </span>
-                  </span>
+                <li key={gap.id} className="text-sm text-amber-700">
+                  &#9888; Stretch: {gap.skill}
                 </li>
               ))}
               {strengths.length === 0 && stretches.length === 0 && (
@@ -170,7 +146,7 @@ export default async function MatchDetailPage({
       </Card>
 
       {/* Direct Line panel */}
-      <Card className="border-amber-200 bg-amber-50">
+      <Card className="border-2 border-foreground/15 bg-[#FFF8E0]">
         <CardContent className="space-y-4">
           <div className="flex items-center gap-2">
             <Handshake className="h-5 w-5 text-amber-700" />

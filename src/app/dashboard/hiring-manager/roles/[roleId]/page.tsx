@@ -1,7 +1,6 @@
 import { auth } from "@/lib/auth";
 import { redirect, notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
-import { Badge } from "@/components/ui/badge";
 import { PipelineBoard } from "@/components/pipeline/pipeline-board";
 
 export default async function RoleDetailPage({
@@ -73,11 +72,13 @@ export default async function RoleDetailPage({
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center gap-3">
-        <h1 className="text-2xl font-bold">{role.title}</h1>
-        <Badge variant="secondary" className="text-xs tabular-nums">
+      <div className="flex items-baseline justify-between">
+        <h1 className="text-xl font-bold">
+          {role.title} &mdash; your pipeline
+        </h1>
+        <span className="text-sm text-muted-foreground">
           {totalMatched} matched
-        </Badge>
+        </span>
       </div>
 
       {/* Kanban board */}
