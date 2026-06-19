@@ -68,21 +68,21 @@ export default async function ApplicationDetailPage({
       {/* Three score tiles */}
       <div className="grid grid-cols-3 gap-3">
         {/* Hard */}
-        <div className="rounded-xl border-2 border-foreground/20 px-4 py-4 text-center">
+        <div className="rounded-xl border-2 px-4 py-4 text-center">
           <p className="text-xs text-muted-foreground mb-1">Hard</p>
           <p className="text-2xl font-bold tabular-nums">
             {hardScore ?? "—"}
           </p>
         </div>
         {/* Soft */}
-        <div className="rounded-xl border-2 border-foreground/20 px-4 py-4 text-center">
+        <div className="rounded-xl border-2 px-4 py-4 text-center">
           <p className="text-xs text-muted-foreground mb-1">Soft</p>
           <p className="text-2xl font-bold tabular-nums">
             {softScore ?? "—"}
           </p>
         </div>
         {/* Verified */}
-        <div className="rounded-xl border-2 border-foreground/20 bg-[#FFE27A] px-4 py-4 text-center">
+        <div className="rounded-xl border-2 bg-[#FFE27A] px-4 py-4 text-center">
           <p className="text-xs text-foreground/60 mb-1">Verified</p>
           <p className="text-2xl font-bold tabular-nums">&#10003;</p>
         </div>

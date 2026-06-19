@@ -51,7 +51,7 @@ export default async function HiringManagerDashboard() {
                 href={`/dashboard/hiring-manager/roles/${role.id}`}
                 className="block"
               >
-                <div className="rounded-xl border-2 border-foreground/15 px-4 py-4 hover:bg-accent/50 transition-colors">
+                <div className="rounded-xl border-2 px-4 py-4 hover:bg-accent/50 transition-colors">
                   <div className="flex items-center justify-between">
                     {/* Left side */}
                     <div className="space-y-2">
@@ -71,13 +71,13 @@ export default async function HiringManagerDashboard() {
                         </Badge>
                       </div>
                       <div className="flex items-center gap-2">
-                        <span className="inline-flex items-center rounded-full border-2 border-foreground/15 px-2.5 py-0.5 text-xs text-muted-foreground">
+                        <span className="inline-flex items-center rounded-full border-2 px-2.5 py-0.5 text-xs text-muted-foreground">
                           {newCount} new
                         </span>
-                        <span className="inline-flex items-center rounded-full border-2 border-foreground/15 px-2.5 py-0.5 text-xs text-muted-foreground">
+                        <span className="inline-flex items-center rounded-full border-2 px-2.5 py-0.5 text-xs text-muted-foreground">
                           {talkingCount} talking
                         </span>
-                        <span className="inline-flex items-center rounded-full border-2 border-foreground/15 px-2.5 py-0.5 text-xs text-muted-foreground">
+                        <span className="inline-flex items-center rounded-full border-2 px-2.5 py-0.5 text-xs text-muted-foreground">
                           {offerCount} offer
                         </span>
                       </div>
@@ -97,7 +97,7 @@ export default async function HiringManagerDashboard() {
           })}
         </div>
       ) : (
-        <div className="rounded-xl border-2 border-foreground/15 px-4 py-12 text-center">
+        <div className="rounded-xl border-2 px-4 py-12 text-center">
           <p className="text-muted-foreground mb-4">No roles yet.</p>
           <Button asChild>
             <Link href="/dashboard/hiring-manager/roles/new">

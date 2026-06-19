@@ -111,7 +111,7 @@ export default async function MatchDetailPage({
       </div>
 
       {/* Fit Breakdown panel */}
-      <Card className="border-2 border-foreground/15">
+      <Card className="border-2">
         <CardContent className="pt-0">
           <div className="flex items-start gap-6">
             {/* Left: fit radar placeholder */}
@@ -146,7 +146,7 @@ export default async function MatchDetailPage({
       </Card>
 
       {/* Direct Line panel */}
-      <Card className="border-2 border-foreground/15 bg-[#FFF8E0]">
+      <Card className="border-2 bg-[#FFF8E0]">
         <CardContent className="space-y-4">
           <div className="flex items-center gap-2">
             <Handshake className="h-5 w-5 text-amber-700" />

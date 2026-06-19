@@ -97,7 +97,7 @@ export default async function CandidateGapReportPage({
       {/* Two-column skill panels */}
       <div className="grid gap-6 lg:grid-cols-2">
         {/* Hard skills */}
-        <Card className="border-2 border-foreground/15">
+        <Card className="border-2">
           <CardHeader>
             <CardTitle className="text-sm font-bold">Hard skills</CardTitle>
           </CardHeader>
@@ -114,7 +114,7 @@ export default async function CandidateGapReportPage({
         </Card>
 
         {/* Soft skills */}
-        <Card className="border-2 border-foreground/15">
+        <Card className="border-2">
           <CardHeader>
             <CardTitle className="text-sm font-bold">Soft skills</CardTitle>
           </CardHeader>
@@ -133,7 +133,7 @@ export default async function CandidateGapReportPage({
 
       {/* CTA panel */}
       {gapCount > 0 && (
-        <div className="rounded-xl border-2 border-foreground/20 bg-[#FFE27A] p-6 space-y-3">
+        <div className="rounded-xl border-2 bg-[#FFE27A] p-6 space-y-3">
           <h2 className="text-base font-bold">
             &#127919; Close the {gapCount === 1 ? "one gap" : `${gapCount} gaps`}{" "}
             &rarr; re-match next time
@@ -205,7 +205,7 @@ function SkillBar({ gap }: { gap: SkillGapRow }) {
         </span>
         <div className="h-3 w-full rounded-full bg-muted">
           <div
-            className="h-3 rounded-full border border-foreground/20"
+            className="h-3 rounded-full border"
             style={{
               width: `${rolePct}%`,
               backgroundImage:

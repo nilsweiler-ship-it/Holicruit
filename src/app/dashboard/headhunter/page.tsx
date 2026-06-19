@@ -86,19 +86,19 @@ export default async function HeadhunterDashboard() {
       {/* Stat tiles */}
       <div className="grid gap-4 md:grid-cols-3">
         {/* Active intros */}
-        <div className="rounded-xl border-2 border-foreground/20 px-4 py-5 text-center">
+        <div className="rounded-xl border-2 px-4 py-5 text-center">
           <p className="text-4xl font-bold tabular-nums leading-none">{activeCount}</p>
           <p className="text-xs text-muted-foreground mt-2">active intros</p>
         </div>
 
         {/* In interview */}
-        <div className="rounded-xl border-2 border-foreground/20 px-4 py-5 text-center">
+        <div className="rounded-xl border-2 px-4 py-5 text-center">
           <p className="text-4xl font-bold tabular-nums leading-none">{interviewCount}</p>
           <p className="text-xs text-muted-foreground mt-2">in interview</p>
         </div>
 
         {/* Earned — novel feature yellow */}
-        <div className="rounded-xl border-2 border-foreground/20 bg-[#FFE27A] px-4 py-5 text-center">
+        <div className="rounded-xl border-2 bg-[#FFE27A] px-4 py-5 text-center">
           <p className="text-4xl font-bold tabular-nums leading-none">
             &euro;{totalEarnedEur}
           </p>
@@ -115,7 +115,7 @@ export default async function HeadhunterDashboard() {
             {activeIntroductions.map((app) => (
               <div
                 key={app.id}
-                className="flex items-center gap-4 rounded-xl border-2 border-foreground/15 px-4 py-3"
+                className="flex items-center gap-4 rounded-xl border-2 px-4 py-3"
               >
                 {/* Avatar circle */}
                 <div className="h-9 w-9 shrink-0 rounded-full bg-muted" />

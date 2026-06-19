@@ -145,7 +145,7 @@ export function ProfileForm({
   return (
     <div className="space-y-6">
       {/* A) Hero section: avatar + name + completeness ring in one row */}
-      <div className="flex items-center gap-4 rounded-xl border-2 border-foreground/15 bg-card p-5">
+      <div className="flex items-center gap-4 rounded-xl border-2 bg-card p-5">
         <Avatar className="size-[58px] text-xl shrink-0">
           <AvatarFallback className="text-xl">
             {getInitials(userName)}
@@ -169,8 +169,8 @@ export function ProfileForm({
                 key={`${skill.name}-${index}`}
                 className={`inline-flex items-center gap-1.5 rounded-full border-2 px-3 py-1 text-sm ${
                   isVerified
-                    ? "bg-[#FFE27A] border-foreground/20 text-foreground"
-                    : "border-foreground/15 text-foreground"
+                    ? "bg-[#FFE27A] text-foreground"
+                    : "text-foreground"
                 }`}
               >
                 <Check className="size-3.5" />

@@ -143,7 +143,7 @@ export default async function CandidateMatchesPage() {
               href={`/dashboard/candidate/matches/${app.id}`}
               className="block"
             >
-              <Card className="rounded-xl border-2 border-foreground/15 transition-colors hover:bg-muted/50">
+              <Card className="rounded-xl border-2 transition-colors hover:bg-muted/50">
                 <CardContent className="space-y-4">
                   {/* Top row: logo + info + fit score */}
                   <div className="flex items-start justify-between gap-4">
@@ -173,23 +173,23 @@ export default async function CandidateMatchesPage() {
 
                   {/* Bottom row: three equal-width pills */}
                   <div className="flex items-center gap-2">
-                    <span className="flex-1 rounded-md border-2 border-foreground/15 py-1.5 text-center text-xs font-medium">
+                    <span className="flex-1 rounded-md border-2 py-1.5 text-center text-xs font-medium">
                       hard {app.hardScore !== null ? app.hardScore : "—"}
                     </span>
-                    <span className="flex-1 rounded-md border-2 border-foreground/15 py-1.5 text-center text-xs font-medium">
+                    <span className="flex-1 rounded-md border-2 py-1.5 text-center text-xs font-medium">
                       soft {app.softScore !== null ? app.softScore : "—"}
                     </span>
                     {app.candidateRank <= 3 ? (
-                      <span className="flex-1 rounded-md border-2 border-foreground/15 bg-[#FFE27A] py-1.5 text-center text-xs font-medium">
+                      <span className="flex-1 rounded-md border-2 bg-[#FFE27A] py-1.5 text-center text-xs font-medium">
                         you&apos;re top 3
                       </span>
                     ) : app.totalGaps > 0 ? (
-                      <span className="flex-1 rounded-md border-2 border-foreground/10 py-1.5 text-center text-xs font-medium text-muted-foreground">
+                      <span className="flex-1 rounded-md border-2 py-1.5 text-center text-xs font-medium text-muted-foreground">
                         {app.totalGaps} gap{app.totalGaps !== 1 ? "s" : ""}{" "}
                         &rarr;
                       </span>
                     ) : (
-                      <span className="flex-1 rounded-md border-2 border-foreground/10 py-1.5 text-center text-xs font-medium text-muted-foreground">
+                      <span className="flex-1 rounded-md border-2 py-1.5 text-center text-xs font-medium text-muted-foreground">
                         &mdash;
                       </span>
                     )}

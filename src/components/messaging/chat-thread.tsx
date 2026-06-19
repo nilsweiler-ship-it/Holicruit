@@ -67,7 +67,7 @@ export function ChatThread({
   return (
     <div className="flex flex-col h-full">
       {/* Chat header */}
-      <div className="flex items-center gap-3 border-b-2 border-foreground/15 px-4 py-3">
+      <div className="flex items-center gap-3 border-b-2 px-4 py-3">
         <Avatar className="size-8">
           <AvatarFallback className="text-xs">
             {getInitials(partner.name)}
@@ -124,7 +124,7 @@ export function ChatThread({
         ))}
 
         {/* Interview scheduled panel */}
-        <div className="rounded-xl border-2 border-foreground/15 bg-[#FFF8E0] p-4 space-y-3">
+        <div className="rounded-xl border-2 bg-[#FFF8E0] p-4 space-y-3">
           <div className="flex items-start gap-3">
             <span className="text-lg mt-0.5 shrink-0">&#x1F4C5;</span>
             <div>
@@ -148,7 +148,7 @@ export function ChatThread({
       </div>
 
       {/* Reply input */}
-      <div className="border-t-2 border-foreground/15 px-4 py-3 flex items-end gap-2">
+      <div className="border-t-2 px-4 py-3 flex items-end gap-2">
         <Textarea
           placeholder="Type a message..."
           value={replyBody}

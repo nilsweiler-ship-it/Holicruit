@@ -67,7 +67,7 @@ export function RoleSelector({ userRole }: { userRole: string }) {
             <button
               key={option.role}
               onClick={() => router.push(option.href)}
-              className="group flex w-full items-center gap-4 rounded-xl border-2 border-foreground/15 bg-card p-5 text-left transition-all hover:border-foreground/30 hover:bg-primary/5 active:scale-[0.98] cursor-pointer"
+              className="group flex w-full items-center gap-4 rounded-xl border-2 bg-card p-5 text-left transition-all hover:border-foreground/80 hover:bg-primary/5 active:scale-[0.98] cursor-pointer"
             >
               <span className="text-2xl shrink-0">{option.emoji}</span>
               <div className="flex-1 min-w-0">
