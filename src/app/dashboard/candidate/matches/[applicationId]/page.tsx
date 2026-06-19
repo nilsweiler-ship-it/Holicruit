@@ -186,7 +186,7 @@ export default async function MatchDetailPage({
           </p>
           <div className="flex items-center gap-3">
             <Button asChild className="bg-foreground text-background hover:bg-foreground/90">
-              <Link href="#">
+              <Link href="/dashboard/messages">
                 Request intro <ArrowRight className="ml-1 h-4 w-4" />
               </Link>
             </Button>

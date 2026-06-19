@@ -153,7 +153,7 @@ export default async function CandidateGapReportPage({
             asChild
             className="w-full bg-foreground text-background hover:bg-foreground/90"
           >
-            <Link href="/dashboard/candidate/matches">
+            <Link href="/dashboard/candidate/progress">
               See growth paths <ArrowRight className="ml-1 h-4 w-4" />
             </Link>
           </Button>

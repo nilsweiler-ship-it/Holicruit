@@ -8,6 +8,7 @@ import {
   CardFooter,
   CardHeader,
 } from "@/components/ui/card";
+import { LogoMark } from "@/components/brand/logo";
 
 interface RoleOption {
   role: string;
@@ -52,8 +53,11 @@ export function RoleSelector({ userRole }: { userRole: string }) {
     <div className="flex min-h-[70vh] items-center justify-center px-4">
       <Card className="w-full max-w-md">
         <CardHeader className="items-center pb-2 text-center">
-          <div className="text-3xl font-extrabold tracking-tight text-primary">
-            holicruit
+          <div className="flex items-center justify-center gap-3">
+            <LogoMark size={40} />
+            <span className="text-3xl font-extrabold tracking-tight">
+              holicruit
+            </span>
           </div>
           <p className="mt-3 text-base text-muted-foreground">
             Who are you here as today?

@@ -20,6 +20,8 @@ import {
   Users,
   Handshake,
 } from "lucide-react";
+import { LogoMark, LogoFull } from "@/components/brand/logo";
+import { Watermark } from "@/components/brand/watermark";
 
 export default function HomePage() {
   return (
@@ -27,8 +29,9 @@ export default function HomePage() {
       {/* Header */}
       <header className="border-b bg-background/80 backdrop-blur-sm sticky top-0 z-50">
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 md:px-6">
-          <Link href="/" className="text-2xl font-bold tracking-tight text-primary">
-            holicruit
+          <Link href="/" className="flex items-center gap-2">
+            <LogoMark size={32} />
+            <span className="text-2xl font-bold tracking-tight">holicruit</span>
           </Link>
           <div className="flex items-center gap-3">
             <Button variant="ghost" asChild>
@@ -43,18 +46,20 @@ export default function HomePage() {
 
       <main className="flex-1">
         {/* Hero */}
-        <section className="flex flex-col items-center justify-center gap-8 px-4 pt-20 pb-16 text-center md:pt-28 md:pb-20">
-          <h1 className="text-5xl font-extrabold tracking-tight text-primary md:text-6xl">
+        <section className="relative flex flex-col items-center justify-center gap-8 px-4 pt-20 pb-16 text-center md:pt-28 md:pb-20 overflow-hidden">
+          <Watermark />
+          <LogoMark size={72} className="relative" />
+          <h1 className="relative text-5xl font-extrabold tracking-tight md:text-6xl">
             holicruit
           </h1>
-          <p className="max-w-2xl text-lg leading-relaxed text-muted-foreground md:text-xl">
+          <p className="relative max-w-2xl text-lg leading-relaxed text-muted-foreground md:text-xl">
             Holistic recruiting that re-connects hiring managers and candidates
             directly &mdash; stripping out the admin drag, and giving every
             candidate honest feedback on where they fell short and how to grow.
           </p>
 
           {/* Principle badges */}
-          <div className="flex flex-wrap justify-center gap-3">
+          <div className="relative flex flex-wrap justify-center gap-3">
             <span className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/5 px-5 py-2 text-sm font-semibold text-primary">
               <Eye className="h-4 w-4" />
               Radical transparency
@@ -69,7 +74,7 @@ export default function HomePage() {
             </span>
           </div>
 
-          <div className="flex gap-4 pt-2">
+          <div className="relative flex gap-4 pt-2">
             <Button size="lg" className="px-8 text-base" asChild>
               <Link href="/register">
                 Get started free
@@ -359,8 +364,9 @@ export default function HomePage() {
         </section>
 
         {/* Bottom CTA */}
-        <section className="border-t bg-primary/5 py-20 text-center">
-          <div className="mx-auto max-w-2xl px-4">
+        <section className="relative border-t bg-primary/5 py-20 text-center overflow-hidden">
+          <Watermark />
+          <div className="relative mx-auto max-w-2xl px-4">
             <Handshake className="mx-auto mb-6 h-10 w-10 text-primary" />
             <h2 className="mb-3 text-3xl font-bold tracking-tight">
               Ready to try something different?
@@ -384,7 +390,10 @@ export default function HomePage() {
       {/* Footer */}
       <footer className="border-t bg-card py-8">
         <div className="mx-auto flex max-w-6xl flex-col items-center gap-4 px-4 md:flex-row md:justify-between">
-          <span className="text-lg font-bold text-primary">holicruit</span>
+          <span className="inline-flex items-center gap-2">
+            <LogoMark size={24} />
+            <span className="text-lg font-bold">holicruit</span>
+          </span>
           <p className="text-sm text-muted-foreground">
             &copy; {new Date().getFullYear()} holicruit. All rights reserved.
           </p>

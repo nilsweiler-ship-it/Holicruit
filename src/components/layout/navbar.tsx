@@ -13,6 +13,7 @@ import {
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { PlanBadge } from "@/components/billing/plan-badge";
 import { Menu, X } from "lucide-react";
+import { LogoMark } from "@/components/brand/logo";
 
 export function Navbar() {
   const { data: session } = useSession();
@@ -37,11 +38,9 @@ export function Navbar() {
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
       <div className="flex h-14 items-center px-4 md:px-6">
         <Link href="/" className="flex items-center gap-2 mr-6">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground text-sm font-bold">
-            H
-          </div>
+          <LogoMark size={32} />
           <span className="text-lg font-bold tracking-tight hidden sm:inline">
-            Holicruit
+            holicruit
           </span>
         </Link>
 
