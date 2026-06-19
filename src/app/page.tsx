@@ -23,7 +23,7 @@ export default function HomePage() {
   return (
     <div className="flex min-h-screen flex-col">
       {/* Header */}
-      <header className="border-b bg-background/80 backdrop-blur-sm sticky top-0 z-50">
+      <header className="border-b-2 bg-background/80 backdrop-blur-sm sticky top-0 z-50">
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 md:px-6">
           <Link href="/" className="flex items-center gap-2">
             <LogoMark size={32} />
@@ -81,7 +81,7 @@ export default function HomePage() {
         </section>
 
         {/* Three perspectives */}
-        <section className="border-t bg-muted/40 py-20">
+        <section className="border-t-2 bg-muted/40 py-20">
           <div className="mx-auto max-w-6xl px-4">
             <h2 className="mb-4 text-center text-3xl font-bold tracking-tight">
               One platform, three perspectives
@@ -357,7 +357,7 @@ export default function HomePage() {
         </section>
 
         {/* Bottom CTA */}
-        <section className="relative border-t bg-primary/5 py-20 text-center overflow-hidden">
+        <section className="relative border-t-2 bg-primary/5 py-20 text-center overflow-hidden">
           <Watermark />
           <div className="relative mx-auto max-w-2xl px-4">
             <Handshake className="mx-auto mb-6 h-10 w-10 text-primary" />
@@ -381,7 +381,7 @@ export default function HomePage() {
       </main>
 
       {/* Footer */}
-      <footer className="border-t bg-card py-8">
+      <footer className="border-t-2 bg-card py-8">
         <div className="mx-auto flex max-w-6xl flex-col items-center gap-4 px-4 md:flex-row md:justify-between">
           <span className="inline-flex items-center gap-2">
             <LogoMark size={24} />
