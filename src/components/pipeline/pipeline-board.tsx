@@ -70,7 +70,7 @@ export function PipelineBoard({
                     <div
                       className={`rounded-lg border-2 px-3 py-2 transition-colors hover:border-foreground/80 ${
                         isHighlighted || isTalkingActive
-                          ? "bg-[#FFF8E0]"
+                          ? "bg-primary/5"
                           : ""
                       }`}
                     >

@@ -124,7 +124,7 @@ export function ChatThread({
         ))}
 
         {/* Interview scheduled panel */}
-        <div className="rounded-xl border-2 bg-[#FFF8E0] p-4 space-y-3">
+        <div className="rounded-xl border-2 bg-primary/5 p-4 space-y-3">
           <div className="flex items-start gap-3">
             <span className="text-lg mt-0.5 shrink-0">&#x1F4C5;</span>
             <div>

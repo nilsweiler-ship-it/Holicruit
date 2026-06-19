@@ -133,7 +133,7 @@ export default async function CandidateGapReportPage({
 
       {/* CTA panel */}
       {gapCount > 0 && (
-        <div className="rounded-xl border-2 bg-[#FFE27A] p-6 space-y-3">
+        <div className="rounded-xl border-2 bg-primary/15 p-6 space-y-3">
           <h2 className="text-base font-bold">
             &#127919; Close the {gapCount === 1 ? "one gap" : `${gapCount} gaps`}{" "}
             &rarr; re-match next time

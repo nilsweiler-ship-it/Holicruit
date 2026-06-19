@@ -98,7 +98,7 @@ export default async function HeadhunterDashboard() {
         </div>
 
         {/* Earned — novel feature yellow */}
-        <div className="rounded-xl border-2 bg-[#FFE27A] px-4 py-5 text-center">
+        <div className="rounded-xl border-2 bg-primary/15 px-4 py-5 text-center">
           <p className="text-4xl font-bold tabular-nums leading-none">
             &euro;{totalEarnedEur}
           </p>

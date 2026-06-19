@@ -82,7 +82,7 @@ export default async function ApplicationDetailPage({
           </p>
         </div>
         {/* Verified */}
-        <div className="rounded-xl border-2 bg-[#FFE27A] px-4 py-4 text-center">
+        <div className="rounded-xl border-2 bg-primary/15 px-4 py-4 text-center">
           <p className="text-xs text-foreground/60 mb-1">Verified</p>
           <p className="text-2xl font-bold tabular-nums">&#10003;</p>
         </div>

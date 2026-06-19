@@ -169,7 +169,7 @@ export function ProfileForm({
                 key={`${skill.name}-${index}`}
                 className={`inline-flex items-center gap-1.5 rounded-full border-2 px-3 py-1 text-sm ${
                   isVerified
-                    ? "bg-[#FFE27A] text-foreground"
+                    ? "bg-primary/15 text-foreground"
                     : "text-foreground"
                 }`}
               >

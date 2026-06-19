@@ -180,7 +180,7 @@ export default async function CandidateMatchesPage() {
                       soft {app.softScore !== null ? app.softScore : "—"}
                     </span>
                     {app.candidateRank <= 3 ? (
-                      <span className="flex-1 rounded-md border-2 bg-[#FFE27A] py-1.5 text-center text-xs font-medium">
+                      <span className="flex-1 rounded-md border-2 bg-primary/15 py-1.5 text-center text-xs font-medium">
                         you&apos;re top 3
                       </span>
                     ) : app.totalGaps > 0 ? (

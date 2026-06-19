@@ -82,7 +82,7 @@ export function MessagesLayout({
                 onClick={() => setActiveIndex(idx)}
                 className={`w-full flex items-center gap-3 rounded-xl px-3 py-3 text-left transition-colors ${
                   isActive
-                    ? "bg-[#FFF8E0] border-2"
+                    ? "bg-primary/5 border-2"
                     : "border-2 border-transparent hover:bg-muted"
                 }`}
               >
