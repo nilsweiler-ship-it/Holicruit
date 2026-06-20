@@ -1,26 +1,20 @@
 import type { Metadata, Viewport } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import "@fontsource/outfit/400.css";
+import "@fontsource/outfit/500.css";
+import "@fontsource/outfit/600.css";
+import "@fontsource/outfit/700.css";
+import "@fontsource/outfit/800.css";
 import "./globals.css";
 import { Providers } from "@/components/layout/providers";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
-
 export const viewport: Viewport = {
-  themeColor: "#0a0a0a",
+  themeColor: "#E0533D",
 };
 
 export const metadata: Metadata = {
-  title: "Holicruit - Recruitment Platform",
+  title: "Holicruit - Transparent, Holistic Recruiting",
   description:
-    "Connect freelance headhunters with hiring companies. Smart matching and pipeline management.",
+    "Radical transparency in hiring. Candidates see exactly which skills they lack. Hiring managers see every candidate scored. Everyone wins when everyone knows where they stand.",
   appleWebApp: {
     capable: true,
     title: "Holicruit",
@@ -39,7 +33,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className="antialiased"
       >
         <Providers>{children}</Providers>
       </body>
