@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { matchingService } from "@/lib/services/matching";
-import { CURRENT_CANDIDATE } from "@/lib/fixtures";
+import { getActiveCandidateId } from "@/lib/persona";
 import { MatchCard } from "@/components/match/match-card";
 
 export const metadata: Metadata = { title: "Your matches · Holicruit" };
@@ -11,8 +11,9 @@ export const metadata: Metadata = { title: "Your matches · Holicruit" };
  * broken into hard/soft sub-scores and the candidate sees their own ranking.
  */
 export default async function CandidateMatchesPage() {
-  const matches = await matchingService.getCandidateMatches(CURRENT_CANDIDATE.id);
-  const closed = await matchingService.getClosedMatches(CURRENT_CANDIDATE.id);
+  const candidateId = await getActiveCandidateId();
+  const matches = await matchingService.getCandidateMatches(candidateId);
+  const closed = await matchingService.getClosedMatches(candidateId);
 
   return (
     <div className="flex flex-col gap-6">

@@ -1,17 +1,16 @@
 /**
  * MatchingService — the seam between this UI and the (separate) matching engine.
  *
- * The UI only ever consumes this interface. The real engine is a different
- * service; here it is backed by fixtures. Methods are async on purpose so the
+ * The UI only ever consumes this interface. Backed by per-persona fixture
+ * "worlds" so the same screens work across industries. Methods are async so the
  * mock and a future networked implementation are interchangeable.
  */
 
 import type { GrowthReport, SkillGap } from "../fit/types";
 import type { Match, PipelineStage } from "../types";
 import {
-  CANDIDATE_MATCHES,
-  CLOSED_MATCH,
-  DAILY_MATCH_IDS,
+  CANDIDATE_WORLDS,
+  DEFAULT_CANDIDATE_ID,
   GROWTH_REPORTS,
   PIPELINE_MATCHES,
   PROGRAMS,
@@ -34,23 +33,31 @@ export interface MatchingService {
   rolesClearedIfGapClosed(gap: SkillGap): Promise<number>;
 }
 
-const ALL_MATCHES: Match[] = [...CANDIDATE_MATCHES, CLOSED_MATCH, ...PIPELINE_MATCHES];
+const worldOf = (candidateId: string) =>
+  CANDIDATE_WORLDS[candidateId] ?? CANDIDATE_WORLDS[DEFAULT_CANDIDATE_ID];
+
+/** Every match across all personas + the pipeline — for id lookups. */
+const ALL_MATCHES: Match[] = [
+  ...Object.values(CANDIDATE_WORLDS).flatMap((w) => [...w.matches, ...w.closed]),
+  ...PIPELINE_MATCHES,
+];
 
 const EMPTY_PIPELINE: Record<PipelineStage, Match[]> = { new: [], talking: [], offer: [], closed: [] };
 
 class MockMatchingService implements MatchingService {
-  async getCandidateMatches(): Promise<Match[]> {
-    return [...CANDIDATE_MATCHES].sort((a, b) => b.fit.mutualFit - a.fit.mutualFit);
+  async getCandidateMatches(candidateId: string): Promise<Match[]> {
+    return [...worldOf(candidateId).matches].sort((a, b) => b.fit.mutualFit - a.fit.mutualFit);
   }
 
-  async getDailyMatches(): Promise<Match[]> {
-    return DAILY_MATCH_IDS.map((id) => CANDIDATE_MATCHES.find((m) => m.id === id)).filter(
-      (m): m is Match => Boolean(m),
-    );
+  async getDailyMatches(candidateId: string): Promise<Match[]> {
+    const world = worldOf(candidateId);
+    return world.dailyIds
+      .map((id) => world.matches.find((m) => m.id === id))
+      .filter((m): m is Match => Boolean(m));
   }
 
-  async getClosedMatches(): Promise<Match[]> {
-    return [CLOSED_MATCH];
+  async getClosedMatches(candidateId: string): Promise<Match[]> {
+    return worldOf(candidateId).closed;
   }
 
   async getMatch(matchId: string): Promise<Match | null> {
@@ -58,15 +65,15 @@ class MockMatchingService implements MatchingService {
   }
 
   async getPipeline(openingId: string): Promise<Record<PipelineStage, Match[]>> {
+    if (!PIPELINE_MATCHES.some((m) => m.opening.id === openingId)) return EMPTY_PIPELINE;
     const grouped: Record<PipelineStage, Match[]> = { new: [], talking: [], offer: [], closed: [] };
     for (const m of PIPELINE_MATCHES) {
       if (m.opening.id === openingId) grouped[m.stage].push(m);
     }
-    // Rank each column by mutualFit desc.
     (Object.keys(grouped) as PipelineStage[]).forEach((s) =>
       grouped[s].sort((a, b) => b.fit.mutualFit - a.fit.mutualFit),
     );
-    return PIPELINE_MATCHES.some((m) => m.opening.id === openingId) ? grouped : EMPTY_PIPELINE;
+    return grouped;
   }
 
   async getGrowthReport(matchId: string): Promise<GrowthReport | null> {
@@ -76,7 +83,6 @@ class MockMatchingService implements MatchingService {
   async rolesClearedIfGapClosed(gap: SkillGap): Promise<number> {
     const report = GROWTH_REPORTS.find((r) => r.primaryGap.skill === gap.skill);
     if (report) return report.rolesClearedIfClosed;
-    // Fallback heuristic for arbitrary gaps: count programs that close it.
     return PROGRAMS.filter((p) => p.closesGap === gap.skill).length;
   }
 }

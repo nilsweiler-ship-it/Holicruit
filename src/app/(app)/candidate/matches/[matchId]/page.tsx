@@ -3,7 +3,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowUpRight, Check, TriangleAlert } from "lucide-react";
 import { matchingService } from "@/lib/services/matching";
-import { CURRENT_CANDIDATE } from "@/lib/fixtures";
+import { CANDIDATE_WORLDS } from "@/lib/fixtures";
+import { getActiveCandidateId } from "@/lib/persona";
 import { MutualFit } from "@/components/fit/mutual-fit";
 import { FitRadar, type RadarAxis } from "@/components/fit/fit-radar";
 import { DirectLinePanel } from "@/components/match/direct-line-panel";
@@ -31,7 +32,8 @@ export default async function MatchDetailPage({
   if (!match) notFound();
 
   const { opening, fit } = match;
-  const profile = CURRENT_CANDIDATE;
+  const fallbackId = await getActiveCandidateId();
+  const profile = (CANDIDATE_WORLDS[match.candidate.id] ?? CANDIDATE_WORLDS[fallbackId]).profile;
   const salary = salaryLabel(opening.salaryMin, opening.salaryMax, opening.currency);
 
   // Evidence, derived from the candidate's skills vs. the role's bar.
@@ -102,7 +104,7 @@ export default async function MatchDetailPage({
           <ArrowUpRight className="size-5 text-primary" />
         </Link>
       ) : (
-        <DirectLinePanel manager={opening.hiringManager} initiallySaved={match.saved} />
+        <DirectLinePanel manager={opening.hiringManager} matchId={match.id} initiallySaved={match.saved} />
       )}
     </div>
   );

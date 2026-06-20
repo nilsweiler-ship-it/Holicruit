@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { ArrowRight, Bookmark, BookmarkCheck, Check, Radio } from "lucide-react";
+import Link from "next/link";
+import { ArrowRight, Bookmark, BookmarkCheck, Check, MessageCircle, Radio } from "lucide-react";
 import { toast } from "sonner";
 import type { Person } from "@/lib/types";
 import { Button } from "@/components/ui/button";
@@ -14,9 +15,11 @@ import { Button } from "@/components/ui/button";
  */
 export function DirectLinePanel({
   manager,
+  matchId,
   initiallySaved = false,
 }: {
   manager: Person;
+  matchId: string;
   initiallySaved?: boolean;
 }) {
   const [requested, setRequested] = useState(false);
@@ -68,6 +71,14 @@ export function DirectLinePanel({
           {saved ? <BookmarkCheck className="size-4" /> : <Bookmark className="size-4" />}
           {saved ? "Saved" : "Save"}
         </Button>
+        {requested && (
+          <Button asChild variant="secondary">
+            <Link href={`/candidate/chat/${matchId}`}>
+              <MessageCircle className="size-4" />
+              Open direct chat
+            </Link>
+          </Button>
+        )}
       </div>
     </section>
   );

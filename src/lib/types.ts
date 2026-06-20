@@ -3,7 +3,7 @@
  * these are the people, roles, matches, threads and programs the UI renders.
  */
 
-import type { FitObject, SkillGap, SkillType } from "./fit/types";
+import type { FitObject, GrowthReport, SkillGap, SkillType } from "./fit/types";
 
 /** One account, interchangeable "hats". The training **provider** is a
  *  fourth-party entity that offers/promotes trainings to close candidate gaps. */
@@ -32,12 +32,28 @@ export interface SoftSkillScore {
 }
 
 export interface CandidateProfile extends Person {
+  /** Industry / domain the candidate works in — the platform is domain-agnostic
+   *  (Software, Healthcare, Sales, Finance, Education, …). */
+  industry: string;
   /** Profile completeness ring, 0–100. */
   completeness: number;
   hardSkills: HardSkill[];
   softSkills: SoftSkillScore[];
   /** Whether the 8-min skill scenario has been taken. */
   scenarioCompleted: boolean;
+}
+
+/** A peer endorsement — the evidence that earns a hard skill its "verified"
+ *  badge. Verification is earned this way, never user-toggled. */
+export interface Endorsement {
+  id: string;
+  /** The hard skill this endorsement verifies. */
+  skill: string;
+  endorserName: string;
+  endorserInitials: string;
+  endorserHeadline: string;
+  /** How they know the candidate, e.g. "Former manager". */
+  relationship: string;
 }
 
 export interface Company {
@@ -50,6 +66,8 @@ export interface Company {
 export interface Opening {
   id: string;
   title: string;
+  /** Industry / domain of the role. */
+  industry: string;
   company: Company;
   location: string;
   salaryMin?: number;
@@ -83,6 +101,20 @@ export interface Match {
   saved?: boolean;
   /** Active conversation indicator (drives the 💬 marker). */
   hasThread?: boolean;
+}
+
+/** Everything that hangs off one candidate persona — used to demo the same UI
+ *  across industries by switching the active persona. */
+export interface CandidateWorld {
+  profile: CandidateProfile;
+  /** Active matches, ranked by mutualFit. */
+  matches: Match[];
+  /** Closed/decided matches (each has a growth report). */
+  closed: Match[];
+  growthReports: GrowthReport[];
+  /** Ids (into `matches`) for the curated mobile daily set. */
+  dailyIds: string[];
+  endorsements: Endorsement[];
 }
 
 export interface ChatMessage {
@@ -180,6 +212,8 @@ export interface Program {
 export interface GapDemand {
   skill: string;
   type: SkillType;
+  /** Industry the demand sits in — shows the platform spans domains. */
+  industry: string;
   /** Matched candidates currently carrying this gap. */
   candidatesWithGap: number;
   /** Open roles this gap is blocking. */

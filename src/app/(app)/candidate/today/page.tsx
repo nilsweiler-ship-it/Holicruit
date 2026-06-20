@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { matchingService } from "@/lib/services/matching";
-import { CURRENT_CANDIDATE } from "@/lib/fixtures";
+import { getActiveCandidateId } from "@/lib/persona";
 import { DailySwipe } from "@/components/candidate/daily-swipe";
 
 export const metadata: Metadata = { title: "Today's matches · Holicruit" };
@@ -10,7 +10,7 @@ export const metadata: Metadata = { title: "Today's matches · Holicruit" };
  * card stack. Deliberately limited (~3) — anti-firehose.
  */
 export default async function TodayPage() {
-  const daily = await matchingService.getDailyMatches(CURRENT_CANDIDATE.id);
+  const daily = await matchingService.getDailyMatches(await getActiveCandidateId());
 
   return (
     <div className="mx-auto flex max-w-md flex-col gap-6">
