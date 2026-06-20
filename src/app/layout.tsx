@@ -1,9 +1,14 @@
 import type { Metadata, Viewport } from "next";
+import "@fontsource/outfit/400.css";
+import "@fontsource/outfit/500.css";
+import "@fontsource/outfit/600.css";
+import "@fontsource/outfit/700.css";
+import "@fontsource/outfit/800.css";
 import "./globals.css";
 import { Providers } from "@/components/layout/providers";
 
 export const viewport: Viewport = {
-  themeColor: "#1a7a6d",
+  themeColor: "#E0533D",
 };
 
 export const metadata: Metadata = {
