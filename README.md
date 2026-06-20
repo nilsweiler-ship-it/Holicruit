@@ -1,100 +1,85 @@
 # Holicruit
 
-A modern recruitment platform connecting hiring managers, candidates, and headhunters through intelligent skill-based matching.
+A holistic recruiting platform built on **radical transparency**: every candidate —
+win or lose — sees exactly where they stood against the role's bar, the specific gap
+that cost them the role, and a concrete path to close it. No black box, no silent
+rejections.
 
-## Features
+This repo is the implementation of the `design_handoff_holicruit/` wireframes.
 
-- **Three-role system**: Hiring Managers, Candidates, and Headhunters
-- **Skill-based matching**: Multi-dimensional scoring across hard skills, soft skills, experience, and education
-- **Auto-shortlisting**: Candidates above a configurable threshold are automatically shortlisted
-- **Gap analysis**: Detailed skill gap reports with actionable recommendations
-- **Pipeline management**: Track candidates through application stages
-- **Billing tiers**: Tiered plans for hiring managers and headhunters
-- **PWA support**: Installable as a mobile app
+## Core ideas
 
-## Tech Stack
+- **The fit model** — every match produces a fit object: `hardFit` / `softFit` /
+  `mutualFit`, `verified`, `gaps[]`, and the candidate's own `candidateRank`. The
+  hard / soft / verified|rank triplet is shown wherever a match appears.
+- **Opt-in matching** — a match becomes a conversation only when both sides opt in.
+  No cold applications.
+- **Four hats, one account** — `candidate`, `hiring_manager`, `recruiter` (paid on
+  outcomes), and `provider` (fourth-party training providers who offer/promote
+  programs that close candidates' gaps). Switch via the hat switcher.
+- **Domain-agnostic** — works across industries. The candidate flow ships three demo
+  personas (Software / Healthcare / Sales) you can switch between; the soft-skill
+  scenario assessment is universal (situational judgment, not field knowledge).
 
-- **Framework**: Next.js 16 with App Router (React 19, TypeScript)
-- **Database**: SQLite via Prisma ORM with LibSQL adapter
-- **Auth**: NextAuth v5 (email/password)
-- **UI**: Tailwind CSS 4 + shadcn/ui components
-- **Validation**: Zod + React Hook Form
+## Screens
 
-## Quick Start
+- **Candidate** — match dashboard, match detail + direct line, **Growth Report** (the
+  "you vs. role bar" transparency view), profile builder, mobile daily swipe, the
+  scenario assessment, peer endorsements, and the upskilling marketplace.
+- **Hiring manager** — pipeline (drag to advance), candidate deep-dive, direct chat
+  with inline scheduling, and auto-drafted pass feedback → Growth Report.
+- **Recruiter** — outcome-based desk.
+- **Training provider** — gap-demand targeting, program catalog, promotion.
+
+## Tech stack
+
+- **Next.js 16** (App Router, RSC) · **React 19** · **TypeScript**
+- **Tailwind CSS 4** + **shadcn/ui** (new-york) · **Outfit** type
+- Brand palette: Coral `#E0533D` (primary) · Ink `#161514` · Cream `#F4EFE7`
+
+The **matching engine** and **scenario assessment** are separate services this UI only
+consumes; here they're **mocked behind clean interfaces** (`src/lib/services/*`) over
+typed fixtures (`src/lib/fixtures/*`). No database — the app is UI-first.
+
+## Quick start
 
 ```bash
-# One-command setup
-./scripts/setup.sh
-
-# Start development server
-npm run dev
-```
-
-Or manually:
-
-```bash
-# Install dependencies
 npm install
-
-# Set up environment
-cp .env.example .env
-
-# Set up database
-npx prisma generate
-npx prisma migrate deploy
-npx tsx prisma/seed.ts
-
-# Start dev server
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) in your browser.
+Open [http://localhost:3000](http://localhost:3000) — it lands on the role selector.
 
-## Demo Accounts
-
-All demo accounts use password: `password123`
-
-| Role | Email | Company |
-|------|-------|---------|
-| Hiring Manager | sarah@acme.com | Acme Corp |
-| Hiring Manager | mike@globex.com | Globex Industries |
-| Headhunter | alex@headhunt.com | — |
-| Headhunter | jordan@recruit.co | — |
-| Candidates | See `prisma/seed.ts` | — |
-
-## Project Structure
+## Project structure
 
 ```
 src/
-├── app/                    # Next.js App Router pages & API routes
-│   ├── (auth)/             # Login & registration pages
-│   ├── api/                # REST API endpoints
-│   ├── dashboard/          # Role-specific dashboards
-│   │   ├── candidate/      # Candidate views
-│   │   ├── hiring-manager/ # HM views
-│   │   └── headhunter/     # Headhunter views
-│   └── pricing/            # Public pricing page
-├── components/             # React components
-│   ├── ui/                 # shadcn/ui primitives
-│   ├── matching/           # Match score & gap report views
-│   ├── pipeline/           # Pipeline board components
-│   ├── billing/            # Plan badges, usage, upgrade prompts
-│   └── layout/             # Navbar, sidebar, providers
-├── lib/                    # Business logic
-│   ├── matching/           # Scoring engine & gap analysis
-│   ├── validations/        # Zod schemas
-│   ├── auth.ts             # NextAuth configuration
-│   ├── db.ts               # Prisma client
-│   └── plans.ts            # Billing tiers & quota logic
-└── middleware.ts           # Auth & role-based route protection
+├── app/
+│   ├── (app)/              # the app shell + role-scoped routes
+│   │   ├── candidate/      # matches, growth report, profile, scenario, chat, today, marketplace
+│   │   ├── hiring-manager/ # pipeline, deep-dive, chat
+│   │   ├── recruiter/
+│   │   └── provider/
+│   ├── select-role/        # 1.0 role selector
+│   └── endorse/[skill]/    # peer "give endorsement" page
+├── components/
+│   ├── fit/                # FitPills, ScoreTiles, MutualFit, ComparisonBars, FitRadar
+│   ├── candidate/ match/ chat/ provider/ market/ people/ brand/ layout/
+│   └── ui/                 # shadcn primitives
+└── lib/
+    ├── fit/types.ts        # the fit-model primitive
+    ├── types.ts            # domain types
+    ├── services/           # mocked matching / scenario / marketplace
+    ├── fixtures/           # cross-industry demo data + scenario bank
+    ├── scenario/           # scenario assessment types
+    └── persona.ts          # active demo-persona resolution
 ```
 
 ## Scripts
 
 | Command | Description |
 |---------|-------------|
-| `npm run dev` | Start development server |
+| `npm run dev` | Start the dev server |
 | `npm run build` | Production build |
-| `npm run start` | Start production server |
-| `npm run seed` | Seed database with demo data |
+| `npm run start` | Start the production server |
 | `npm run lint` | Run ESLint |
