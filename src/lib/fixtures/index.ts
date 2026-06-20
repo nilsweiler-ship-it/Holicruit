@@ -11,10 +11,13 @@ import type {
   CandidateProfile,
   Company,
   FeedbackDraft,
+  GapDemand,
   Match,
   Opening,
   Person,
   Program,
+  Provider,
+  ProviderStats,
   RecruiterIntro,
   Thread,
 } from "../types";
@@ -325,23 +328,132 @@ export const RECRUITER_INTROS: RecruiterIntro[] = [
   { id: "ri-7", candidateName: "Ravi Menon", roleTitle: "Engineer", company: "Orbit Pay", valueNote: "Closed last year — referred two more since.", stage: "hired" },
 ];
 
-/* ── Upskilling marketplace (future) ─────────────────────────────────── */
+/* ── Fourth-party training providers + upskilling marketplace ─────────── */
+
+const providerFM: Provider = {
+  id: "prov-fm",
+  name: "Frontend Masters",
+  headline: "Course platform · partner",
+  initials: "FM",
+  kind: "Course platform",
+};
+const providerTUD: Provider = {
+  id: "prov-tud",
+  name: "TU Delft (online)",
+  headline: "University · accredited micro-credentials",
+  initials: "TU",
+  kind: "University",
+};
+const providerLaunch: Provider = {
+  id: "prov-launch",
+  name: "Launchpad",
+  headline: "Bootcamp · cohort-based",
+  initials: "LP",
+  kind: "Bootcamp",
+};
+
+export const PROVIDERS: Provider[] = [providerFM, providerTUD, providerLaunch];
+
+/** The signed-in provider (the "me" for provider-side screens). */
+export const CURRENT_PROVIDER = providerFM;
 
 export const PROGRAMS: Program[] = [
   {
     id: "prog-ts-scale",
-    provider: "Frontend Masters",
+    providerId: providerFM.id,
+    provider: providerFM.name,
+    providerKind: providerFM.kind,
     title: "TypeScript at Scale",
     format: "Online course · 4 weeks · cert",
-    tags: ["closes your gap", "+7 matches", "partner"],
+    credential: "Certificate",
+    tags: ["partner", "hands-on"],
     closesGap: "TypeScript at scale",
+    gapType: "hard",
+    sponsored: true,
+    enrollments: 1240,
+    completions: 870,
+    reMatches: 610,
   },
   {
     id: "prog-ts-uni",
-    provider: "TU Delft (online)",
+    providerId: providerTUD.id,
+    provider: providerTUD.name,
+    providerKind: providerTUD.kind,
     title: "Type-Safe Systems Engineering",
-    format: "University micro-credential · Part-time · 1 semester · accredited",
-    tags: ["closes your gap", "deeper", "accredited"],
+    format: "Micro-credential · Part-time · 1 semester",
+    credential: "Accredited micro-credential",
+    tags: ["accredited", "deeper"],
     closesGap: "TypeScript at scale",
+    gapType: "hard",
+    sponsored: false,
+    enrollments: 320,
+    completions: 210,
+    reMatches: 150,
+  },
+  {
+    id: "prog-sysdesign",
+    providerId: providerFM.id,
+    provider: providerFM.name,
+    providerKind: providerFM.kind,
+    title: "Designing Large-Scale Systems",
+    format: "Online course · 6 weeks · cert",
+    credential: "Certificate",
+    tags: ["partner"],
+    closesGap: "System design at scale",
+    gapType: "hard",
+    sponsored: true,
+    enrollments: 980,
+    completions: 640,
+    reMatches: 430,
+  },
+  {
+    id: "prog-lead",
+    providerId: providerLaunch.id,
+    provider: providerLaunch.name,
+    providerKind: providerLaunch.kind,
+    title: "From Senior to Lead",
+    format: "Cohort bootcamp · 6 weeks · live",
+    tags: ["cohort", "coaching"],
+    closesGap: "Team leadership",
+    gapType: "soft",
+    sponsored: false,
+    enrollments: 410,
+    completions: 290,
+    reMatches: 180,
+  },
+  {
+    id: "prog-k8s",
+    providerId: providerFM.id,
+    provider: providerFM.name,
+    providerKind: providerFM.kind,
+    title: "Kubernetes in Production",
+    format: "Online course · 5 weeks · cert",
+    credential: "Certificate",
+    tags: ["partner", "hands-on"],
+    closesGap: "Kubernetes",
+    gapType: "hard",
+    sponsored: false,
+    enrollments: 760,
+    completions: 480,
+    reMatches: 300,
   },
 ];
+
+/** Aggregate demand for skill gaps — what providers target ("stretch" gaps). */
+export const GAP_DEMAND: GapDemand[] = [
+  { skill: "TypeScript at scale", type: "hard", candidatesWithGap: 147, rolesBlocked: 7, programsOffered: 2 },
+  { skill: "System design at scale", type: "hard", candidatesWithGap: 112, rolesBlocked: 9, programsOffered: 1 },
+  { skill: "Team leadership", type: "soft", candidatesWithGap: 89, rolesBlocked: 4, programsOffered: 1 },
+  { skill: "Kubernetes", type: "hard", candidatesWithGap: 64, rolesBlocked: 5, programsOffered: 1 },
+  { skill: "Product sense", type: "soft", candidatesWithGap: 53, rolesBlocked: 6, programsOffered: 0 },
+];
+
+/** Provider desk headline stats (for CURRENT_PROVIDER). */
+export const PROVIDER_STATS: ProviderStats = {
+  activePrograms: 3,
+  learnersEnrolled: 2980,
+  gapsClosed: 1990,
+  reMatchesGenerated: 1340,
+  revenue: 96400,
+  currency: "€",
+};

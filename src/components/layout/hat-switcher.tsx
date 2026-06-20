@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Briefcase, ChevronDown, Repeat, Target, User } from "lucide-react";
+import { Briefcase, ChevronDown, GraduationCap, Repeat, Target, User } from "lucide-react";
 import type { RoleHat } from "@/lib/types";
 import {
   DropdownMenu,
@@ -17,11 +17,13 @@ const HATS: { hat: RoleHat; label: string; href: string; icon: React.ElementType
   { hat: "candidate", label: "Candidate", href: "/candidate/matches", icon: User },
   { hat: "hiring_manager", label: "Hiring Manager", href: "/hiring-manager/pipeline", icon: Briefcase },
   { hat: "recruiter", label: "Recruiter", href: "/recruiter", icon: Target },
+  { hat: "provider", label: "Training Provider", href: "/provider", icon: GraduationCap },
 ];
 
 function hatFromPath(pathname: string): RoleHat {
   if (pathname.startsWith("/hiring-manager")) return "hiring_manager";
   if (pathname.startsWith("/recruiter")) return "recruiter";
+  if (pathname.startsWith("/provider")) return "provider";
   return "candidate";
 }
 
