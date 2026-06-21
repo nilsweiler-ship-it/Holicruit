@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { BookOpen, GraduationCap, HandCoins, Megaphone, Repeat, Users } from "lucide-react";
 import { marketplaceService } from "@/lib/services/marketplace";
-import { CURRENT_PROVIDER } from "@/lib/fixtures";
+import { getActiveProvider } from "@/lib/persona";
 import { PersonAvatar } from "@/components/people/person-avatar";
 import { PromoteButton } from "@/components/provider/promote-button";
 import { cn } from "@/lib/utils";
@@ -15,7 +15,7 @@ export const metadata: Metadata = { title: "Provider desk · Holicruit" };
  * re-match).
  */
 export default async function ProviderDeskPage() {
-  const provider = CURRENT_PROVIDER;
+  const provider = await getActiveProvider();
   const [stats, demand, programs] = await Promise.all([
     marketplaceService.getProviderStats(provider.id),
     marketplaceService.getGapDemand(),

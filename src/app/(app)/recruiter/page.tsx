@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import { BadgeEuro, HandCoins, Star } from "lucide-react";
-import { RECRUITER_INTROS } from "@/lib/fixtures";
 import type { RecruiterIntro } from "@/lib/types";
+import { prisma } from "@/lib/db";
+import { getActiveRecruiterId } from "@/lib/persona";
 import { PersonAvatar } from "@/components/people/person-avatar";
 
 export const metadata: Metadata = { title: "Recruiter desk · Holicruit" };
@@ -51,8 +52,10 @@ function StagePill({ stage }: { stage: RecruiterIntro["stage"] }) {
  * footer that reframes the commercial model (success fee, no retainers).
  */
 export default async function RecruiterPage() {
-  const activeIntros = RECRUITER_INTROS.length;
-  const inInterview = RECRUITER_INTROS.filter((i) => i.stage === "interview").length;
+  const recruiterId = await getActiveRecruiterId();
+  const intros = await prisma.recruiterIntro.findMany({ where: { recruiterId }, orderBy: { id: "asc" } });
+  const activeIntros = intros.length;
+  const inInterview = intros.filter((i) => i.stage === "interview").length;
 
   return (
     <div className="flex flex-col gap-6">
@@ -84,7 +87,7 @@ export default async function RecruiterPage() {
           Where you add value
         </h2>
         <ul className="flex flex-col gap-3">
-          {RECRUITER_INTROS.map((intro) => (
+          {intros.map((intro) => (
             <li
               key={intro.id}
               className="flex items-center gap-4 rounded-2xl border border-border bg-card p-4"
@@ -99,7 +102,7 @@ export default async function RecruiterPage() {
                 </p>
                 <p className="mt-0.5 truncate text-sm text-muted-foreground">{intro.valueNote}</p>
               </div>
-              <StagePill stage={intro.stage} />
+              <StagePill stage={intro.stage as RecruiterIntro["stage"]} />
             </li>
           ))}
         </ul>

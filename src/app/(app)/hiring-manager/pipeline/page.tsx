@@ -1,6 +1,6 @@
 import { Zap } from "lucide-react";
 import { matchingService } from "@/lib/services/matching";
-import { PIPELINE_OPENING_ID } from "@/lib/fixtures";
+import { getActiveHmOpeningId } from "@/lib/persona";
 import { HmPipelineBoard } from "@/components/pipeline/hm-pipeline-board";
 
 /**
@@ -8,7 +8,10 @@ import { HmPipelineBoard } from "@/components/pipeline/hm-pipeline-board";
  * grouped into advanceable stages.
  */
 export default async function PipelinePage() {
-  const pipeline = await matchingService.getPipeline(PIPELINE_OPENING_ID);
+  const openingId = await getActiveHmOpeningId();
+  const pipeline = openingId
+    ? await matchingService.getPipeline(openingId)
+    : { new: [], talking: [], offer: [], closed: [] };
   const opening =
     pipeline.talking[0]?.opening ??
     pipeline.new[0]?.opening ??

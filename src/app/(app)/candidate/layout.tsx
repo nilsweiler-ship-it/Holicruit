@@ -1,6 +1,5 @@
 import { getActiveCandidateId } from "@/lib/persona";
 import { SubNav } from "@/components/layout/sub-nav";
-import { PersonaSwitcher } from "@/components/candidate/persona-switcher";
 
 const ITEMS = [
   { label: "Matches", href: "/candidate/matches" },
@@ -9,14 +8,12 @@ const ITEMS = [
 ];
 
 export default async function CandidateLayout({ children }: { children: React.ReactNode }) {
-  const activeId = await getActiveCandidateId();
+  // Guard: candidate-only area (redirects non-candidate accounts).
+  await getActiveCandidateId();
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex items-center justify-between gap-3">
-        <SubNav items={ITEMS} />
-        <PersonaSwitcher activeId={activeId} />
-      </div>
+      <SubNav items={ITEMS} />
       {children}
     </div>
   );

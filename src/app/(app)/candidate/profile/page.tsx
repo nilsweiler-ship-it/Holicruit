@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
+import { notFound } from "next/navigation";
 import { scenarioService } from "@/lib/services/scenario";
-import { getActiveWorld } from "@/lib/persona";
+import { getActiveCandidateId } from "@/lib/persona";
+import { getCandidateProfile, getEndorsements } from "@/lib/services/profile";
 import { PersonAvatar } from "@/components/people/person-avatar";
 import { CompletenessRing } from "@/components/people/completeness-ring";
 import { SkillChips } from "@/components/candidate/skill-chips";
@@ -14,10 +16,12 @@ export const metadata: Metadata = { title: "Your profile · Holicruit" };
  * skills, and soft skills measured objectively (via the scenario assessment).
  */
 export default async function CandidateProfilePage() {
-  const world = await getActiveWorld();
-  const profile = world.profile;
-  const softScores = await scenarioService.getSoftSkillScores(profile.id);
-  const completed = await scenarioService.isComplete(profile.id);
+  const candidateId = await getActiveCandidateId();
+  const profile = await getCandidateProfile(candidateId);
+  if (!profile) notFound();
+  const endorsements = await getEndorsements(candidateId);
+  const softScores = await scenarioService.getSoftSkillScores(candidateId);
+  const completed = await scenarioService.isComplete(candidateId);
   const minutes = scenarioService.estimatedMinutes();
 
   return (
@@ -48,7 +52,7 @@ export default async function CandidateProfilePage() {
             verified = peer-endorsed
           </span>
         </div>
-        <SkillChips initial={profile.hardSkills} endorsements={world.endorsements} />
+        <SkillChips initial={profile.hardSkills} endorsements={endorsements} />
       </section>
 
       {/* Soft skills */}

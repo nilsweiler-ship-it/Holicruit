@@ -3,8 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowUpRight, Check, TriangleAlert } from "lucide-react";
 import { matchingService } from "@/lib/services/matching";
-import { CANDIDATE_WORLDS } from "@/lib/fixtures";
-import { getActiveCandidateId } from "@/lib/persona";
+import { getCandidateProfile } from "@/lib/services/profile";
 import { MutualFit } from "@/components/fit/mutual-fit";
 import { FitRadar, type RadarAxis } from "@/components/fit/fit-radar";
 import { DirectLinePanel } from "@/components/match/direct-line-panel";
@@ -32,8 +31,8 @@ export default async function MatchDetailPage({
   if (!match) notFound();
 
   const { opening, fit } = match;
-  const fallbackId = await getActiveCandidateId();
-  const profile = (CANDIDATE_WORLDS[match.candidate.id] ?? CANDIDATE_WORLDS[fallbackId]).profile;
+  const profile = await getCandidateProfile(match.candidate.id);
+  if (!profile) notFound();
   const salary = salaryLabel(opening.salaryMin, opening.salaryMax, opening.currency);
 
   // Evidence, derived from the candidate's skills vs. the role's bar.
