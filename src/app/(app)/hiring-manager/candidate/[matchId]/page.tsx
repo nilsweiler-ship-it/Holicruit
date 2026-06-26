@@ -2,7 +2,6 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, ChevronRight, FileText, Handshake, Wrench } from "lucide-react";
 import { matchingService } from "@/lib/services/matching";
-import { THREADS } from "@/lib/fixtures";
 import { ScoreTiles } from "@/components/fit/score-tiles";
 import { MutualFit } from "@/components/fit/mutual-fit";
 import { PersonAvatar } from "@/components/people/person-avatar";
@@ -27,9 +26,6 @@ export default async function CandidatePage({
   const { matchId } = await params;
   const match = await matchingService.getMatch(matchId);
   if (!match) notFound();
-
-  const threadId =
-    THREADS.find((t) => t.matchId === match.id)?.id ?? THREADS[0]?.id;
 
   return (
     <div className="flex flex-col gap-6">
@@ -79,9 +75,9 @@ export default async function CandidatePage({
 
       <div className="flex flex-wrap items-center gap-3">
         <Button asChild>
-          <Link href={`/hiring-manager/chat/${threadId}`}>Open direct chat</Link>
+          <Link href={`/hiring-manager/chat/${match.id}`}>Open direct chat</Link>
         </Button>
-        <PassFeedback match={match} />
+        <PassFeedback match={match} matchId={match.id} />
       </div>
     </div>
   );

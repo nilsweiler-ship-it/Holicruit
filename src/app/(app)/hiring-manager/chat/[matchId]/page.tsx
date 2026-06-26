@@ -9,16 +9,12 @@ import { ChatThread } from "@/components/chat/chat-thread";
 
 export const metadata: Metadata = { title: "Direct line · Holicruit" };
 
-/** Candidate-side direct line to the named hiring manager (DB-backed). */
-export default async function CandidateChatPage({
-  params,
-}: {
-  params: Promise<{ matchId: string }>;
-}) {
+/** Hiring-manager-side direct line with a candidate (DB-backed). */
+export default async function HmChatPage({ params }: { params: Promise<{ matchId: string }> }) {
   const { matchId } = await params;
   const match = await matchingService.getMatch(matchId);
   if (!match) notFound();
-  const view = await getThreadView(matchId, "candidate");
+  const view = await getThreadView(matchId, "manager");
   if (!view) notFound();
 
   const seed: ChatMessage[] = view.messages.length
@@ -26,8 +22,8 @@ export default async function CandidateChatPage({
     : [
         {
           id: "seed-1",
-          fromId: view.them.name,
-          text: `Hi ${view.me.name.split(" ")[0]} — really liked your fit for ${match.opening.title}. Want to grab a quick call this week?`,
+          fromId: view.me.name,
+          text: `Hi ${view.them.name.split(" ")[0]} — thanks for the conversation. Shall we find a time to talk properly?`,
           ts: "Today",
         },
       ];
@@ -35,15 +31,15 @@ export default async function CandidateChatPage({
   return (
     <div className="flex flex-col gap-6">
       <Link
-        href={`/candidate/matches/${matchId}`}
+        href={`/hiring-manager/candidate/${matchId}`}
         className="inline-flex w-fit items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-foreground"
       >
         <ArrowLeft className="size-4" />
-        Back to match
+        Back to candidate
       </Link>
 
       <h1 className="text-sm font-semibold text-foreground">
-        Direct line · {match.opening.title} @ {match.opening.company.name}
+        Direct line · {view.them.name} · {match.opening.title}
       </h1>
 
       <ChatThread

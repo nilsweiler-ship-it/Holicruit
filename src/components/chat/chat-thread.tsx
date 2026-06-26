@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import { CalendarCheck, CalendarClock, Check, Send } from "lucide-react";
 import { toast } from "sonner";
 import type { ChatMessage, Person, ScheduledInterview } from "@/lib/types";
+import { sendMessage, scheduleInterview } from "@/lib/actions/match";
 import { PersonAvatar } from "@/components/people/person-avatar";
 import { ScoreSheetButton } from "@/components/pipeline/score-sheet-button";
 import { Button } from "@/components/ui/button";
@@ -13,16 +14,17 @@ import { cn } from "@/lib/utils";
 const SLOTS = ["Tomorrow · 10:00", "Thu · 14:00", "Fri · 09:30"];
 
 /**
- * Interactive direct chat between two experts. All state is local/mocked: sends
- * append outgoing bubbles, proposing a slot posts a proposal the other side can
- * accept, and accepting locks in the scheduled-interview panel.
+ * Interactive direct chat between two experts, persisted to the DB. Optimistic
+ * bubbles appear immediately; the server action stores the message / interview.
  */
 export function ChatThread({
+  matchId,
   me,
   them,
   initialMessages,
   initialInterview,
 }: {
+  matchId: string;
   me: Person;
   them: Person;
   initialMessages: ChatMessage[];
@@ -34,6 +36,7 @@ export function ChatThread({
   const [interview, setInterview] = useState<ScheduledInterview | undefined>(initialInterview);
   /** A slot the viewer proposed that the other side can still accept. */
   const [pendingSlot, setPendingSlot] = useState<string | null>(null);
+  const [, startTransition] = useTransition();
 
   const nextId = () => {
     const id = `local-${counter}`;
@@ -41,28 +44,36 @@ export function ChatThread({
     return id;
   };
 
+  function persistMessage(fromName: string, text: string) {
+    startTransition(() => {
+      void sendMessage(matchId, fromName, text);
+    });
+  }
+
   function send() {
     const text = draft.trim();
     if (!text) return;
     setMessages((prev) => [...prev, { id: nextId(), fromId: me.id, text, ts: "now" }]);
     setDraft("");
+    persistMessage(me.name, text);
   }
 
   function propose(slot: string) {
-    setMessages((prev) => [
-      ...prev,
-      { id: nextId(), fromId: me.id, text: `Proposed: ${slot} · video`, ts: "now" },
-    ]);
+    const text = `Proposed: ${slot} · video`;
+    setMessages((prev) => [...prev, { id: nextId(), fromId: me.id, text, ts: "now" }]);
     setPendingSlot(slot);
+    persistMessage(me.name, text);
   }
 
   function accept(slot: string) {
     setInterview({ when: slot, medium: "video", scoreSheetAttached: false });
     setPendingSlot(null);
-    setMessages((prev) => [
-      ...prev,
-      { id: nextId(), fromId: them.id, text: `Accepted: ${slot} · video`, ts: "now" },
-    ]);
+    const text = `Accepted: ${slot} · video`;
+    setMessages((prev) => [...prev, { id: nextId(), fromId: them.id, text, ts: "now" }]);
+    persistMessage(them.name, text);
+    startTransition(() => {
+      void scheduleInterview(matchId, slot);
+    });
     toast(`Interview scheduled — ${slot} · video.`);
   }
 
@@ -111,7 +122,7 @@ export function ChatThread({
             {interview.when} · {interview.medium} — no back-and-forth, no scheduler email chain.
           </p>
           <div>
-            <ScoreSheetButton />
+            <ScoreSheetButton matchId={matchId} />
           </div>
         </div>
       ) : (

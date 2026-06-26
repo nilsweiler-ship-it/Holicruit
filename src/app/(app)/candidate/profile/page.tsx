@@ -52,7 +52,11 @@ export default async function CandidateProfilePage() {
             verified = peer-endorsed
           </span>
         </div>
-        <SkillChips initial={profile.hardSkills} endorsements={endorsements} />
+        <SkillChips
+          initial={profile.hardSkills}
+          endorsements={endorsements}
+          candidateId={candidateId}
+        />
       </section>
 
       {/* Soft skills */}

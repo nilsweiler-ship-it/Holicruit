@@ -62,7 +62,7 @@ export function ProgramCard({
         ))}
       </div>
 
-      <EnrollButton programTitle={program.title} />
+      <EnrollButton programTitle={program.title} programId={program.id} />
     </article>
   );
 }

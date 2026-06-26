@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import Link from "next/link";
 import { ArrowRight, Bookmark, BookmarkCheck, Check, MessageCircle, Radio } from "lucide-react";
 import { toast } from "sonner";
 import type { Person } from "@/lib/types";
 import { Button } from "@/components/ui/button";
+import { requestIntro, saveMatch } from "@/lib/actions/match";
 
 /**
  * The emphasized "Direct line" panel (2.3). Names the actual hiring manager —
@@ -24,6 +25,7 @@ export function DirectLinePanel({
 }) {
   const [requested, setRequested] = useState(false);
   const [saved, setSaved] = useState(initiallySaved);
+  const [, startTransition] = useTransition();
 
   const firstName = manager.name.split(" ")[0];
 
@@ -46,6 +48,7 @@ export function DirectLinePanel({
           disabled={requested}
           onClick={() => {
             setRequested(true);
+            startTransition(() => requestIntro(matchId));
             toast.success(`Intro requested — ${firstName} will be notified.`);
           }}
         >
@@ -64,7 +67,9 @@ export function DirectLinePanel({
         <Button
           variant="outline"
           onClick={() => {
-            setSaved((s) => !s);
+            const nextSaved = !saved;
+            setSaved(nextSaved);
+            startTransition(() => saveMatch(matchId, nextSaved));
             toast(saved ? "Removed from saved" : "Saved");
           }}
         >

@@ -4,7 +4,7 @@ import { useState, useTransition } from "react";
 import Link from "next/link";
 import { ArrowLeft, ArrowRight, Check, Loader2 } from "lucide-react";
 import type { ScenarioQuestion, ScenarioResult } from "@/lib/scenario/types";
-import { scoreScenario } from "@/app/(app)/candidate/profile/scenario/actions";
+import { submitScenario } from "@/lib/actions/candidate";
 import { SoftSkillBars } from "@/components/candidate/soft-skill-bars";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -27,7 +27,7 @@ export function ScenarioRunner({ questions }: { questions: ScenarioQuestion[] })
 
   function submit(allAnswers: Record<string, string>) {
     startScoring(async () => {
-      const res = await scoreScenario(allAnswers);
+      const res = await submitScenario(allAnswers);
       setResult(res);
     });
   }

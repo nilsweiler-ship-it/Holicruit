@@ -130,7 +130,9 @@ export default async function ProviderDeskPage() {
                   {p.reMatches.toLocaleString()} re-matched
                 </p>
               </div>
-              {!p.sponsored && <PromoteButton gap={p.closesGap} label="Boost" variant="ghost" />}
+              {!p.sponsored && (
+                <PromoteButton gap={p.closesGap} label="Boost" variant="ghost" programId={p.id} />
+              )}
             </li>
           ))}
         </ul>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
@@ -15,6 +15,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import type { Match } from "@/lib/types";
 import { FEEDBACK_DRAFTS } from "@/lib/fixtures";
+import { passWithFeedback } from "@/lib/actions/hm";
 
 /** Build a short draft from the match when no pre-authored one exists. */
 function synthesizeDraft(match: Match): string {
@@ -38,12 +39,14 @@ function synthesizeDraft(match: Match): string {
  * Pass + feedback action. Opens a dialog with the auto-drafted (editable)
  * feedback body. Sending generates the candidate's Growth Report.
  */
-export function PassFeedback({ match }: { match: Match }) {
+export function PassFeedback({ match, matchId }: { match: Match; matchId: string }) {
   const draft = FEEDBACK_DRAFTS.find((d) => d.matchId === match.id);
   const [open, setOpen] = useState(false);
   const [body, setBody] = useState(draft?.body ?? synthesizeDraft(match));
+  const [, startTransition] = useTransition();
 
   function handleSend() {
+    startTransition(() => passWithFeedback(matchId, body));
     setOpen(false);
     toast.success(`Feedback sent — ${match.candidate.name}'s growth report generated.`);
   }

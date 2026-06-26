@@ -1,10 +1,11 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useTransition } from "react";
 import { BadgeCheck, Clock, ExternalLink, Plus, ShieldCheck, UserCheck } from "lucide-react";
 import Link from "next/link";
 import { toast } from "sonner";
 import type { Endorsement, HardSkill } from "@/lib/types";
+import { addSkill, giveEndorsement } from "@/lib/actions/candidate";
 import {
   Dialog,
   DialogContent,
@@ -31,9 +32,11 @@ interface ChipState {
 export function SkillChips({
   initial,
   endorsements,
+  candidateId,
 }: {
   initial: HardSkill[];
   endorsements: Endorsement[];
+  candidateId: string;
 }) {
   const [skills, setSkills] = useState<ChipState[]>(
     initial.map((s) => ({ name: s.name, status: s.verified ? "verified" : "plain" })),
@@ -41,6 +44,7 @@ export function SkillChips({
   const [active, setActive] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
   const [draft, setDraft] = useState("");
+  const [, startTransition] = useTransition();
 
   const activeChip = skills.find((s) => s.name === active) ?? null;
   const activeEndorsers = useMemo(
@@ -56,6 +60,7 @@ export function SkillChips({
     const name = draft.trim();
     if (name && !skills.some((s) => s.name.toLowerCase() === name.toLowerCase())) {
       setSkills((prev) => [...prev, { name, status: "plain" }]);
+      startTransition(() => addSkill(name));
     }
     setDraft("");
     setAdding(false);
@@ -177,7 +182,13 @@ export function SkillChips({
                 )}
                 <Button
                   onClick={() => {
-                    if (activeChip) setStatus(activeChip.name, "verified");
+                    if (activeChip) {
+                      setStatus(activeChip.name, "verified");
+                      const skill = activeChip.name;
+                      startTransition(() =>
+                        giveEndorsement({ candidateId, skill, relationship: "Peer" }),
+                      );
+                    }
                     toast.success(`${activeChip?.name} verified`, {
                       description: "A peer endorsed you — this skill now carries verification.",
                     });

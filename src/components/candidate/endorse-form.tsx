@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import { CheckCircle2, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
+import { giveEndorsement } from "@/lib/actions/candidate";
 import { Button } from "@/components/ui/button";
 
 const RELATIONSHIPS = ["Manager", "Teammate", "Mentor", "Client / stakeholder", "Other"];
@@ -12,9 +13,18 @@ const RELATIONSHIPS = ["Manager", "Teammate", "Mentor", "Client / stakeholder", 
  * vouches for a candidate's skill. On submit, the candidate's skill becomes
  * verified (mocked).
  */
-export function EndorseForm({ candidateName, skill }: { candidateName: string; skill: string }) {
+export function EndorseForm({
+  candidateId,
+  candidateName,
+  skill,
+}: {
+  candidateId: string;
+  candidateName: string;
+  skill: string;
+}) {
   const [relationship, setRelationship] = useState<string | null>(null);
   const [done, setDone] = useState(false);
+  const [pending, startTransition] = useTransition();
 
   if (done) {
     return (
@@ -56,9 +66,12 @@ export function EndorseForm({ candidateName, skill }: { candidateName: string; s
         ))}
       </div>
       <Button
-        disabled={!relationship}
+        disabled={!relationship || pending}
         className="self-start"
         onClick={() => {
+          if (candidateId && relationship) {
+            startTransition(() => void giveEndorsement({ candidateId, skill, relationship }));
+          }
           setDone(true);
           toast.success(`You endorsed ${candidateName} for ${skill}.`);
         }}

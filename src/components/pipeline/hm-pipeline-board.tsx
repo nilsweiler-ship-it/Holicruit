@@ -1,11 +1,12 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { MessageCircle, Star } from "lucide-react";
 import { PersonAvatar } from "@/components/people/person-avatar";
 import type { Match } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import { setStage } from "@/lib/actions/hm";
 
 /** The three advanceable stages this board exposes (no "closed"). */
 type BoardStage = "new" | "talking" | "offer";
@@ -35,10 +36,17 @@ export function HmPipelineBoard({
   const router = useRouter();
   const [board, setBoard] = useState<Board>({ new: newCol, talking, offer });
   const [dragOver, setDragOver] = useState<BoardStage | null>(null);
+  const [, startTransition] = useTransition();
   // Tracks whether a real drag happened so a drop isn't read as a click.
   const draggingRef = useRef(false);
 
   function moveTo(matchId: string, target: BoardStage) {
+    // Find the source column so we only persist when the stage actually changes.
+    const sourceStage = (Object.keys(board) as BoardStage[]).find((stage) =>
+      board[stage].some((m) => m.id === matchId),
+    );
+    if (!sourceStage || sourceStage === target) return;
+
     setBoard((prev) => {
       let moved: Match | undefined;
       const next: Board = { new: [], talking: [], offer: [] };
@@ -56,6 +64,8 @@ export function HmPipelineBoard({
       next[target].sort((a, b) => b.fit.mutualFit - a.fit.mutualFit);
       return next;
     });
+
+    startTransition(() => setStage(matchId, target));
   }
 
   return (
