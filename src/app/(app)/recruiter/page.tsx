@@ -1,9 +1,11 @@
 import type { Metadata } from "next";
-import { BadgeEuro, HandCoins, Star } from "lucide-react";
+import Link from "next/link";
+import { BadgeEuro, HandCoins, Plus, Star } from "lucide-react";
 import type { RecruiterIntro } from "@/lib/types";
 import { prisma } from "@/lib/db";
 import { getActiveRecruiterId } from "@/lib/persona";
 import { PersonAvatar } from "@/components/people/person-avatar";
+import { Button } from "@/components/ui/button";
 
 export const metadata: Metadata = { title: "Recruiter desk · Holicruit" };
 
@@ -59,9 +61,17 @@ export default async function RecruiterPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <header className="flex flex-col gap-1">
-        <h1 className="text-2xl font-bold tracking-tight">Recruiter desk</h1>
-        <p className="text-sm text-muted-foreground">Facilitate matches. Paid on outcomes.</p>
+      <header className="flex items-center justify-between gap-3">
+        <div className="flex flex-col gap-1">
+          <h1 className="text-2xl font-bold tracking-tight">Recruiter desk</h1>
+          <p className="text-sm text-muted-foreground">Facilitate matches. Paid on outcomes.</p>
+        </div>
+        <Button asChild>
+          <Link href="/recruiter/new">
+            <Plus className="size-4" />
+            Log an intro
+          </Link>
+        </Button>
       </header>
 
       <section className="grid grid-cols-1 gap-4 sm:grid-cols-3">

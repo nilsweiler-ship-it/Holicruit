@@ -1,11 +1,56 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
+import { requireUser } from "@/lib/persona";
+import { runMatchingForOpening } from "@/lib/matching/engine";
 import type { SkillGap } from "@/lib/fit/types";
 
 const HARD_BAR = 85;
 const SOFT_BAR = 75;
+
+const parseList = (v: FormDataEntryValue | null) =>
+  String(v ?? "")
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+
+/** Post a role: create the opening and run matching to populate its pipeline. */
+export async function createOpening(formData: FormData): Promise<void> {
+  const user = await requireUser();
+  const title = String(formData.get("title") ?? "").trim();
+  if (!title) redirect("/hiring-manager/roles");
+
+  const company = await prisma.company.create({
+    data: {
+      name: String(formData.get("companyName") ?? "").trim() || "My Company",
+      location: String(formData.get("location") ?? "").trim() || "Remote",
+      ownerId: user.id,
+    },
+  });
+  const opening = await prisma.opening.create({
+    data: {
+      title,
+      industry: String(formData.get("industry") ?? "").trim() || "General",
+      companyId: company.id,
+      location: String(formData.get("location") ?? "").trim() || "Remote",
+      salaryMin: Number(formData.get("salaryMin")) || null,
+      salaryMax: Number(formData.get("salaryMax")) || null,
+      currency: String(formData.get("currency") ?? "").trim() || "€",
+      hiringManagerName: user.name,
+      hiringManagerHeadline: `Hiring manager · ${company.name}`,
+      hiringManagerInitials: user.initials,
+      requiredHard: JSON.stringify(parseList(formData.get("requiredHard"))),
+      requiredSoft: JSON.stringify(parseList(formData.get("requiredSoft"))),
+    },
+  });
+
+  await runMatchingForOpening(opening.id);
+  revalidatePath("/hiring-manager/pipeline");
+  revalidatePath("/hiring-manager/roles");
+  redirect(`/hiring-manager/pipeline?opening=${opening.id}`);
+}
 
 /** Advance/move a candidate between pipeline stages. */
 export async function setStage(

@@ -113,3 +113,90 @@ async function refreshRank(openingId: string, matchId: string): Promise<void> {
     data: { candidateRank: idx + 1, poolSize: pool.length },
   });
 }
+
+/** Rank every match within an opening's pool. */
+async function rankOpening(openingId: string): Promise<void> {
+  const pool = await prisma.match.findMany({
+    where: { openingId },
+    select: { id: true },
+    orderBy: { mutualFit: "desc" },
+  });
+  for (let i = 0; i < pool.length; i++) {
+    await prisma.match.update({
+      where: { id: pool[i]!.id },
+      data: { candidateRank: i + 1, poolSize: pool.length },
+    });
+  }
+}
+
+/** A match is created when computed fit clears this bar (otherwise no match). */
+export const MATCH_THRESHOLD = 55;
+
+function fitFor(
+  profile: { hardSkills: { name: string; verified: boolean }[]; softSkills: { name: string; level: number }[] },
+  opening: { requiredHard: string; requiredSoft: string },
+) {
+  return computeFit({
+    hardSkills: profile.hardSkills,
+    softSkills: profile.softSkills,
+    requiredHard: JSON.parse(opening.requiredHard) as string[],
+    requiredSoft: JSON.parse(opening.requiredSoft) as string[],
+  });
+}
+
+async function upsertMatch(candidateId: string, openingId: string, fit: ReturnType<typeof computeFit>) {
+  const existing = await prisma.match.findUnique({
+    where: { candidateId_openingId: { candidateId, openingId } },
+    select: { id: true, stage: true },
+  });
+  const data = {
+    hardFit: fit.hardFit,
+    softFit: fit.softFit,
+    mutualFit: fit.mutualFit,
+    verified: fit.verified,
+    gaps: JSON.stringify(fit.gaps),
+  };
+  if (existing) {
+    if (existing.stage !== "closed") await prisma.match.update({ where: { id: existing.id }, data });
+  } else if (fit.mutualFit >= MATCH_THRESHOLD) {
+    await prisma.match.create({
+      data: { candidateId, openingId, ...data, stage: "new", candidateOptIn: true, managerOptIn: true },
+    });
+  }
+}
+
+/**
+ * Run matching for one candidate against every open role — creates matches that
+ * clear the bar and updates existing ones. This is candidate-side discovery
+ * (a fresh candidate gets matched once they've built a profile).
+ */
+export async function runMatchingForCandidate(candidateId: string): Promise<void> {
+  const profile = await prisma.candidateProfile.findUnique({
+    where: { id: candidateId },
+    include: { hardSkills: true, softSkills: true },
+  });
+  if (!profile) return;
+  const openings = await prisma.opening.findMany();
+  const affected = new Set<string>();
+  for (const o of openings) {
+    await upsertMatch(candidateId, o.id, fitFor(profile, o));
+    affected.add(o.id);
+  }
+  for (const openingId of affected) await rankOpening(openingId);
+}
+
+/**
+ * Run matching for one opening against every candidate — populates the hiring
+ * manager's pipeline when a role is posted.
+ */
+export async function runMatchingForOpening(openingId: string): Promise<void> {
+  const opening = await prisma.opening.findUnique({ where: { id: openingId } });
+  if (!opening) return;
+  const profiles = await prisma.candidateProfile.findMany({
+    include: { hardSkills: true, softSkills: true },
+  });
+  for (const p of profiles) {
+    await upsertMatch(p.id, openingId, fitFor(p, opening));
+  }
+  await rankOpening(openingId);
+}

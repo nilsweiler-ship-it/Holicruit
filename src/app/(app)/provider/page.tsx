@@ -1,9 +1,11 @@
 import type { Metadata } from "next";
-import { BookOpen, GraduationCap, HandCoins, Megaphone, Repeat, Users } from "lucide-react";
+import Link from "next/link";
+import { BookOpen, GraduationCap, HandCoins, Megaphone, Plus, Repeat, Users } from "lucide-react";
 import { marketplaceService } from "@/lib/services/marketplace";
 import { getActiveProvider } from "@/lib/persona";
 import { PersonAvatar } from "@/components/people/person-avatar";
 import { PromoteButton } from "@/components/provider/promote-button";
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 export const metadata: Metadata = { title: "Provider desk · Holicruit" };
@@ -37,6 +39,12 @@ export default async function ProviderDeskPage() {
             {provider.kind} · provider desk
           </p>
         </div>
+        <Button asChild className="ml-auto">
+          <Link href="/provider/new">
+            <Plus className="size-4" />
+            Offer a program
+          </Link>
+        </Button>
       </header>
 
       {/* Stat tiles */}

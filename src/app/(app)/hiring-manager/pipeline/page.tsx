@@ -1,17 +1,38 @@
-import { Zap } from "lucide-react";
+import Link from "next/link";
+import { Plus, Zap } from "lucide-react";
 import { matchingService } from "@/lib/services/matching";
 import { getActiveHmOpeningId } from "@/lib/persona";
 import { HmPipelineBoard } from "@/components/pipeline/hm-pipeline-board";
+import { Button } from "@/components/ui/button";
 
 /**
  * 3.1 Pipeline — the hiring manager's view of one opening's candidates,
- * grouped into advanceable stages.
+ * grouped into advanceable stages. The opening can be selected via the
+ * `opening` search param (from the Roles list), otherwise the active one.
  */
-export default async function PipelinePage() {
-  const openingId = await getActiveHmOpeningId();
-  const pipeline = openingId
-    ? await matchingService.getPipeline(openingId)
-    : { new: [], talking: [], offer: [], closed: [] };
+export default async function PipelinePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ opening?: string }>;
+}) {
+  const { opening: openingParam } = await searchParams;
+  const openingId = openingParam ?? (await getActiveHmOpeningId());
+
+  if (!openingId) {
+    return (
+      <div className="flex flex-col items-center gap-4 rounded-2xl border border-border bg-card p-10 text-center">
+        <p className="text-sm text-muted-foreground">No roles yet — post one.</p>
+        <Button asChild>
+          <Link href="/hiring-manager/roles/new">
+            <Plus className="size-4" />
+            Post a role
+          </Link>
+        </Button>
+      </div>
+    );
+  }
+
+  const pipeline = await matchingService.getPipeline(openingId);
   const opening =
     pipeline.talking[0]?.opening ??
     pipeline.new[0]?.opening ??

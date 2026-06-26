@@ -32,10 +32,11 @@ function hatFromPath(pathname: string): RoleHat {
  * Re-routes to that role's home dashboard; "Switch hats…" re-opens the full
  * role selector (1.0).
  */
-export function HatSwitcher() {
+export function HatSwitcher({ held }: { held: string[] }) {
   const pathname = usePathname();
   const router = useRouter();
   const current = HATS.find((h) => h.hat === hatFromPath(pathname)) ?? HATS[0];
+  const heldHats = HATS.filter((h) => held.includes(h.hat));
   const Icon = current.icon;
 
   return (
@@ -49,7 +50,7 @@ export function HatSwitcher() {
         <DropdownMenuLabel className="text-xs text-muted-foreground">
           Acting as
         </DropdownMenuLabel>
-        {HATS.map((h) => {
+        {heldHats.map((h) => {
           const HIcon = h.icon;
           return (
             <DropdownMenuItem key={h.hat} asChild>
@@ -66,7 +67,7 @@ export function HatSwitcher() {
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={() => router.push("/select-role")} className="cursor-pointer gap-2">
           <Repeat className="size-4" />
-          Switch hats…
+          Add / switch hats…
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

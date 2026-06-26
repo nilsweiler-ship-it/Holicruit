@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/db";
 import { getActiveCandidateId } from "@/lib/persona";
 import { scenarioService } from "@/lib/services/scenario";
-import { recomputeCandidateMatches } from "@/lib/matching/engine";
+import { runMatchingForCandidate } from "@/lib/matching/engine";
 import type { ScenarioResult } from "@/lib/scenario/types";
 
 function initialsOf(name: string): string {
@@ -49,7 +49,7 @@ export async function submitScenario(answers: Record<string, string>): Promise<S
     data: { scenarioCompleted: true },
   });
   await recalcCompleteness(candidateId);
-  await recomputeCandidateMatches(candidateId);
+  await runMatchingForCandidate(candidateId);
   revalidateCandidate();
   return result;
 }
@@ -65,7 +65,7 @@ export async function addSkill(name: string): Promise<void> {
     create: { profileId: candidateId, name: clean, verified: false },
   });
   await recalcCompleteness(candidateId);
-  await recomputeCandidateMatches(candidateId);
+  await runMatchingForCandidate(candidateId);
   revalidateCandidate();
 }
 
@@ -94,7 +94,7 @@ export async function giveEndorsement(input: {
     create: { profileId: candidateId, name: skill, verified: true },
   });
   await recalcCompleteness(candidateId);
-  await recomputeCandidateMatches(candidateId);
+  await runMatchingForCandidate(candidateId);
   revalidateCandidate();
 }
 
@@ -122,7 +122,7 @@ export async function enroll(programId: string): Promise<void> {
       create: { profileId: candidateId, name: program.closesGap, verified: true },
     });
     await recalcCompleteness(candidateId);
-    await recomputeCandidateMatches(candidateId);
+    await runMatchingForCandidate(candidateId);
   }
   revalidateCandidate();
 }

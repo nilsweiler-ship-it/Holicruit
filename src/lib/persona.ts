@@ -21,6 +21,17 @@ export async function requireUser() {
   return user;
 }
 
+/** The hats (roles) the current account holds. */
+export async function getHeldHats(): Promise<string[]> {
+  const user = await getCurrentUser();
+  if (!user) return [];
+  try {
+    return JSON.parse(user.roles) as string[];
+  } catch {
+    return [];
+  }
+}
+
 /** The active candidate profile id (redirects if the account isn't a candidate). */
 export async function getActiveCandidateId(): Promise<string> {
   const user = await requireUser();
