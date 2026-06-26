@@ -3,11 +3,11 @@
  * who you are is now your logged-in account and the hats (profiles) it holds.
  */
 import { redirect } from "next/navigation";
-import { auth } from "./auth";
+import { safeAuth } from "./auth";
 import { prisma } from "./db";
 
 export async function getCurrentUser() {
-  const session = await auth();
+  const session = await safeAuth();
   if (!session?.user?.id) return null;
   return prisma.user.findUnique({
     where: { id: session.user.id },

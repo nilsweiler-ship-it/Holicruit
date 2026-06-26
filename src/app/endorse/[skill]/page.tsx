@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { auth } from "@/lib/auth";
+import { safeAuth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { Wordmark } from "@/components/brand/wordmark";
 import { EndorseForm } from "@/components/candidate/endorse-form";
@@ -14,7 +14,7 @@ export const metadata: Metadata = { title: "Endorse a skill · Holicruit" };
 export default async function EndorsePage({ params }: { params: Promise<{ skill: string }> }) {
   const { skill: rawSkill } = await params;
   const skill = decodeURIComponent(rawSkill);
-  const session = await auth();
+  const session = await safeAuth();
   let candidateName = "this candidate";
   let candidateId = "";
   if (session?.user?.id) {

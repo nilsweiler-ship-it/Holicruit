@@ -6,6 +6,14 @@ import { prisma } from "@/lib/db";
 export const { handlers, auth, signIn, signOut } = NextAuth({
   session: { strategy: "jwt" },
   pages: { signIn: "/login" },
+  logger: {
+    // A stale/undecodable session cookie is handled gracefully via safeAuth();
+    // don't spam the console with it.
+    error(error: Error) {
+      if (error?.name === "JWTSessionError") return;
+      console.error(error);
+    },
+  },
   providers: [
     Credentials({
       credentials: { email: {}, password: {} },
@@ -32,3 +40,16 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     },
   },
 });
+
+/**
+ * auth() that never throws on an undecodable/stale session cookie — returns null
+ * instead, so a bad cookie behaves as "logged out" (and a fresh login overwrites
+ * it) rather than crashing the render.
+ */
+export async function safeAuth() {
+  try {
+    return await auth();
+  } catch {
+    return null;
+  }
+}

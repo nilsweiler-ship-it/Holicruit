@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { auth } from "@/lib/auth";
+import { safeAuth } from "@/lib/auth";
 import { Wordmark } from "@/components/brand/wordmark";
 import { RegisterForm } from "@/components/auth/register-form";
 
@@ -18,7 +18,7 @@ export default async function RegisterPage({
 }: {
   searchParams: Promise<{ plan?: string }>;
 }) {
-  if (await auth()) redirect("/select-role");
+  if (await safeAuth()) redirect("/select-role");
   const { plan } = await searchParams;
 
   return (
