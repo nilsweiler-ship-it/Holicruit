@@ -80,8 +80,8 @@ export default function MarketingHomePage() {
         </h1>
         <p className="mx-auto mt-6 max-w-2xl text-balance text-lg text-muted-foreground sm:text-xl">
           Holicruit shows every candidate exactly where they stood, the gap that
-          cost them the role, and a path to close it. One account, four hats, and
-          a fit model built on radical transparency.
+          cost them the role, and a path to close it. Four roles, one platform,
+          and a fit model built on radical transparency.
         </p>
         <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
           <Button asChild size="lg">
@@ -138,16 +138,16 @@ export default function MarketingHomePage() {
         </div>
       </section>
 
-      {/* For everyone — four hats */}
+      {/* For everyone — four roles */}
       <section className="border-t border-border bg-card">
         <div className="mx-auto w-full max-w-6xl px-4 py-20 sm:px-6">
           <div className="mx-auto max-w-2xl text-center">
             <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
-              One account, four hats
+              A role for every side of hiring
             </h2>
             <p className="mt-4 text-lg text-muted-foreground">
-              Holicruit serves every side of hiring. Switch hats anytime — your
-              verified profile follows you.
+              Holicruit serves candidates, hiring managers, recruiters, and
+              training providers — one focused account per role.
             </p>
           </div>
 

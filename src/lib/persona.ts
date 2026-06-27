@@ -21,14 +21,15 @@ export async function requireUser() {
   return user;
 }
 
-/** The hats (roles) the current account holds. */
-export async function getHeldHats(): Promise<string[]> {
+/** The account's single role. One account = one role. */
+export async function getRole(): Promise<string> {
   const user = await getCurrentUser();
-  if (!user) return [];
+  if (!user) return "candidate";
   try {
-    return JSON.parse(user.roles) as string[];
+    const roles = JSON.parse(user.roles) as string[];
+    return roles[0] ?? "candidate";
   } catch {
-    return [];
+    return "candidate";
   }
 }
 

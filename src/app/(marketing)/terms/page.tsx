@@ -59,11 +59,10 @@ export default function TermsPage() {
 
         <section className="space-y-3">
           <h2 className="text-xl font-semibold text-foreground">
-            3. Accounts &amp; Hats
+            3. Accounts &amp; Roles
           </h2>
           <p>
-            You need an account to use most features. One account may operate
-            under multiple Hats. You are responsible for the accuracy of the
+            You need an account to use most features. Each account operates under a single role; register a separate account to use Holicruit in another capacity. You are responsible for the accuracy of the
             information you provide, for maintaining the confidentiality of your
             credentials, and for all activity under your account. You must be of
             legal working age in your jurisdiction and have the authority to

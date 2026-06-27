@@ -46,7 +46,7 @@ export default function PrivacyPage() {
           <ul className="space-y-2">
             <li>
               <strong className="text-foreground">Profile data</strong> — name,
-              contact details, account credentials, the Hats you operate in, and
+              contact details, account credentials, the role you operate in, and
               role or company information.
             </li>
             <li>
