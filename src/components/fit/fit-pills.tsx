@@ -1,4 +1,4 @@
-import { ArrowRight, BadgeCheck, Trophy } from "lucide-react";
+import { ArrowRight, BadgeCheck } from "lucide-react";
 import type { FitObject } from "@/lib/fit/types";
 import { cn } from "@/lib/utils";
 
@@ -28,19 +28,13 @@ function ScorePill({ label, value }: { label: string; value: number }) {
   );
 }
 
-/** The third, contextual pill — the "verified | rank" slot, with gaps surfaced. */
+/**
+ * The third, contextual pill — surfaces a gap or the verified signal. We
+ * deliberately do NOT show the candidate's rank ("top N"): hiring managers keep
+ * the freedom to decide on judgement without having to justify skipping a
+ * higher-ranked candidate.
+ */
 export function ContextPill({ fit }: { fit: FitObject }) {
-  const isTop = fit.candidateRank != null && fit.candidateRank <= 3;
-
-  if (isTop) {
-    return (
-      <span className="inline-flex items-center gap-1 rounded-full bg-primary/12 px-2 py-0.5 text-xs font-semibold text-primary">
-        <Trophy className="size-3" />
-        you&apos;re top {fit.candidateRank}
-      </span>
-    );
-  }
-
   if (fit.gaps.length > 0) {
     const n = fit.gaps.length;
     return (

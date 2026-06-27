@@ -130,7 +130,7 @@ async function rankOpening(openingId: string): Promise<void> {
 }
 
 /** A match is created when computed fit clears this bar (otherwise no match). */
-export const MATCH_THRESHOLD = 55;
+export const MATCH_THRESHOLD = 48;
 
 function fitFor(
   profile: { hardSkills: { name: string; verified: boolean }[]; softSkills: { name: string; level: number }[] },

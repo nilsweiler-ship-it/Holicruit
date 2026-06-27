@@ -5,6 +5,7 @@ import {
   Briefcase,
   GraduationCap,
   Handshake,
+  Layers,
   LineChart,
   ScanSearch,
   ShieldCheck,
@@ -73,15 +74,15 @@ export default function MarketingHomePage() {
       <section className="mx-auto w-full max-w-5xl px-4 pt-20 pb-16 text-center sm:px-6 sm:pt-28">
         <span className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-3 py-1 text-xs font-medium text-muted-foreground">
           <Handshake className="size-3.5 text-primary" />
-          Opt-in matching · no cold applications
+          Holistic recruiting · radically transparent
         </span>
         <h1 className="mt-6 text-balance text-4xl font-extrabold tracking-tight sm:text-6xl">
-          Recruiting that tells you the truth.
+          The whole person. The honest truth.
         </h1>
         <p className="mx-auto mt-6 max-w-2xl text-balance text-lg text-muted-foreground sm:text-xl">
-          Holicruit shows every candidate exactly where they stood, the gap that
-          cost them the role, and a path to close it. Four roles, one platform,
-          and a fit model built on radical transparency.
+          Holicruit weighs the whole person — hard skills, scenario-measured soft
+          skills, and verified evidence — then shows every candidate exactly where
+          they stood and how to close the gap. Holistic, and radically transparent.
         </p>
         <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
           <Button asChild size="lg">
@@ -102,6 +103,42 @@ export default function MarketingHomePage() {
           <p className="text-center text-sm font-medium tracking-wide text-muted-foreground">
             Works across Software · Healthcare · Sales · Finance · Education
           </p>
+        </div>
+      </section>
+
+      {/* Holistic emphasis */}
+      <section className="mx-auto w-full max-w-5xl px-4 py-16 sm:px-6">
+        <div className="rounded-3xl border border-border bg-card p-8 sm:p-10">
+          <div className="flex flex-col items-center gap-3 text-center">
+            <span className="inline-flex items-center gap-2 rounded-full bg-primary/12 px-3 py-1 text-xs font-semibold text-primary">
+              <Layers className="size-3.5" />
+              Holistic by design
+            </span>
+            <h2 className="text-2xl font-bold tracking-tight sm:text-3xl">
+              The whole person — not a keyword match
+            </h2>
+            <p className="max-w-2xl text-muted-foreground">
+              A CV keyword scan sees a fraction of someone. Holicruit weighs hard skills,
+              scenario-measured soft skills, verified evidence, and growth over time — together —
+              so people are matched on who they really are, not how their résumé is worded.
+            </p>
+          </div>
+          <div className="mt-8 grid gap-4 sm:grid-cols-3">
+            {[
+              { icon: Layers, title: "Hard + soft, together", body: "Technical ability and the human skills that decide on-the-job success — one fit." },
+              { icon: ShieldCheck, title: "Evidence, not claims", body: "Peer endorsements and assessed scenarios — never self-ratings." },
+              { icon: LineChart, title: "Growth over time", body: "Close a gap, re-match — your verified profile compounds." },
+            ].map((p) => {
+              const Icon = p.icon;
+              return (
+                <div key={p.title} className="rounded-2xl border border-border bg-background p-5">
+                  <Icon className="size-5 text-primary" />
+                  <h3 className="mt-3 font-semibold">{p.title}</h3>
+                  <p className="mt-1 text-sm text-muted-foreground">{p.body}</p>
+                </div>
+              );
+            })}
+          </div>
         </div>
       </section>
 
