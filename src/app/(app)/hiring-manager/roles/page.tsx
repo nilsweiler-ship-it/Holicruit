@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Plus, Briefcase } from "lucide-react";
+import { Plus, Briefcase, Wand2 } from "lucide-react";
 import { prisma } from "@/lib/db";
 import { requireUser } from "@/lib/persona";
 import { Button } from "@/components/ui/button";
@@ -22,12 +22,20 @@ export default async function RolesPage() {
           <h1 className="text-2xl font-bold tracking-tight text-foreground">Roles</h1>
           <p className="text-sm text-muted-foreground">Openings you own and their matches.</p>
         </div>
-        <Button asChild>
-          <Link href="/hiring-manager/roles/new">
-            <Plus className="size-4" />
-            Post a role
-          </Link>
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button asChild variant="outline">
+            <Link href="/hiring-manager/roles/import">
+              <Wand2 className="size-4" />
+              Import a job ad
+            </Link>
+          </Button>
+          <Button asChild>
+            <Link href="/hiring-manager/roles/new">
+              <Plus className="size-4" />
+              Post a role
+            </Link>
+          </Button>
+        </div>
       </header>
 
       {openings.length === 0 ? (

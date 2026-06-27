@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { notFound } from "next/navigation";
+import { Wand2 } from "lucide-react";
 import { scenarioService } from "@/lib/services/scenario";
 import { getActiveCandidateId } from "@/lib/persona";
 import { getCandidateProfile, getEndorsements } from "@/lib/services/profile";
@@ -57,6 +59,13 @@ export default async function CandidateProfilePage() {
           endorsements={endorsements}
           candidateId={candidateId}
         />
+        <Link
+          href="/candidate/profile/import"
+          className="inline-flex w-fit items-center gap-1 text-xs font-medium text-primary hover:underline"
+        >
+          <Wand2 className="size-3.5" />
+          Import skills from a CV or job description
+        </Link>
       </section>
 
       {/* Soft skills */}

@@ -1,9 +1,11 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { getActiveCandidateId } from "@/lib/persona";
 import { scenarioService } from "@/lib/services/scenario";
+import { jobAdParser } from "@/lib/services/ingest";
 import { runMatchingForCandidate } from "@/lib/matching/engine";
 import type { ScenarioResult } from "@/lib/scenario/types";
 
@@ -52,6 +54,33 @@ export async function submitScenario(answers: Record<string, string>): Promise<S
   await runMatchingForCandidate(candidateId);
   revalidateCandidate();
   return result;
+}
+
+/**
+ * Import skills from pasted text (a CV, a job description, a LinkedIn profile):
+ * the parser translates the free text into the structured skill model, the
+ * skills are added, and matching re-runs.
+ */
+export async function importProfileSkills(formData: FormData): Promise<void> {
+  const candidateId = await getActiveCandidateId();
+  const text = String(formData.get("text") ?? "").trim();
+  if (!text) redirect("/candidate/profile/import");
+
+  const parsed = await jobAdParser.parseCv(text);
+  for (const name of parsed.hardSkills) {
+    await prisma.hardSkill.upsert({
+      where: { profileId_name: { profileId: candidateId, name } },
+      update: {},
+      create: { profileId: candidateId, name, verified: false },
+    });
+  }
+  if (parsed.industry && parsed.industry !== "General") {
+    await prisma.candidateProfile.update({ where: { id: candidateId }, data: { industry: parsed.industry } });
+  }
+  await recalcCompleteness(candidateId);
+  await runMatchingForCandidate(candidateId);
+  revalidateCandidate();
+  redirect("/candidate/profile");
 }
 
 /** Add a self-declared (unverified) hard skill. */

@@ -9,6 +9,8 @@ import { GAP_DEMAND, PROVIDER_STATS } from "../fixtures";
 
 export interface MarketplaceService {
   getProgramsForGap(skill: string): Promise<Program[]>;
+  /** Trainings that close the candidate's current gaps (across their matches). */
+  getRecommendedPrograms(candidateId: string, limit?: number): Promise<Program[]>;
   getProviderPrograms(providerId: string): Promise<Program[]>;
   getGapDemand(): Promise<GapDemand[]>;
   getProviderStats(providerId: string): Promise<ProviderStats>;
@@ -57,6 +59,22 @@ class DbMarketplaceService implements MarketplaceService {
       where: { closesGap: skill },
       include: programInclude,
       orderBy: [{ sponsored: "desc" }, { reMatches: "desc" }],
+    });
+    return rows.map(toProgram);
+  }
+
+  async getRecommendedPrograms(candidateId: string, limit = 3): Promise<Program[]> {
+    const matches = await prisma.match.findMany({ where: { candidateId }, select: { gaps: true } });
+    const gapSkills = new Set<string>();
+    for (const m of matches) {
+      for (const g of JSON.parse(m.gaps) as { skill: string }[]) gapSkills.add(g.skill);
+    }
+    const where = gapSkills.size ? { closesGap: { in: [...gapSkills] } } : {};
+    const rows = await prisma.program.findMany({
+      where,
+      include: programInclude,
+      orderBy: [{ sponsored: "desc" }, { reMatches: "desc" }],
+      take: limit,
     });
     return rows.map(toProgram);
   }

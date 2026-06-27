@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { requireUser } from "@/lib/persona";
 import { runMatchingForOpening } from "@/lib/matching/engine";
+import { jobAdParser } from "@/lib/services/ingest";
 import type { SkillGap } from "@/lib/fit/types";
 
 const HARD_BAR = 85;
@@ -43,6 +44,41 @@ export async function createOpening(formData: FormData): Promise<void> {
       hiringManagerInitials: user.initials,
       requiredHard: JSON.stringify(parseList(formData.get("requiredHard"))),
       requiredSoft: JSON.stringify(parseList(formData.get("requiredSoft"))),
+    },
+  });
+
+  await runMatchingForOpening(opening.id);
+  revalidatePath("/hiring-manager/pipeline");
+  revalidatePath("/hiring-manager/roles");
+  redirect(`/hiring-manager/pipeline?opening=${opening.id}`);
+}
+
+/**
+ * Import a role by pasting a job ad from another platform: the parser
+ * "translates" the free text into the structured opening (title, skills,
+ * industry), then matching runs against the candidate pool.
+ */
+export async function importOpening(formData: FormData): Promise<void> {
+  const user = await requireUser();
+  const text = String(formData.get("text") ?? "").trim();
+  if (!text) redirect("/hiring-manager/roles/import");
+
+  const parsed = await jobAdParser.parseJobAd(text);
+  const company = await prisma.company.create({
+    data: { name: parsed.company ?? "Imported", location: parsed.location, ownerId: user.id },
+  });
+  const opening = await prisma.opening.create({
+    data: {
+      title: parsed.title,
+      industry: parsed.industry,
+      companyId: company.id,
+      location: parsed.location,
+      currency: "€",
+      hiringManagerName: user.name,
+      hiringManagerHeadline: `Hiring manager · ${company.name}`,
+      hiringManagerInitials: user.initials,
+      requiredHard: JSON.stringify(parsed.requiredHard),
+      requiredSoft: JSON.stringify(parsed.requiredSoft),
     },
   });
 
