@@ -57,25 +57,30 @@ export async function submitScenario(answers: Record<string, string>): Promise<S
 }
 
 /**
- * Import skills from pasted text (a CV, a job description, a LinkedIn profile):
- * the parser translates the free text into the structured skill model, the
- * skills are added, and matching re-runs.
+ * Parse step of import: translate pasted text (a CV, a job description, a
+ * profile) into the structured skill model. Returns the extracted skills for
+ * the candidate to review before anything is saved.
  */
-export async function importProfileSkills(formData: FormData): Promise<void> {
-  const candidateId = await getActiveCandidateId();
-  const text = String(formData.get("text") ?? "").trim();
-  if (!text) redirect("/candidate/profile/import");
-
+export async function parseProfileText(text: string): Promise<{ skills: string[]; industry: string }> {
+  await getActiveCandidateId();
   const parsed = await jobAdParser.parseCv(text);
-  for (const name of parsed.hardSkills) {
+  return { skills: parsed.hardSkills, industry: parsed.industry };
+}
+
+/** Confirm step of import: add the reviewed skills and re-run matching. */
+export async function addImportedSkills(names: string[], industry?: string): Promise<void> {
+  const candidateId = await getActiveCandidateId();
+  for (const name of names) {
+    const clean = name.trim();
+    if (!clean) continue;
     await prisma.hardSkill.upsert({
-      where: { profileId_name: { profileId: candidateId, name } },
+      where: { profileId_name: { profileId: candidateId, name: clean } },
       update: {},
-      create: { profileId: candidateId, name, verified: false },
+      create: { profileId: candidateId, name: clean, verified: false },
     });
   }
-  if (parsed.industry && parsed.industry !== "General") {
-    await prisma.candidateProfile.update({ where: { id: candidateId }, data: { industry: parsed.industry } });
+  if (industry && industry !== "General") {
+    await prisma.candidateProfile.update({ where: { id: candidateId }, data: { industry } });
   }
   await recalcCompleteness(candidateId);
   await runMatchingForCandidate(candidateId);

@@ -4,9 +4,16 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { requireUser } from "@/lib/persona";
+import { getActivePlan } from "@/lib/services/billing";
 
-/** Promote (sponsor) or un-sponsor a program → featured placement. */
+/** Promote (sponsor) or un-sponsor a program → featured placement.
+ *  Promoting requires the Partner plan. */
 export async function setSponsored(programId: string, sponsored: boolean): Promise<void> {
+  const user = await requireUser();
+  if (sponsored) {
+    const { plan } = await getActivePlan(user.id, "provider");
+    if (!plan.canPromote) redirect("/provider/billing?promote=1");
+  }
   await prisma.program.update({ where: { id: programId }, data: { sponsored } });
   revalidatePath("/provider");
   revalidatePath("/candidate/growth-paths");

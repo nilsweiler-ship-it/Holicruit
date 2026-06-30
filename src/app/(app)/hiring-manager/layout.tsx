@@ -3,6 +3,7 @@ import { SubNav } from "@/components/layout/sub-nav";
 const ITEMS = [
   { label: "Pipeline", href: "/hiring-manager/pipeline" },
   { label: "Roles", href: "/hiring-manager/roles" },
+  { label: "Billing", href: "/hiring-manager/billing" },
 ];
 
 export default function HiringManagerLayout({ children }: { children: React.ReactNode }) {

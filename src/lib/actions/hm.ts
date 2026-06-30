@@ -6,7 +6,17 @@ import { prisma } from "@/lib/db";
 import { requireUser } from "@/lib/persona";
 import { runMatchingForOpening } from "@/lib/matching/engine";
 import { jobAdParser } from "@/lib/services/ingest";
+import { getActivePlan, countOpenRoles } from "@/lib/services/billing";
 import type { SkillGap } from "@/lib/fit/types";
+
+/** Block posting beyond the plan's open-role limit → send to billing. */
+async function enforceRoleLimit(userId: string): Promise<void> {
+  const { plan } = await getActivePlan(userId, "hiring_manager");
+  if (plan.openRoleLimit !== undefined) {
+    const count = await countOpenRoles(userId);
+    if (count >= plan.openRoleLimit) redirect("/hiring-manager/billing?limit=1");
+  }
+}
 
 const HARD_BAR = 85;
 const SOFT_BAR = 75;
@@ -20,6 +30,7 @@ const parseList = (v: FormDataEntryValue | null) =>
 /** Post a role: create the opening and run matching to populate its pipeline. */
 export async function createOpening(formData: FormData): Promise<void> {
   const user = await requireUser();
+  await enforceRoleLimit(user.id);
   const title = String(formData.get("title") ?? "").trim();
   if (!title) redirect("/hiring-manager/roles");
 
@@ -59,33 +70,23 @@ export async function createOpening(formData: FormData): Promise<void> {
  * industry), then matching runs against the candidate pool.
  */
 export async function importOpening(formData: FormData): Promise<void> {
-  const user = await requireUser();
+  await requireUser();
   const text = String(formData.get("text") ?? "").trim();
   if (!text) redirect("/hiring-manager/roles/import");
 
+  // Parse → hand off to the create form prefilled, so the HM reviews/edits the
+  // "translation" before it goes live.
   const parsed = await jobAdParser.parseJobAd(text);
-  const company = await prisma.company.create({
-    data: { name: parsed.company ?? "Imported", location: parsed.location, ownerId: user.id },
+  const params = new URLSearchParams({
+    title: parsed.title,
+    companyName: parsed.company ?? "",
+    location: parsed.location,
+    industry: parsed.industry,
+    requiredHard: parsed.requiredHard.join(", "),
+    requiredSoft: parsed.requiredSoft.join(", "),
+    imported: "1",
   });
-  const opening = await prisma.opening.create({
-    data: {
-      title: parsed.title,
-      industry: parsed.industry,
-      companyId: company.id,
-      location: parsed.location,
-      currency: "€",
-      hiringManagerName: user.name,
-      hiringManagerHeadline: `Hiring manager · ${company.name}`,
-      hiringManagerInitials: user.initials,
-      requiredHard: JSON.stringify(parsed.requiredHard),
-      requiredSoft: JSON.stringify(parsed.requiredSoft),
-    },
-  });
-
-  await runMatchingForOpening(opening.id);
-  revalidatePath("/hiring-manager/pipeline");
-  revalidatePath("/hiring-manager/roles");
-  redirect(`/hiring-manager/pipeline?opening=${opening.id}`);
+  redirect(`/hiring-manager/roles/new?${params.toString()}`);
 }
 
 /** Advance/move a candidate between pipeline stages. */

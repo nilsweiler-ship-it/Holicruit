@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { BookOpen, GraduationCap, HandCoins, Megaphone, Plus, Repeat, Users } from "lucide-react";
+import { BookOpen, GraduationCap, HandCoins, Megaphone, Plus, Receipt, Repeat, Users } from "lucide-react";
 import { marketplaceService } from "@/lib/services/marketplace";
 import { getActiveProvider } from "@/lib/persona";
 import { PersonAvatar } from "@/components/people/person-avatar";
@@ -39,12 +39,20 @@ export default async function ProviderDeskPage() {
             {provider.kind} · provider desk
           </p>
         </div>
-        <Button asChild className="ml-auto">
-          <Link href="/provider/new">
-            <Plus className="size-4" />
-            Offer a program
-          </Link>
-        </Button>
+        <div className="ml-auto flex items-center gap-2">
+          <Button asChild variant="outline">
+            <Link href="/provider/billing">
+              <Receipt className="size-4" />
+              Billing
+            </Link>
+          </Button>
+          <Button asChild>
+            <Link href="/provider/new">
+              <Plus className="size-4" />
+              Offer a program
+            </Link>
+          </Button>
+        </div>
       </header>
 
       {/* Stat tiles */}

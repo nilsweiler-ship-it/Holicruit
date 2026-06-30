@@ -1,14 +1,13 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowLeft, Wand2 } from "lucide-react";
-import { importProfileSkills } from "@/lib/actions/candidate";
-import { Button } from "@/components/ui/button";
+import { ImportReview } from "@/components/candidate/import-review";
 
 export const metadata: Metadata = { title: "Import your skills · Holicruit" };
 
 /**
  * Translate free text (a CV, a profile, a job you've done) into the candidate's
- * structured profile — extracting the hard skills the matching engine uses.
+ * structured profile — extract, review, then confirm the skills to add.
  */
 export default function ImportProfilePage() {
   return (
@@ -27,25 +26,12 @@ export default function ImportProfilePage() {
           Import your skills
         </h1>
         <p className="text-sm text-muted-foreground">
-          Paste your CV, a profile, or a description of work you&apos;ve done. We&apos;ll extract
-          the skills into your profile — then re-run matching. Verification is still earned via
-          peer endorsements.
+          Paste your CV, a profile, or a description of work you&apos;ve done. We&apos;ll extract the
+          skills — you review and pick which to add, then matching re-runs.
         </p>
       </header>
 
-      <form action={importProfileSkills} className="flex flex-col gap-3">
-        <textarea
-          name="text"
-          required
-          rows={14}
-          placeholder={"Paste your CV or experience here…\n\ne.g. \"6 years building React + TypeScript apps, system design, testing. Strong communication and ownership.\""}
-          className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/30"
-        />
-        <Button type="submit" className="self-start">
-          <Wand2 className="size-4" />
-          Extract skills
-        </Button>
-      </form>
+      <ImportReview />
     </div>
   );
 }

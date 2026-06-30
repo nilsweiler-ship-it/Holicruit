@@ -54,6 +54,9 @@ async function main() {
       roles: JSON.stringify(["hiring_manager"]),
     },
   });
+  await prisma.subscription.create({
+    data: { userId: hmUser.id, hat: "hiring_manager", plan: "hm-scale", status: "active" },
+  });
 
   // Openings, created lazily and shared across candidates (keyed by fixture id).
   const openingRows = new Map<string, string>(); // fixtureOpeningId -> db opening id
@@ -293,6 +296,13 @@ async function main() {
         completions: prog.completions,
         reMatches: prog.reMatches,
       },
+    });
+  }
+
+  const fmUser = await prisma.user.findUnique({ where: { email: "fm@holicruit.test" } });
+  if (fmUser) {
+    await prisma.subscription.create({
+      data: { userId: fmUser.id, hat: "provider", plan: "provider-partner", status: "active" },
     });
   }
 
