@@ -30,16 +30,24 @@ export function LoginForm() {
         </Button>
       </form>
 
-      <div className="flex flex-col gap-2">
-        <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-          Or try a demo account
+      <div className="flex items-center gap-3">
+        <span className="h-px flex-1 bg-border" />
+        <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+          One-click demo — no signup
+        </span>
+        <span className="h-px flex-1 bg-border" />
+      </div>
+
+      <div className="flex flex-col gap-2 rounded-xl border border-primary/25 bg-primary/5 p-3">
+        <p className="text-sm text-muted-foreground">
+          Pick a persona to jump straight into a fully populated account.
         </p>
         <div className="grid gap-1.5">
           {DEMO.map((d) => (
             <form key={d.email} action={demoLoginAction.bind(null, d.email)}>
               <button
                 type="submit"
-                className="w-full rounded-lg border border-border bg-card px-3 py-2 text-left text-sm transition-colors hover:bg-accent"
+                className="w-full rounded-lg border border-border bg-card px-3 py-2 text-left text-sm transition-colors hover:border-primary/40 hover:bg-accent"
               >
                 {d.label}
               </button>

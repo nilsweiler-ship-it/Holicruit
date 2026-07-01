@@ -27,17 +27,45 @@ export default async function CandidateMatchesPage() {
         </p>
       </header>
 
-      <ol className="flex flex-col gap-3">
-        {matches.map((match) => (
-          <li key={match.id}>
-            <MatchCard match={match} />
-          </li>
-        ))}
-      </ol>
+      {matches.length > 0 ? (
+        <>
+          <ol className="flex flex-col gap-3">
+            {matches.map((match) => (
+              <li key={match.id}>
+                <MatchCard match={match} />
+              </li>
+            ))}
+          </ol>
 
-      <p className="text-center text-sm text-muted-foreground">
-        Showing your top {matches.length}. New matches surface daily — never a firehose.
-      </p>
+          <p className="text-center text-sm text-muted-foreground">
+            Showing your top {matches.length}. New matches surface daily — never a firehose.
+          </p>
+        </>
+      ) : (
+        <div className="flex flex-col items-center gap-4 rounded-2xl border border-dashed border-border bg-card/40 px-6 py-12 text-center">
+          <div>
+            <p className="font-medium text-foreground">No matches yet</p>
+            <p className="mx-auto mt-1 max-w-sm text-sm text-muted-foreground">
+              Matching is opt-in on both sides. Build out your profile and take the
+              scenario assessment so we can match you on the whole picture — not a keyword scan.
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center justify-center gap-2">
+            <Link
+              href="/candidate/profile"
+              className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-90"
+            >
+              Complete your profile
+            </Link>
+            <Link
+              href="/candidate/profile/scenario"
+              className="rounded-lg border border-border bg-card px-4 py-2 text-sm font-medium transition-colors hover:bg-accent"
+            >
+              Take the scenario
+            </Link>
+          </div>
+        </div>
+      )}
 
       {closed.length > 0 && (
         <section className="flex flex-col gap-3 border-t border-border pt-6">

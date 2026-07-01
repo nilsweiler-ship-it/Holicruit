@@ -92,7 +92,7 @@ export default function MarketingHomePage() {
             </Link>
           </Button>
           <Button asChild size="lg" variant="outline">
-            <Link href="/select-role">Explore the demo</Link>
+            <Link href="/login">Explore the demo</Link>
           </Button>
         </div>
       </section>
@@ -231,7 +231,7 @@ export default function MarketingHomePage() {
               </p>
               <div className="mt-6">
                 <Button asChild variant="outline">
-                  <Link href="/select-role">
+                  <Link href="/login">
                     See a sample report
                     <ArrowRight className="size-4" />
                   </Link>

@@ -9,7 +9,7 @@ export function SoftSkillBars({ scores }: { scores: SoftSkillScore[] }) {
     <div className="flex flex-col gap-3">
       {scores.map((s) => (
         <div key={s.name} className="flex items-center gap-3">
-          <span className="w-32 shrink-0 text-sm text-foreground">{s.name}</span>
+          <span className="w-24 shrink-0 text-sm text-foreground sm:w-32">{s.name}</span>
           <div className="h-2.5 flex-1 overflow-hidden rounded-full bg-muted">
             <div
               className="h-full rounded-full bg-primary"

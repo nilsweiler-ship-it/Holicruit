@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Wordmark } from "@/components/brand/wordmark";
 import { Button } from "@/components/ui/button";
+import { MarketingMobileNav } from "@/components/layout/marketing-mobile-nav";
 
 /**
  * Public marketing shell — distinct from the authenticated app shell.
@@ -27,12 +28,13 @@ export default function MarketingLayout({
           </nav>
 
           <div className="flex items-center gap-2">
-            <Button asChild variant="ghost" size="sm">
+            <Button asChild variant="ghost" size="sm" className="hidden sm:inline-flex">
               <Link href="/login">Sign in</Link>
             </Button>
             <Button asChild size="sm">
               <Link href="/register">Get started</Link>
             </Button>
+            <MarketingMobileNav />
           </div>
         </div>
       </header>
