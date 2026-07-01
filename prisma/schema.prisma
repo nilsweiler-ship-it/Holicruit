@@ -118,6 +118,8 @@ model Opening {
   // JSON arrays of required skill names
   requiredHard        String  @default("[]")
   requiredSoft        String  @default("[]")
+  // Priority matching (Scale plan): wider net + surfaced first.
+  priority            Boolean @default(false)
   matches             Match[]
 }
 
@@ -141,6 +143,7 @@ model Match {
 
   // new | talking | offer | closed
   stage         String           @default("new")
+  stageChangedAt DateTime        @default(now())
   candidateOptIn Boolean         @default(false)
   managerOptIn  Boolean          @default(false)
   saved         Boolean          @default(false)
@@ -149,6 +152,8 @@ model Match {
   thread       Thread?
   growthReport GrowthReport?
   feedback     FeedbackDraft?
+  scoreSheets  ScoreSheet[]
+  notes        PipelineNote[]
 
   @@unique([candidateId, openingId])
 }
@@ -206,6 +211,31 @@ model FeedbackDraft {
   matchId   String   @unique
   body      String
   sent      Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+// Structured interview scorecard (Team plan).
+model ScoreSheet {
+  id             String   @id @default(cuid())
+  match          Match    @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  matchId        String
+  author         String
+  // JSON array of { criterion, score } (score 1–5)
+  ratings        String   @default("[]")
+  overall        Int      @default(3)
+  // strong_yes | yes | no | strong_no
+  recommendation String   @default("yes")
+  notes          String   @default("")
+  createdAt      DateTime @default(now())
+}
+
+// Private hiring-manager note on a candidate (Team plan — full pipeline mgmt).
+model PipelineNote {
+  id        String   @id @default(cuid())
+  match     Match    @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  matchId   String
+  author    String
+  body      String
   createdAt DateTime @default(now())
 }
 

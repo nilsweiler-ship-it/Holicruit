@@ -131,6 +131,8 @@ async function rankOpening(openingId: string): Promise<void> {
 
 /** A match is created when computed fit clears this bar (otherwise no match). */
 export const MATCH_THRESHOLD = 48;
+/** Priority roles (Scale plan) cast a wider net. */
+export const PRIORITY_THRESHOLD = 40;
 
 function fitFor(
   profile: { hardSkills: { name: string; verified: boolean }[]; softSkills: { name: string; level: number }[] },
@@ -144,7 +146,12 @@ function fitFor(
   });
 }
 
-async function upsertMatch(candidateId: string, openingId: string, fit: ReturnType<typeof computeFit>) {
+async function upsertMatch(
+  candidateId: string,
+  openingId: string,
+  fit: ReturnType<typeof computeFit>,
+  threshold = MATCH_THRESHOLD,
+) {
   const existing = await prisma.match.findUnique({
     where: { candidateId_openingId: { candidateId, openingId } },
     select: { id: true, stage: true },
@@ -158,7 +165,7 @@ async function upsertMatch(candidateId: string, openingId: string, fit: ReturnTy
   };
   if (existing) {
     if (existing.stage !== "closed") await prisma.match.update({ where: { id: existing.id }, data });
-  } else if (fit.mutualFit >= MATCH_THRESHOLD) {
+  } else if (fit.mutualFit >= threshold) {
     await prisma.match.create({
       data: { candidateId, openingId, ...data, stage: "new", candidateOptIn: true, managerOptIn: true },
     });
@@ -192,11 +199,12 @@ export async function runMatchingForCandidate(candidateId: string): Promise<void
 export async function runMatchingForOpening(openingId: string): Promise<void> {
   const opening = await prisma.opening.findUnique({ where: { id: openingId } });
   if (!opening) return;
+  const threshold = opening.priority ? PRIORITY_THRESHOLD : MATCH_THRESHOLD;
   const profiles = await prisma.candidateProfile.findMany({
     include: { hardSkills: true, softSkills: true },
   });
   for (const p of profiles) {
-    await upsertMatch(p.id, openingId, fitFor(p, opening));
+    await upsertMatch(p.id, openingId, fitFor(p, opening), threshold);
   }
   await rankOpening(openingId);
 }

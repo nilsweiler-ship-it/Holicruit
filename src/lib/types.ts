@@ -78,6 +78,8 @@ export interface Opening {
   hiringManager: Person;
   requiredHard: string[];
   requiredSoft: string[];
+  /** Priority role (Scale plan) — wider matching net + surfaced first. */
+  priority?: boolean;
 }
 
 /** Stage of a candidate within a role's pipeline. */

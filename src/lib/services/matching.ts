@@ -52,6 +52,7 @@ type MatchRow = {
     hiringManagerInitials: string;
     requiredHard: string;
     requiredSoft: string;
+    priority: boolean;
     company: { name: string; location: string };
   };
   thread: { id: string } | null;
@@ -92,6 +93,7 @@ function toMatch(r: MatchRow): Match {
       },
       requiredHard: JSON.parse(r.opening.requiredHard) as string[],
       requiredSoft: JSON.parse(r.opening.requiredSoft) as string[],
+      priority: r.opening.priority,
     },
     fit,
     stage: r.stage as PipelineStage,

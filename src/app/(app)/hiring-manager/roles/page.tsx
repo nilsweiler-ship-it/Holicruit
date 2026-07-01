@@ -3,6 +3,7 @@ import { Plus, Briefcase, Wand2 } from "lucide-react";
 import { prisma } from "@/lib/db";
 import { requireUser } from "@/lib/persona";
 import { Button } from "@/components/ui/button";
+import { PriorityBadge } from "@/components/pipeline/priority-badge";
 
 /**
  * Roles list — every opening the hiring manager owns, each linking into its
@@ -60,7 +61,10 @@ export default async function RolesPage() {
                 className="flex items-center gap-4 rounded-2xl border border-border bg-card p-4 transition-colors hover:bg-accent"
               >
                 <div className="min-w-0 flex-1">
-                  <p className="truncate font-semibold text-foreground">{o.title}</p>
+                  <div className="flex items-center gap-2">
+                    <p className="truncate font-semibold text-foreground">{o.title}</p>
+                    {o.priority && <PriorityBadge />}
+                  </div>
                   <p className="truncate text-sm text-muted-foreground">
                     {o.company.name}
                     {o.location ? ` · ${o.location}` : ""}

@@ -22,6 +22,12 @@ export interface Plan {
   enterprise?: boolean;
   highlight?: boolean;
   features: string[];
+
+  /** Premium capability flags (gate real features). */
+  scoreSheets?: boolean;
+  pipelineTools?: boolean;
+  analytics?: boolean;
+  priorityMatching?: boolean;
 }
 
 export const PLANS: Plan[] = [
@@ -43,7 +49,9 @@ export const PLANS: Plan[] = [
     openRoleLimit: 5,
     paid: true,
     highlight: true,
-    features: ["Up to 5 open roles", "Direct chat + inline scheduling", "Structured score sheets", "Up to 5 seats"],
+    scoreSheets: true,
+    pipelineTools: true,
+    features: ["Up to 5 open roles", "Full pipeline management", "Structured score sheets", "Up to 5 seats"],
   },
   {
     key: "hm-scale",
@@ -53,6 +61,10 @@ export const PLANS: Plan[] = [
     cadence: "annual contract",
     paid: true,
     enterprise: true,
+    scoreSheets: true,
+    pipelineTools: true,
+    analytics: true,
+    priorityMatching: true,
     features: ["Unlimited open roles", "Priority matching", "Hiring analytics", "Unlimited seats · SSO · DPA"],
   },
   {

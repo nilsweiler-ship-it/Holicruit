@@ -7,6 +7,7 @@ import { requireUser } from "@/lib/persona";
 import { runMatchingForOpening } from "@/lib/matching/engine";
 import { jobAdParser } from "@/lib/services/ingest";
 import { getActivePlan, countOpenRoles } from "@/lib/services/billing";
+import { SCORE_CRITERIA } from "@/lib/scoresheet";
 import type { SkillGap } from "@/lib/fit/types";
 
 /** Block posting beyond the plan's open-role limit → send to billing. */
@@ -31,6 +32,7 @@ const parseList = (v: FormDataEntryValue | null) =>
 export async function createOpening(formData: FormData): Promise<void> {
   const user = await requireUser();
   await enforceRoleLimit(user.id);
+  const { plan } = await getActivePlan(user.id, "hiring_manager");
   const title = String(formData.get("title") ?? "").trim();
   if (!title) redirect("/hiring-manager/roles");
 
@@ -55,6 +57,7 @@ export async function createOpening(formData: FormData): Promise<void> {
       hiringManagerInitials: user.initials,
       requiredHard: JSON.stringify(parseList(formData.get("requiredHard"))),
       requiredSoft: JSON.stringify(parseList(formData.get("requiredSoft"))),
+      priority: plan.priorityMatching ?? false,
     },
   });
 
@@ -94,8 +97,52 @@ export async function setStage(
   matchId: string,
   stage: "new" | "talking" | "offer" | "closed",
 ): Promise<void> {
-  await prisma.match.update({ where: { id: matchId }, data: { stage } });
+  await prisma.match.update({ where: { id: matchId }, data: { stage, stageChangedAt: new Date() } });
   revalidatePath("/hiring-manager/pipeline");
+}
+
+/** Gate a premium hiring-manager capability, sending to billing if not on plan. */
+async function requireHmFeature(
+  userId: string,
+  feature: "scoreSheets" | "pipelineTools",
+  redirectTo: string,
+): Promise<void> {
+  const { plan } = await getActivePlan(userId, "hiring_manager");
+  if (!plan[feature]) redirect(redirectTo);
+}
+
+/** Save a structured interview scorecard (Team plan). */
+export async function saveScoreSheet(matchId: string, formData: FormData): Promise<void> {
+  const user = await requireUser();
+  await requireHmFeature(user.id, "scoreSheets", "/hiring-manager/billing?feature=score-sheets");
+
+  const ratings = SCORE_CRITERIA.map((criterion, i) => ({
+    criterion,
+    score: Math.min(5, Math.max(1, Number(formData.get(`rating-${i}`)) || 3)),
+  }));
+  const overall = Math.round(ratings.reduce((s, r) => s + r.score, 0) / ratings.length);
+
+  await prisma.scoreSheet.create({
+    data: {
+      matchId,
+      author: user.name,
+      ratings: JSON.stringify(ratings),
+      overall,
+      recommendation: String(formData.get("recommendation") ?? "yes"),
+      notes: String(formData.get("notes") ?? "").trim(),
+    },
+  });
+  revalidatePath(`/hiring-manager/candidate/${matchId}`);
+}
+
+/** Add a private note on a candidate (Team plan — full pipeline management). */
+export async function addNote(matchId: string, formData: FormData): Promise<void> {
+  const user = await requireUser();
+  await requireHmFeature(user.id, "pipelineTools", "/hiring-manager/billing?feature=pipeline");
+  const body = String(formData.get("body") ?? "").trim();
+  if (!body) return;
+  await prisma.pipelineNote.create({ data: { matchId, author: user.name, body } });
+  revalidatePath(`/hiring-manager/candidate/${matchId}`);
 }
 
 /**

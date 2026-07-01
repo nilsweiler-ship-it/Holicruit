@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { AlertTriangle, Building2, Check, CheckCircle2, MessageSquare, Receipt } from "lucide-react";
 import { plansFor, planByKey, type Plan } from "@/lib/plans";
 import { getActivePlan } from "@/lib/services/billing";
@@ -131,6 +132,37 @@ function TierCard({ plan, current }: { plan: Plan; current: boolean }) {
       </ul>
 
       <TierCta plan={plan} current={current} />
+
+      <FeatureLinks planKey={plan.key} />
+    </div>
+  );
+}
+
+const FEATURE_LINKS: Record<string, { slug: string; label: string }[]> = {
+  "hm-team": [
+    { slug: "score-sheets", label: "Score sheets" },
+    { slug: "pipeline", label: "Pipeline" },
+  ],
+  "hm-scale": [
+    { slug: "analytics", label: "Analytics" },
+    { slug: "priority", label: "Priority matching" },
+  ],
+};
+
+function FeatureLinks({ planKey }: { planKey: string }) {
+  const links = FEATURE_LINKS[planKey];
+  if (!links) return null;
+  return (
+    <div className="flex flex-wrap gap-x-4 gap-y-1 border-t border-border pt-3">
+      {links.map((l) => (
+        <Link
+          key={l.slug}
+          href={`/hiring-manager/features/${l.slug}`}
+          className="text-xs font-medium text-primary hover:underline"
+        >
+          {l.label} &rarr;
+        </Link>
+      ))}
     </div>
   );
 }

@@ -3,6 +3,7 @@ import { Plus, Zap } from "lucide-react";
 import { matchingService } from "@/lib/services/matching";
 import { getActiveHmOpeningId } from "@/lib/persona";
 import { HmPipelineBoard } from "@/components/pipeline/hm-pipeline-board";
+import { PriorityBadge } from "@/components/pipeline/priority-badge";
 import { Button } from "@/components/ui/button";
 
 /**
@@ -44,9 +45,12 @@ export default async function PipelinePage({
   return (
     <div className="flex flex-col gap-6">
       <header className="flex flex-col gap-1">
-        <h1 className="text-2xl font-bold tracking-tight text-foreground">
-          {opening?.title ?? "Pipeline"}
-        </h1>
+        <div className="flex items-center gap-2">
+          <h1 className="text-2xl font-bold tracking-tight text-foreground">
+            {opening?.title ?? "Pipeline"}
+          </h1>
+          {opening?.priority && <PriorityBadge />}
+        </div>
         <p className="text-sm text-muted-foreground">
           {opening?.company.name}
           {opening?.company.location ? ` · ${opening.company.location}` : ""}
