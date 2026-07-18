@@ -66,6 +66,7 @@ export async function getThreadView(
   const interview: ScheduledInterview | undefined = match.thread?.interview
     ? {
         when: match.thread.interview.whenText,
+        whenAt: match.thread.interview.whenAt?.toISOString(),
         medium: match.thread.interview.medium,
         scoreSheetAttached: match.thread.interview.scoreSheetAttached,
       }

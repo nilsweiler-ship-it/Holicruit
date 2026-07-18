@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Holicruit — the transparency flywheel</title>
+<style>
+  :root{
+    --ink:#161514; --coral:#E0533D; --cream:#F4EFE7; --card:#211F1D;
+    --muted:#B7B0A6; --line:#343230; --green:#2E7D5B;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    background:var(--ink); color:var(--cream);
+    font-family:"Outfit",-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;
+    display:flex; align-items:center; justify-content:center; min-height:100%;
+  }
+  .stage{width:820px; max-width:96vw; padding:34px 34px 30px; }
+  .eyebrow{color:var(--coral); font-size:13px; font-weight:700; letter-spacing:3px; text-transform:uppercase}
+  h1{font-size:30px; font-weight:800; margin:8px 0 4px; letter-spacing:-.3px}
+  .sub{color:var(--muted); font-size:15px; max-width:640px}
+  .wrap{position:relative; width:520px; height:520px; margin:14px auto 0; max-width:92vw}
+  svg{width:100%; height:100%; overflow:visible}
+  .node-card{
+    fill:var(--card); stroke:var(--line); stroke-width:1.5;
+    transition:fill .35s, stroke .35s, transform .35s; transform-box:fill-box; transform-origin:center;
+  }
+  .node.active .node-card{ fill:#2b1c18; stroke:var(--coral); stroke-width:2.5; }
+  .node-num{ fill:var(--muted); font-weight:800; font-size:15px; transition:fill .35s;}
+  .node.active .node-num{ fill:var(--coral); }
+  .node-label{ fill:var(--cream); font-weight:700; font-size:15px;}
+  .ring{ fill:none; stroke:var(--line); stroke-width:2; stroke-dasharray:5 7; }
+  .prog{ fill:none; stroke:var(--coral); stroke-width:3; stroke-linecap:round; transition:stroke-dashoffset .1s linear;}
+  .token{ fill:var(--coral); filter:drop-shadow(0 0 7px rgba(224,83,61,.75)); }
+  .hub{fill:none;}
+  .hub-t1{fill:var(--cream); font-weight:800; font-size:16px;}
+  .hub-t2{fill:var(--muted); font-weight:600; font-size:12.5px; letter-spacing:1px; text-transform:uppercase;}
+  .caption{
+    margin:8px auto 0; text-align:center; min-height:52px; max-width:620px;
+  }
+  .caption b{color:var(--cream); font-size:17px; font-weight:700}
+  .caption span{display:block; color:var(--muted); font-size:14px; margin-top:3px}
+  .foot{margin-top:10px; text-align:center; color:#6f6a63; font-size:12px; letter-spacing:.3px}
+  @media (prefers-reduced-motion: reduce){ .token{display:none} }
+</style>
+</head>
+<body>
+<div class="stage">
+  <div class="eyebrow">How Holicruit compounds</div>
+  <h1>The transparency flywheel</h1>
+  <p class="sub">Not a job board — a loop. Every turn makes candidate profiles richer, matches sharper, and providers' ROI provable.</p>
+
+  <div class="wrap">
+    <svg viewBox="0 0 520 520" aria-label="Holicruit flywheel animation">
+      <circle class="ring" cx="260" cy="260" r="190"></circle>
+      <circle class="prog" cx="260" cy="260" r="190" id="prog"
+              transform="rotate(-90 260 260)"></circle>
+
+      <!-- hub -->
+      <text class="hub-t2" x="260" y="248" text-anchor="middle">Holicruit</text>
+      <text class="hub-t1" x="260" y="272" text-anchor="middle">Whole-person fit</text>
+      <text class="hub-t2" x="260" y="292" text-anchor="middle">+ radical transparency</text>
+
+      <g id="nodes"></g>
+      <circle class="token" id="token" r="9" cx="260" cy="70"></circle>
+    </svg>
+  </div>
+
+  <div class="caption" id="caption"></div>
+  <div class="foot">holicruit.com · recruiting that tells you the truth</div>
+</div>
+
+<script>
+  const STAGES = [
+    { t:"Assess the whole person", s:"Hard skills, scenario-measured soft skills, and verified evidence — one fit model." },
+    { t:"Match on mutual fit", s:"A conversation starts only when both sides opt in. No cold applications." },
+    { t:"Explain every outcome", s:"Win or lose, each candidate gets a Growth Report: the one gap that decided it." },
+    { t:"Close the gap", s:"Partner programs — ranked by real completions and re-matches, not ad spend." },
+    { t:"Re-match, stronger", s:"A verified profile re-runs through matching automatically. The loop compounds." },
+  ];
+
+  const cx=260, cy=260, R=190, N=STAGES.length;
+  const svgNS="http://www.w3.org/2000/svg";
+  const nodesG=document.getElementById("nodes");
+  const nodeEls=[];
+
+  // place nodes evenly, starting at top
+  STAGES.forEach((st,i)=>{
+    const a = -Math.PI/2 + i*(2*Math.PI/N);
+    const x = cx + R*Math.cos(a), y = cy + R*Math.sin(a);
+    const g=document.createElementNS(svgNS,"g"); g.setAttribute("class","node"); g.dataset.i=i;
+    const w=132,h=58;
+    const rect=document.createElementNS(svgNS,"rect");
+    rect.setAttribute("class","node-card");
+    rect.setAttribute("x",x-w/2); rect.setAttribute("y",y-h/2);
+    rect.setAttribute("width",w); rect.setAttribute("height",h);
+    rect.setAttribute("rx",12);
+    const num=document.createElementNS(svgNS,"text");
+    num.setAttribute("class","node-num"); num.setAttribute("x",x-w/2+14); num.setAttribute("y",y-h/2+22);
+    num.textContent=(i+1);
+    const lab=document.createElementNS(svgNS,"text");
+    lab.setAttribute("class","node-label"); lab.setAttribute("x",x); lab.setAttribute("y",y+6);
+    lab.setAttribute("text-anchor","middle");
+    lab.textContent=["Assess","Match","Explain","Close gap","Re-match"][i];
+    g.appendChild(rect); g.appendChild(num); g.appendChild(lab);
+    nodesG.appendChild(g); nodeEls.push(g);
+  });
+
+  const token=document.getElementById("token");
+  const prog=document.getElementById("prog");
+  const C=2*Math.PI*R;
+  prog.style.strokeDasharray=C;
+  const caption=document.getElementById("caption");
+
+  const STEP_MS=2100;
+  let idx=-1;
+  function setCaption(i){
+    caption.innerHTML="<b>"+STAGES[i].t+"</b><span>"+STAGES[i].s+"</span>";
+  }
+  function highlight(i){
+    nodeEls.forEach((el,k)=>el.classList.toggle("active",k===i));
+    setCaption(i);
+  }
+
+  let start=null;
+  function frame(ts){
+    if(start===null) start=ts;
+    const elapsed=ts-start;
+    const total=elapsed/STEP_MS;                 // in "steps"
+    const seg=Math.floor(total)%N;               // current node index
+    const frac=total-Math.floor(total);          // 0..1 within segment
+    // token angle travels continuously
+    const ang=-Math.PI/2 + (seg+frac)*(2*Math.PI/N);
+    token.setAttribute("cx", cx + R*Math.cos(ang));
+    token.setAttribute("cy", cy + R*Math.sin(ang));
+    // progress arc fills across the whole loop
+    const loopFrac=((seg+frac)/N);
+    prog.style.strokeDashoffset = C*(1-loopFrac);
+    if(seg!==idx){ idx=seg; highlight(idx); }
+    requestAnimationFrame(frame);
+  }
+  highlight(0);
+  requestAnimationFrame(frame);
+</script>
+</body>
+</html>

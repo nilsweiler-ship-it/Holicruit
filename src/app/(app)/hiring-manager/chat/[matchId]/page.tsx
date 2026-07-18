@@ -38,7 +38,7 @@ export default async function HmChatPage({ params }: { params: Promise<{ matchId
         Back to candidate
       </Link>
 
-      <h1 className="text-sm font-semibold text-foreground">
+      <h1 className="truncate text-sm font-semibold text-foreground">
         Direct line · {view.them.name} · {match.opening.title}
       </h1>
 

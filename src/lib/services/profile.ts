@@ -19,6 +19,7 @@ export async function getCandidateProfile(profileId: string): Promise<CandidateP
     name: p.user.name,
     headline: p.headline,
     initials: p.user.initials,
+    avatarUrl: p.avatarUrl ?? undefined,
     industry: p.industry,
     completeness: p.completeness,
     scenarioCompleted: p.scenarioCompleted,

@@ -5,10 +5,11 @@ import { Wand2 } from "lucide-react";
 import { scenarioService } from "@/lib/services/scenario";
 import { getActiveCandidateId } from "@/lib/persona";
 import { getCandidateProfile, getEndorsements } from "@/lib/services/profile";
-import { PersonAvatar } from "@/components/people/person-avatar";
+import { AvatarUpload } from "@/components/candidate/avatar-upload";
 import { CompletenessRing } from "@/components/people/completeness-ring";
 import { SkillChips } from "@/components/candidate/skill-chips";
 import { SoftSkillBars } from "@/components/candidate/soft-skill-bars";
+import { PersonalityBars } from "@/components/candidate/personality-bars";
 import { ScenarioCta } from "@/components/candidate/scenario-cta";
 
 export const metadata: Metadata = { title: "Your profile · Holicruit" };
@@ -23,6 +24,7 @@ export default async function CandidateProfilePage() {
   if (!profile) notFound();
   const endorsements = await getEndorsements(candidateId);
   const softScores = await scenarioService.getSoftSkillScores(candidateId);
+  const personality = await scenarioService.getPersonalityProfile(candidateId);
   const completed = await scenarioService.isComplete(candidateId);
   const minutes = scenarioService.estimatedMinutes();
 
@@ -30,7 +32,7 @@ export default async function CandidateProfilePage() {
     <div className="flex flex-col gap-8">
       {/* Header: avatar + name/headline + completeness ring */}
       <header className="flex items-center gap-4">
-        <PersonAvatar person={profile} size={56} />
+        <AvatarUpload person={profile} size={64} />
         <div className="min-w-0 flex-1">
           <h1 className="truncate text-xl font-bold tracking-tight">{profile.name}</h1>
           <p className="truncate text-sm text-muted-foreground">{profile.headline}</p>
@@ -78,6 +80,24 @@ export default async function CandidateProfilePage() {
         </p>
         <SoftSkillBars scores={softScores} />
       </section>
+
+      {/* Personality — Big Five + Integrity, measured from the scenario */}
+      {personality && (
+        <section className="flex flex-col gap-3">
+          <div className="flex items-baseline justify-between gap-2">
+            <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+              Personality
+            </h2>
+            <span className="text-xs text-muted-foreground">Big Five + Integrity</span>
+          </div>
+          <p className="text-sm text-muted-foreground">
+            Measured from your scenario choices and mapped to the scientifically validated{" "}
+            <span className="font-medium text-foreground">Big Five</span> model (with HEXACO
+            Integrity) — <span className="font-medium text-foreground">never self-rated</span>.
+          </p>
+          <PersonalityBars traits={personality} />
+        </section>
+      )}
 
       {/* Primary CTA */}
       <ScenarioCta minutes={minutes} completed={completed} />

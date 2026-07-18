@@ -25,7 +25,7 @@ const FEATURES = [
   {
     icon: ScanSearch,
     title: "The fit model",
-    body: "Hard fit, soft fit, and mutual fit — measured against the role's actual bar. Soft skills come from an objective scenario assessment, never a self-rating. You always see your own rank.",
+    body: "Hard fit, soft fit, and mutual fit — measured against the role's actual bar. Soft skills come from an objective scenario assessment mapped to the scientifically validated Big Five — never a self-rating. You always see your own rank.",
   },
   {
     icon: LineChart,

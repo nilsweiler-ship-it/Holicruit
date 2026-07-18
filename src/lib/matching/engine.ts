@@ -8,14 +8,17 @@ import type { FitObject, SkillGap } from "../fit/types";
 import { prisma } from "../db";
 
 const SOFT_BAR = 75; // default role soft-skill bar
-const HARD_W = 0.55;
-const SOFT_W = 0.45;
+const DEFAULT_HARD_W = 55; // default hard weight (0–100) when a role isn't calibrated
+const DEFAULT_SOFT_W = 45;
 
 interface ComputeInput {
   hardSkills: { name: string; verified: boolean }[];
   softSkills: { name: string; level: number }[];
   requiredHard: string[];
   requiredSoft: string[];
+  /** Custom role calibration (0–100). Falls back to the platform default. */
+  hardWeight?: number | null;
+  softWeight?: number | null;
 }
 
 export function computeFit(input: ComputeInput): FitObject {
@@ -52,7 +55,12 @@ export function computeFit(input: ComputeInput): FitObject {
     }
   }
   const softFit = softN ? Math.round(softSum / softN) : 60;
-  const mutualFit = Math.round(HARD_W * hardFit + SOFT_W * softFit);
+
+  // Calibration: weight hard vs. soft by the role's configured balance.
+  const hw = input.hardWeight ?? DEFAULT_HARD_W;
+  const sw = input.softWeight ?? DEFAULT_SOFT_W;
+  const totalW = hw + sw > 0 ? hw + sw : 100;
+  const mutualFit = Math.round((hw * hardFit + sw * softFit) / totalW);
 
   const presentHard = input.requiredHard.filter((r) => have.has(r.toLowerCase()));
   const verifiedCount = presentHard.filter((r) => have.get(r.toLowerCase())?.verified).length;
@@ -84,6 +92,8 @@ export async function recomputeCandidateMatches(candidateId: string): Promise<vo
       softSkills: profile.softSkills,
       requiredHard: JSON.parse(m.opening.requiredHard) as string[],
       requiredSoft: JSON.parse(m.opening.requiredSoft) as string[],
+      hardWeight: m.opening.hardWeight,
+      softWeight: m.opening.softWeight,
     });
     await prisma.match.update({
       where: { id: m.id },
@@ -136,13 +146,15 @@ export const PRIORITY_THRESHOLD = 40;
 
 function fitFor(
   profile: { hardSkills: { name: string; verified: boolean }[]; softSkills: { name: string; level: number }[] },
-  opening: { requiredHard: string; requiredSoft: string },
+  opening: { requiredHard: string; requiredSoft: string; hardWeight?: number | null; softWeight?: number | null },
 ) {
   return computeFit({
     hardSkills: profile.hardSkills,
     softSkills: profile.softSkills,
     requiredHard: JSON.parse(opening.requiredHard) as string[],
     requiredSoft: JSON.parse(opening.requiredSoft) as string[],
+    hardWeight: opening.hardWeight,
+    softWeight: opening.softWeight,
   });
 }
 
@@ -199,7 +211,10 @@ export async function runMatchingForCandidate(candidateId: string): Promise<void
 export async function runMatchingForOpening(openingId: string): Promise<void> {
   const opening = await prisma.opening.findUnique({ where: { id: openingId } });
   if (!opening) return;
-  const threshold = opening.priority ? PRIORITY_THRESHOLD : MATCH_THRESHOLD;
+  // Calibration: the role's pass bar decides who clears into the pipeline.
+  // Priority roles (Scale) cast a wider net by lowering that bar.
+  const base = opening.passBar ?? MATCH_THRESHOLD;
+  const threshold = opening.priority ? Math.min(base, PRIORITY_THRESHOLD) : base;
   const profiles = await prisma.candidateProfile.findMany({
     include: { hardSkills: true, softSkills: true },
   });

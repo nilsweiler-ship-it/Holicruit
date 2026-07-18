@@ -3,6 +3,7 @@ import { SubNav } from "@/components/layout/sub-nav";
 const ITEMS = [
   { label: "Pipeline", href: "/hiring-manager/pipeline" },
   { label: "Roles", href: "/hiring-manager/roles" },
+  { label: "Talent pool", href: "/hiring-manager/talent-pool" },
   { label: "Analytics", href: "/hiring-manager/analytics" },
   { label: "Billing", href: "/hiring-manager/billing" },
 ];

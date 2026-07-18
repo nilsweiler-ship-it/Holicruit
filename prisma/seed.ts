@@ -14,11 +14,22 @@ import {
   PROGRAMS,
 } from "../src/lib/fixtures";
 import type { Match, Opening, Person } from "../src/lib/types";
+import { SCORE_CRITERIA } from "../src/lib/scoresheet";
 
 const prisma = new PrismaClient();
 
 const PASSWORD = "password123";
 const emailFor = (id: string) => `${id.replace(/^(cand-|prov-|hm-|rec-)/, "")}@holicruit.test`;
+
+// Demo Big Five + Integrity profiles (0–100) per persona — the scenario would
+// produce these; seeded so the profile display has data.
+const TRAIT_PROFILES: Record<string, Record<string, number>> = {
+  "cand-sam": { Conscientiousness: 82, "Emotional stability": 74, Agreeableness: 66, Extraversion: 58, Openness: 79, Integrity: 80 },
+  "cand-aisha": { Conscientiousness: 85, "Emotional stability": 80, Agreeableness: 83, Extraversion: 55, Openness: 68, Integrity: 88 },
+  "cand-diego": { Conscientiousness: 71, "Emotional stability": 76, Agreeableness: 64, Extraversion: 86, Openness: 74, Integrity: 72 },
+};
+const traitFor = (id: string) =>
+  TRAIT_PROFILES[id] ?? { Conscientiousness: 65, "Emotional stability": 62, Agreeableness: 64, Extraversion: 60, Openness: 63, Integrity: 66 };
 
 async function main() {
   // Idempotent: clear everything (order respects FKs via cascade on User/parent).
@@ -130,6 +141,7 @@ async function main() {
             industry: p.industry,
             completeness: p.completeness,
             scenarioCompleted: p.scenarioCompleted,
+            traitProfile: p.scenarioCompleted ? JSON.stringify(traitFor(p.id)) : null,
             hardSkills: { create: p.hardSkills.map((s) => ({ name: s.name, verified: s.verified })) },
             softSkills: { create: p.softSkills.map((s) => ({ name: s.name, level: s.level })) },
             endorsements: {
@@ -236,6 +248,39 @@ async function main() {
           whenText: t.interview.when,
           medium: t.interview.medium,
           scoreSheetAttached: t.interview.scoreSheetAttached,
+        },
+      });
+    }
+  }
+
+  // ── Decision intelligence + calibration demo (Sam's "talking" match) ──
+  const samTalking = await prisma.match.findFirst({
+    where: { candidateId: samProfileId, stage: "talking" },
+    select: { id: true, openingId: true },
+  });
+  if (samTalking) {
+    // Custom role calibration on the opening (Team feature).
+    await prisma.opening.update({
+      where: { id: samTalking.openingId },
+      data: { hardWeight: 55, softWeight: 45, passBar: 70 },
+    });
+    // A three-interviewer panel with high agreement (decision intelligence).
+    const panel = [
+      { author: "Priya Nair", scores: [5, 4, 5, 4], rec: "strong_yes", notes: "Excellent systems thinking and a clear communicator." },
+      { author: "Marcus Lee", scores: [4, 4, 4, 4], rec: "yes", notes: "Solid across the board — would hire." },
+      { author: "Dana Okafor", scores: [4, 5, 3, 4], rec: "yes", notes: "Great collaboration; ownership slightly less evident." },
+    ];
+    for (const pnl of panel) {
+      const ratings = SCORE_CRITERIA.map((criterion, i) => ({ criterion, score: pnl.scores[i] ?? 3 }));
+      const overall = Math.round(ratings.reduce((s, r) => s + r.score, 0) / ratings.length);
+      await prisma.scoreSheet.create({
+        data: {
+          matchId: samTalking.id,
+          author: pnl.author,
+          ratings: JSON.stringify(ratings),
+          overall,
+          recommendation: pnl.rec,
+          notes: pnl.notes,
         },
       });
     }

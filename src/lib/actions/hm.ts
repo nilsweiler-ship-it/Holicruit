@@ -43,6 +43,18 @@ export async function createOpening(formData: FormData): Promise<void> {
       ownerId: user.id,
     },
   });
+  // Custom role calibration (Team+). Clamp hard weight 0–100, soft = 100 − hard,
+  // pass bar 0–100. Fall back to sensible defaults when not on plan or unset.
+  let hardWeight = 60;
+  let passBar = 60;
+  if (plan.calibration) {
+    const hw = Number(formData.get("hardWeight"));
+    const pb = Number(formData.get("passBar"));
+    if (Number.isFinite(hw)) hardWeight = Math.min(100, Math.max(0, Math.round(hw)));
+    if (Number.isFinite(pb)) passBar = Math.min(100, Math.max(0, Math.round(pb)));
+  }
+  const softWeight = 100 - hardWeight;
+
   const opening = await prisma.opening.create({
     data: {
       title,
@@ -58,6 +70,9 @@ export async function createOpening(formData: FormData): Promise<void> {
       requiredHard: JSON.stringify(parseList(formData.get("requiredHard"))),
       requiredSoft: JSON.stringify(parseList(formData.get("requiredSoft"))),
       priority: plan.priorityMatching ?? false,
+      hardWeight,
+      softWeight,
+      passBar,
     },
   });
 
@@ -90,6 +105,86 @@ export async function importOpening(formData: FormData): Promise<void> {
     imported: "1",
   });
   redirect(`/hiring-manager/roles/new?${params.toString()}`);
+}
+
+/**
+ * Re-engage a silver medalist: reopen a closed match, put it back in the
+ * pipeline, and open a direct line with an inviting first message. This is the
+ * talent-pool "invite to re-match" action.
+ */
+export async function reopenForReMatch(matchId: string): Promise<void> {
+  const user = await requireUser();
+  const match = await prisma.match.findUnique({
+    where: { id: matchId },
+    include: {
+      candidate: { include: { user: { select: { name: true } } } },
+      opening: { select: { title: true } },
+      thread: { select: { id: true } },
+    },
+  });
+  if (!match) redirect("/hiring-manager/talent-pool");
+
+  await prisma.match.update({
+    where: { id: matchId },
+    data: { stage: "talking", stageChangedAt: new Date(), candidateOptIn: true, managerOptIn: true },
+  });
+
+  if (!match.thread) {
+    const firstName = match.candidate.user.name.split(" ")[0] ?? "there";
+    const thread = await prisma.thread.create({ data: { matchId } });
+    await prisma.message.create({
+      data: {
+        threadId: thread.id,
+        fromName: user.name,
+        text: `Hi ${firstName} — you were a strong candidate for ${match.opening.title}, and it looks like you've since closed the gap that held things up. We'd love to reopen the conversation. Are you open to talking?`,
+      },
+    });
+  }
+
+  revalidatePath("/hiring-manager/talent-pool");
+  revalidatePath("/hiring-manager/pipeline");
+  redirect(`/hiring-manager/chat/${matchId}`);
+}
+
+/**
+ * Update an existing role's calibration (Team+) and re-run matching so the new
+ * hard/soft weighting and pass bar immediately re-rank the pipeline.
+ */
+export async function updateCalibration(openingId: string, formData: FormData): Promise<void> {
+  const user = await requireUser();
+  const { plan } = await getActivePlan(user.id, "hiring_manager");
+  if (!plan.calibration) redirect("/hiring-manager/billing?feature=calibration");
+
+  const opening = await prisma.opening.findFirst({
+    where: { id: openingId, company: { ownerId: user.id } },
+    select: { id: true },
+  });
+  if (!opening) redirect("/hiring-manager/roles");
+
+  const hw = Number(formData.get("hardWeight"));
+  const pb = Number(formData.get("passBar"));
+  const hardWeight = Number.isFinite(hw) ? Math.min(100, Math.max(0, Math.round(hw))) : 60;
+  const passBar = Number.isFinite(pb) ? Math.min(100, Math.max(0, Math.round(pb))) : 60;
+
+  await prisma.opening.update({
+    where: { id: openingId },
+    data: { hardWeight, softWeight: 100 - hardWeight, passBar },
+  });
+  await runMatchingForOpening(openingId);
+  revalidatePath("/hiring-manager/pipeline");
+  revalidatePath("/hiring-manager/roles");
+  redirect(`/hiring-manager/pipeline?opening=${openingId}`);
+}
+
+/** Save / unsave (shortlist) a candidate match. */
+export async function toggleSaved(matchId: string): Promise<void> {
+  await requireUser();
+  const m = await prisma.match.findUnique({ where: { id: matchId }, select: { saved: true } });
+  if (!m) return;
+  await prisma.match.update({ where: { id: matchId }, data: { saved: !m.saved } });
+  revalidatePath("/hiring-manager/talent-pool");
+  revalidatePath("/hiring-manager/pipeline");
+  revalidatePath(`/hiring-manager/candidate/${matchId}`);
 }
 
 /** Advance/move a candidate between pipeline stages. */

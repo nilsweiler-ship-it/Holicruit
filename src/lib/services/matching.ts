@@ -38,7 +38,7 @@ type MatchRow = {
   saved: boolean;
   candidateOptIn: boolean;
   managerOptIn: boolean;
-  candidate: { id: string; headline: string; user: { name: string; initials: string } };
+  candidate: { id: string; headline: string; avatarUrl: string | null; user: { name: string; initials: string } };
   opening: {
     id: string;
     title: string;
@@ -75,6 +75,7 @@ function toMatch(r: MatchRow): Match {
       name: r.candidate.user.name,
       headline: r.candidate.headline,
       initials: r.candidate.user.initials,
+      avatarUrl: r.candidate.avatarUrl ?? undefined,
     },
     opening: {
       id: r.opening.id,

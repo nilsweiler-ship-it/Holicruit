@@ -1,13 +1,16 @@
 import { cn } from "@/lib/utils";
 
 /**
- * Holicruit logo mark — a "fit gauge": a coral arc over a muted track with a
- * coral core. It nods to the fit model (a fit %) and to the holistic whole.
+ * Holicruit logo mark — the "whole person": a *complete* ring of four rounded
+ * facets (hard skills, soft skills, evidence, growth) around a coral core.
+ * Keeps the fit-gauge DNA but closes the loop — holistic, nothing missing.
  * Uses Tailwind stroke/fill classes so it inherits the brand tokens.
  */
 const R = 9;
 const C = 2 * Math.PI * R;
-const FILL = 0.72;
+const SEGMENTS = 4;
+const GAP = 5; // visual gap between facets (dash units)
+const SEG = C / SEGMENTS - GAP;
 
 export function LogoMark({ size = 24, className }: { size?: number; className?: string }) {
   return (
@@ -18,7 +21,6 @@ export function LogoMark({ size = 24, className }: { size?: number; className?: 
       className={cn("shrink-0", className)}
       aria-hidden
     >
-      <circle cx="12" cy="12" r={R} fill="none" strokeWidth="3" className="stroke-muted" />
       <circle
         cx="12"
         cy="12"
@@ -26,7 +28,7 @@ export function LogoMark({ size = 24, className }: { size?: number; className?: 
         fill="none"
         strokeWidth="3"
         strokeLinecap="round"
-        strokeDasharray={`${(FILL * C).toFixed(2)} ${C.toFixed(2)}`}
+        strokeDasharray={`${SEG.toFixed(2)} ${GAP.toFixed(2)}`}
         transform="rotate(-90 12 12)"
         className="stroke-primary"
       />

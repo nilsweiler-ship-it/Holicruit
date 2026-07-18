@@ -1,6 +1,10 @@
 import Link from "next/link";
 import { ArrowLeft, Wand2 } from "lucide-react";
 import { createOpening } from "@/lib/actions/hm";
+import { requireUser } from "@/lib/persona";
+import { getActivePlan } from "@/lib/services/billing";
+import { CalibrationFields } from "@/components/pipeline/calibration-fields";
+import { LockedFeature } from "@/components/billing/locked-feature";
 import { Button } from "@/components/ui/button";
 
 const inputClass =
@@ -27,6 +31,8 @@ export default async function NewRolePage({
 }) {
   const sp = await searchParams;
   const imported = sp.imported === "1";
+  const user = await requireUser();
+  const { plan } = await getActivePlan(user.id, "hiring_manager");
 
   return (
     <div className="flex flex-col gap-6">
@@ -101,6 +107,17 @@ export default async function NewRolePage({
           <input name="requiredSoft" defaultValue={sp.requiredSoft} className={inputClass} placeholder="Communication, Ownership" />
           <span className="text-xs text-muted-foreground">comma-separated</span>
         </label>
+
+        {plan.calibration ? (
+          <CalibrationFields />
+        ) : (
+          <LockedFeature
+            title="Custom role calibration"
+            tier="Team"
+            blurb="Weight hard vs. soft skills and set the pass bar for this role, so matching optimizes for what a great hire actually looks like on your team."
+            learnMoreHref="/hiring-manager/features/calibration"
+          />
+        )}
 
         <div className="flex">
           <Button type="submit">{imported ? "Confirm & post role" : "Post role & run matching"}</Button>

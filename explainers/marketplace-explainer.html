@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Holicruit — a marketplace where every side wins</title>
+<style>
+  :root{
+    --ink:#161514; --coral:#E0533D; --cream:#F4EFE7; --card:#211F1D;
+    --muted:#B7B0A6; --line:#343230; --green:#2E7D5B;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    background:var(--ink); color:var(--cream);
+    font-family:"Outfit",-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;
+    display:flex; align-items:center; justify-content:center; min-height:100%;
+  }
+  .stage{width:820px; max-width:96vw; padding:34px}
+  .eyebrow{color:var(--coral); font-size:13px; font-weight:700; letter-spacing:3px; text-transform:uppercase}
+  h1{font-size:29px; font-weight:800; margin:8px 0 4px; letter-spacing:-.3px}
+  .sub{color:var(--muted); font-size:15px; max-width:640px}
+  .wrap{position:relative; width:560px; height:440px; margin:16px auto 0; max-width:92vw}
+  svg{width:100%; height:100%; overflow:visible}
+  .flow{fill:none; stroke:var(--line); stroke-width:2; stroke-dasharray:5 7;}
+  .flow.live{stroke:var(--coral); stroke-dasharray:6 6; animation:dash 1s linear infinite;}
+  @keyframes dash{to{stroke-dashoffset:-24}}
+  .qcard{fill:var(--card); stroke:var(--line); stroke-width:1.5;
+    transition:fill .35s, stroke .35s;}
+  .node.active .qcard{fill:#2b1c18; stroke:var(--coral); stroke-width:2.5;}
+  .qk{fill:var(--muted); font-size:11px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; transition:fill .35s}
+  .node.active .qk{fill:var(--coral)}
+  .qt{fill:var(--cream); font-size:16px; font-weight:700}
+  .qm{fill:var(--muted); font-size:11.5px; font-weight:600; text-transform:uppercase; letter-spacing:.5px}
+  .node.active .qm-badge{opacity:1}
+  .qm-badge{opacity:.35; transition:opacity .35s}
+  .hub{fill:#1c1a18; stroke:var(--line); stroke-width:1.5;}
+  .hub-t1{fill:var(--cream); font-weight:800; font-size:15px;}
+  .hub-t2{fill:var(--muted); font-weight:600; font-size:11px; letter-spacing:1px; text-transform:uppercase;}
+  .caption{margin:14px auto 0; text-align:center; min-height:50px; max-width:640px}
+  .caption b{color:var(--cream); font-size:17px; font-weight:700}
+  .caption span{display:block; color:var(--muted); font-size:14px; margin-top:3px}
+  .foot{margin-top:10px; text-align:center; color:#6f6a63; font-size:12px}
+</style>
+</head>
+<body>
+<div class="stage">
+  <div class="eyebrow">The model</div>
+  <h1>A marketplace where every side wins</h1>
+  <p class="sub">Candidates bring the liquidity — free, forever. Three commercial sides monetize the honest loop, each aligned to real outcomes.</p>
+
+  <div class="wrap">
+    <svg viewBox="0 0 560 440" aria-label="Four-sided marketplace animation">
+      <!-- flows between hub and quadrants -->
+      <line class="flow" data-i="0" x1="280" y1="220" x2="140" y2="88"></line>
+      <line class="flow" data-i="1" x1="280" y1="220" x2="420" y2="88"></line>
+      <line class="flow" data-i="2" x1="280" y1="220" x2="140" y2="352"></line>
+      <line class="flow" data-i="3" x1="280" y1="220" x2="420" y2="352"></line>
+
+      <!-- hub -->
+      <circle class="hub" cx="280" cy="220" r="52"></circle>
+      <text class="hub-t1" x="280" y="216" text-anchor="middle">Holicruit</text>
+      <text class="hub-t2" x="280" y="234" text-anchor="middle">one loop</text>
+
+      <g id="nodes"></g>
+    </svg>
+  </div>
+
+  <div class="caption" id="caption"></div>
+  <div class="foot">holicruit.com &middot; candidates free &middot; three sides pay for outcomes</div>
+</div>
+
+<script>
+  // quadrant centers: TL, TR, BL, BR
+  const POS=[{x:140,y:88},{x:420,y:88},{x:140,y:352},{x:420,y:352}];
+  const SIDES=[
+    { k:"Candidate", t:"Matched on merit", m:"Free", cap:"Candidates — free, forever",
+      s:"Honest feedback always. They're the demand engine that makes the whole market liquid." },
+    { k:"Hiring manager", t:"A pipeline, not a pile", m:"Subscription", cap:"Hiring managers pay for Holicruit-only value",
+      s:"Talent pool, calibration, decision intelligence, quality-of-hire analytics." },
+    { k:"Recruiter", t:"Paid on outcomes", m:"Success fee", cap:"Recruiters earn only on a hire",
+      s:"Facilitate opt-in matches — no retainers, incentives aligned with everyone." },
+    { k:"Training provider", t:"Reach the exact gap", m:"Marketplace take", cap:"Providers reach candidates by named gap",
+      s:"Programs ranked by real completions and re-matches — the differentiated, high-margin line." },
+  ];
+
+  const svgNS="http://www.w3.org/2000/svg";
+  const g=document.getElementById("nodes");
+  const nodeEls=[], flowEls=[...document.querySelectorAll(".flow")];
+  const W=210,H=92;
+
+  SIDES.forEach((sd,i)=>{
+    const {x,y}=POS[i];
+    const node=document.createElementNS(svgNS,"g"); node.setAttribute("class","node");
+    const rect=document.createElementNS(svgNS,"rect");
+    rect.setAttribute("class","qcard");
+    rect.setAttribute("x",x-W/2); rect.setAttribute("y",y-H/2);
+    rect.setAttribute("width",W); rect.setAttribute("height",H); rect.setAttribute("rx",14);
+    const k=document.createElementNS(svgNS,"text");
+    k.setAttribute("class","qk"); k.setAttribute("x",x-W/2+16); k.setAttribute("y",y-H/2+24); k.textContent=sd.k;
+    const t=document.createElementNS(svgNS,"text");
+    t.setAttribute("class","qt"); t.setAttribute("x",x-W/2+16); t.setAttribute("y",y-H/2+48); t.textContent=sd.t;
+    // money badge
+    const badge=document.createElementNS(svgNS,"g"); badge.setAttribute("class","qm-badge");
+    const bt=document.createElementNS(svgNS,"text");
+    bt.setAttribute("class","qm"); bt.setAttribute("x",x-W/2+16); bt.setAttribute("y",y-H/2+72); bt.textContent=sd.m;
+    badge.appendChild(bt);
+    node.appendChild(rect); node.appendChild(k); node.appendChild(t); node.appendChild(badge);
+    g.appendChild(node); nodeEls.push(node);
+  });
+
+  const caption=document.getElementById("caption");
+  function activate(i){
+    nodeEls.forEach((n,k)=>n.classList.toggle("active",k===i));
+    flowEls.forEach((f)=>f.classList.toggle("live", Number(f.dataset.i)===i));
+    caption.innerHTML="<b>"+SIDES[i].cap+"</b><span>"+SIDES[i].s+"</span>";
+  }
+
+  let i=0; activate(0);
+  setInterval(()=>{ i=(i+1)%SIDES.length; activate(i); }, 2400);
+</script>
+</body>
+</html>

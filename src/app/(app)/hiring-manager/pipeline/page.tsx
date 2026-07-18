@@ -1,7 +1,9 @@
 import Link from "next/link";
 import { Plus, Zap } from "lucide-react";
 import { matchingService } from "@/lib/services/matching";
-import { getActiveHmOpeningId } from "@/lib/persona";
+import { getActiveHmOpeningId, requireUser } from "@/lib/persona";
+import { getHmOnboarding } from "@/lib/services/onboarding";
+import { OnboardingCurriculum } from "@/components/layout/onboarding-curriculum";
 import { HmPipelineBoard } from "@/components/pipeline/hm-pipeline-board";
 import { PriorityBadge } from "@/components/pipeline/priority-badge";
 import { Button } from "@/components/ui/button";
@@ -18,17 +20,22 @@ export default async function PipelinePage({
 }) {
   const { opening: openingParam } = await searchParams;
   const openingId = openingParam ?? (await getActiveHmOpeningId());
+  const user = await requireUser();
+  const onboarding = await getHmOnboarding(user.id);
 
   if (!openingId) {
     return (
-      <div className="flex flex-col items-center gap-4 rounded-2xl border border-border bg-card p-10 text-center">
-        <p className="text-sm text-muted-foreground">No roles yet — post one.</p>
-        <Button asChild>
-          <Link href="/hiring-manager/roles/new">
-            <Plus className="size-4" />
-            Post a role
-          </Link>
-        </Button>
+      <div className="flex flex-col gap-6">
+        <OnboardingCurriculum onboarding={onboarding} storageKey="holicruit-onb-hm" />
+        <div className="flex flex-col items-center gap-4 rounded-2xl border border-border bg-card p-10 text-center">
+          <p className="text-sm text-muted-foreground">No roles yet — post one.</p>
+          <Button asChild>
+            <Link href="/hiring-manager/roles/new">
+              <Plus className="size-4" />
+              Post a role
+            </Link>
+          </Button>
+        </div>
       </div>
     );
   }
@@ -44,6 +51,8 @@ export default async function PipelinePage({
 
   return (
     <div className="flex flex-col gap-6">
+      <OnboardingCurriculum onboarding={onboarding} storageKey="holicruit-onb-hm" />
+
       <header className="flex flex-col gap-1">
         <div className="flex items-center gap-2">
           <h1 className="text-2xl font-bold tracking-tight text-foreground">

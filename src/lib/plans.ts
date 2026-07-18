@@ -23,11 +23,18 @@ export interface Plan {
   highlight?: boolean;
   features: string[];
 
-  /** Premium capability flags (gate real features). */
+  /** Baseline capability flags (now table stakes — included free). */
   scoreSheets?: boolean;
   pipelineTools?: boolean;
-  analytics?: boolean;
-  priorityMatching?: boolean;
+
+  /** Premium capability flags (gate the differentiated, paid features). */
+  talentPool?: boolean;       // Team+  — silver-medalist re-engagement
+  calibration?: boolean;      // Team+  — custom role bar & hard/soft weighting
+  decisionIntel?: boolean;    // Team+  — multi-interviewer consensus scoring
+  interviewKit?: boolean;     // Team+  — AI-generated structured interview guides
+  analytics?: boolean;        // Scale  — quality-of-hire & fairness analytics
+  customAssessments?: boolean;// Scale  — company-specific scenario assessments
+  priorityMatching?: boolean; // Scale  — wider net, surfaced first
 }
 
 export const PLANS: Plan[] = [
@@ -38,20 +45,38 @@ export const PLANS: Plan[] = [
     price: "Free",
     openRoleLimit: 1,
     paid: false,
-    features: ["1 open role", "Pipeline & opt-in matching", "Auto-drafted pass feedback"],
+    // Pipeline + structured score sheets are table stakes — free for everyone.
+    scoreSheets: true,
+    pipelineTools: true,
+    features: [
+      "1 open role",
+      "Full pipeline & opt-in matching",
+      "Structured score sheets",
+      "Auto-drafted Growth Report feedback",
+    ],
   },
   {
     key: "hm-team",
     hat: "hiring_manager",
     name: "Team",
-    price: "€149",
+    price: "€500",
     cadence: "/mo · billed annually",
     openRoleLimit: 5,
     paid: true,
     highlight: true,
     scoreSheets: true,
     pipelineTools: true,
-    features: ["Up to 5 open roles", "Full pipeline management", "Structured score sheets", "Up to 5 seats"],
+    talentPool: true,
+    calibration: true,
+    decisionIntel: true,
+    interviewKit: true,
+    features: [
+      "Up to 5 open roles · 5 seats",
+      "Silver-medalist talent pool",
+      "AI-generated interview guides",
+      "Custom role calibration",
+      "Team decision intelligence",
+    ],
   },
   {
     key: "hm-scale",
@@ -63,9 +88,19 @@ export const PLANS: Plan[] = [
     enterprise: true,
     scoreSheets: true,
     pipelineTools: true,
+    talentPool: true,
+    calibration: true,
+    decisionIntel: true,
+    interviewKit: true,
     analytics: true,
+    customAssessments: true,
     priorityMatching: true,
-    features: ["Unlimited open roles", "Priority matching", "Hiring analytics", "Unlimited seats · SSO · DPA"],
+    features: [
+      "Everything in Team, unlimited roles & seats",
+      "Quality-of-hire & fairness analytics",
+      "Company-specific assessments",
+      "Priority matching · SSO · DPA",
+    ],
   },
   {
     key: "provider-listed",
@@ -80,7 +115,7 @@ export const PLANS: Plan[] = [
     key: "provider-partner",
     hat: "provider",
     name: "Partner",
-    price: "€299",
+    price: "€300",
     cadence: "/mo · billed annually",
     canPromote: true,
     paid: true,

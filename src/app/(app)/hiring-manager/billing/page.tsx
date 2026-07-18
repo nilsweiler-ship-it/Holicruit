@@ -140,11 +140,14 @@ function TierCard({ plan, current }: { plan: Plan; current: boolean }) {
 
 const FEATURE_LINKS: Record<string, { slug: string; label: string }[]> = {
   "hm-team": [
-    { slug: "score-sheets", label: "Score sheets" },
-    { slug: "pipeline", label: "Pipeline" },
+    { slug: "talent-pool", label: "Talent pool" },
+    { slug: "interview-kit", label: "Interview guides" },
+    { slug: "calibration", label: "Calibration" },
+    { slug: "decision-intelligence", label: "Decision intelligence" },
   ],
   "hm-scale": [
     { slug: "analytics", label: "Analytics" },
+    { slug: "assessments", label: "Assessments" },
     { slug: "priority", label: "Priority matching" },
   ],
 };

@@ -4,6 +4,9 @@ import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/db";
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
+  // Required on non-Vercel hosts (Railway/Render) and custom domains, so
+  // Auth.js trusts the deployment's Host header instead of rejecting it.
+  trustHost: true,
   session: { strategy: "jwt" },
   pages: { signIn: "/login" },
   logger: {

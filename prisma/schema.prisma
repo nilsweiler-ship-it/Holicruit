@@ -41,6 +41,10 @@ model CandidateProfile {
   industry          String
   completeness      Int     @default(40)
   scenarioCompleted Boolean @default(false)
+  // JSON map of Big Five + Integrity levels (0–100), measured from the scenario.
+  traitProfile      String?
+  // Uploaded profile photo, stored as a data URL (demo). Optional.
+  avatarUrl         String?
 
   hardSkills   HardSkill[]
   softSkills   SoftSkillScore[]
@@ -120,6 +124,10 @@ model Opening {
   requiredSoft        String  @default("[]")
   // Priority matching (Scale plan): wider net + surfaced first.
   priority            Boolean @default(false)
+  // Custom role calibration (Team plan): weight hard vs soft and set the pass bar.
+  hardWeight          Int     @default(60)
+  softWeight          Int     @default(40)
+  passBar             Int     @default(60)
   matches             Match[]
 }
 
@@ -184,6 +192,8 @@ model Interview {
   thread            Thread  @relation(fields: [threadId], references: [id], onDelete: Cascade)
   threadId          String  @unique
   whenText          String
+  // Real start time (when scheduled with a specific slot) — powers .ics export.
+  whenAt            DateTime?
   medium            String  @default("video")
   scoreSheetAttached Boolean @default(false)
 }

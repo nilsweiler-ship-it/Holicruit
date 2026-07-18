@@ -1,17 +1,16 @@
 "use client";
 
-"use client";
-
 import { useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { ArrowRight } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { enroll } from "@/lib/actions/candidate";
 
 /**
- * Enroll in a program. Completing it would update the candidate's profile (the
- * skill becomes present/verified) and automatically re-run matching — the
- * flywheel. Mocked here.
+ * Enroll in (and, for the demo, complete) a program. This closes the gap on the
+ * candidate's profile and automatically re-runs matching — the flywheel — then
+ * sends them to their matches to see the result.
  */
 export function EnrollButton({
   programTitle,
@@ -20,19 +19,25 @@ export function EnrollButton({
   programTitle: string;
   programId: string;
 }) {
-  const [, startTransition] = useTransition();
+  const [pending, startTransition] = useTransition();
+  const router = useRouter();
 
   return (
     <Button
       className="w-full"
+      disabled={pending}
       onClick={() => {
-        startTransition(() => enroll(programId));
-        toast.success(`Enrolled in ${programTitle}`, {
-          description: "We'll auto-update your profile and re-run matching when you finish.",
+        startTransition(async () => {
+          await enroll(programId);
+          toast.success(`Completed ${programTitle}`, {
+            description: "Gap closed — we re-ran matching and refreshed your matches.",
+          });
+          router.push("/candidate/matches");
+          router.refresh();
         });
       }}
     >
-      Enroll &amp; auto-update my profile
+      {pending ? "Updating your profile…" : "Complete & re-run my matches"}
       <ArrowRight className="size-4" />
     </Button>
   );

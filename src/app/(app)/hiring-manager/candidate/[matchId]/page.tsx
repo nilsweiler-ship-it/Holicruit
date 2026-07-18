@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, ChevronRight, FileText, Handshake, Wrench } from "lucide-react";
+import { ArrowLeft, ChevronRight, FileText, Handshake, SlidersHorizontal, Sparkles, Users, Wrench } from "lucide-react";
 import { matchingService } from "@/lib/services/matching";
 import { ScoreTiles } from "@/components/fit/score-tiles";
 import { MutualFit } from "@/components/fit/mutual-fit";
@@ -10,6 +10,8 @@ import { PassFeedback } from "@/components/pipeline/pass-feedback";
 import { LockedFeature } from "@/components/billing/locked-feature";
 import { ScoreSheetForm } from "@/components/pipeline/score-sheet-form";
 import { NotesForm } from "@/components/pipeline/notes-form";
+import { PersonalityBars } from "@/components/candidate/personality-bars";
+import { scenarioService } from "@/lib/services/scenario";
 import { prisma } from "@/lib/db";
 import { requireUser } from "@/lib/persona";
 import { getActivePlan } from "@/lib/services/billing";
@@ -36,15 +38,32 @@ export default async function CandidatePage({
 
   const userId = (await requireUser()).id;
   const { plan } = await getActivePlan(userId, "hiring_manager");
+  const personality = await scenarioService.getPersonalityProfile(match.candidate.id);
 
-  const [sheets, notes] = await Promise.all([
+  const [sheets, notes, calibration] = await Promise.all([
     plan.scoreSheets
       ? prisma.scoreSheet.findMany({ where: { matchId: match.id }, orderBy: { createdAt: "desc" } })
       : Promise.resolve([]),
     plan.pipelineTools
       ? prisma.pipelineNote.findMany({ where: { matchId: match.id }, orderBy: { createdAt: "desc" } })
       : Promise.resolve([]),
+    plan.calibration
+      ? prisma.opening.findUnique({
+          where: { id: match.opening.id },
+          select: { hardWeight: true, softWeight: true, passBar: true },
+        })
+      : Promise.resolve(null),
   ]);
+
+  // Decision intelligence (Team+): panel consensus & agreement across raters.
+  const overalls = sheets.map((s) => s.overall);
+  const consensus =
+    overalls.length > 0
+      ? Math.round((overalls.reduce((a, b) => a + b, 0) / overalls.length) * 10) / 10
+      : null;
+  const spread = overalls.length >= 2 ? Math.max(...overalls) - Math.min(...overalls) : 0;
+  const agreement =
+    overalls.length < 2 ? null : spread <= 1 ? "High" : spread <= 2 ? "Moderate" : "Split";
 
   const formatDate = (d: Date) =>
     new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
@@ -76,6 +95,17 @@ export default async function CandidatePage({
 
       <ScoreTiles fit={match.fit} />
 
+      {calibration && (
+        <div className="flex flex-wrap items-center gap-2 rounded-xl border border-primary/25 bg-primary/5 px-4 py-2.5 text-sm">
+          <SlidersHorizontal className="size-4 shrink-0 text-primary" />
+          <span className="font-medium text-foreground">Calibrated for this role:</span>
+          <span className="text-muted-foreground">
+            {calibration.hardWeight}% hard · {calibration.softWeight}% soft · pass ≥{" "}
+            {calibration.passBar} mutual fit
+          </span>
+        </div>
+      )}
+
       <section className="flex flex-col gap-3">
         <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
           Evidence, not claims
@@ -97,9 +127,31 @@ export default async function CandidatePage({
         </div>
       </section>
 
+      {personality && (
+        <section className="flex flex-col gap-3">
+          <div className="flex items-baseline justify-between gap-2">
+            <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+              Personality profile
+            </h2>
+            <span className="text-xs text-muted-foreground">Big Five + Integrity · measured</span>
+          </div>
+          <p className="text-sm text-muted-foreground">
+            Measured from an objective scenario assessment and mapped to the Big Five (with
+            HEXACO Integrity) — not a self-rated questionnaire.
+          </p>
+          <PersonalityBars traits={personality} />
+        </section>
+      )}
+
       <div className="flex flex-wrap items-center gap-3">
         <Button asChild>
           <Link href={`/hiring-manager/chat/${match.id}`}>Open direct chat</Link>
+        </Button>
+        <Button asChild variant="outline">
+          <Link href={`/hiring-manager/interview/${match.id}`}>
+            <Sparkles className="size-4" />
+            Interview guide
+          </Link>
         </Button>
         <PassFeedback match={match} matchId={match.id} />
       </div>
@@ -108,6 +160,45 @@ export default async function CandidatePage({
         <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
           Structured score sheet
         </h2>
+        {plan.decisionIntel && sheets.length > 0 && (
+          <div className="flex flex-col gap-3 rounded-2xl border border-primary/25 bg-primary/5 p-5">
+            <div className="flex items-center gap-2">
+              <Users className="size-4 text-primary" />
+              <span className="text-sm font-semibold text-foreground">Panel consensus</span>
+              {agreement && (
+                <span
+                  className={
+                    agreement === "High"
+                      ? "rounded-full bg-success/15 px-2 py-0.5 text-xs font-semibold text-success"
+                      : agreement === "Moderate"
+                        ? "rounded-full bg-muted px-2 py-0.5 text-xs font-semibold text-muted-foreground"
+                        : "rounded-full bg-primary/15 px-2 py-0.5 text-xs font-semibold text-primary"
+                  }
+                >
+                  {agreement} agreement
+                </span>
+              )}
+            </div>
+            <div className="flex flex-wrap items-baseline gap-x-6 gap-y-1">
+              <p className="text-2xl font-bold tracking-tight text-foreground">
+                {consensus}
+                <span className="text-base font-medium text-muted-foreground">/5</span>
+              </p>
+              <p className="text-sm text-muted-foreground">
+                {sheets.length} interviewer{sheets.length === 1 ? "" : "s"} scored
+                {agreement === "Split" && " — reconcile before deciding"}
+              </p>
+            </div>
+          </div>
+        )}
+        {plan.scoreSheets && !plan.decisionIntel && sheets.length > 1 && (
+          <LockedFeature
+            title="Team decision intelligence"
+            tier="Team"
+            blurb="Roll every interviewer's score into one consensus view with an agreement signal — so decisions are fair, defensible, and never a single opinion."
+            learnMoreHref="/hiring-manager/features/decision-intelligence"
+          />
+        )}
         {plan.scoreSheets ? (
           <>
             <ScoreSheetForm matchId={match.id} />

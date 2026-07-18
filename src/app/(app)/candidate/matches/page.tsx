@@ -2,7 +2,9 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { matchingService } from "@/lib/services/matching";
 import { getActiveCandidateId } from "@/lib/persona";
+import { getCandidateOnboarding } from "@/lib/services/onboarding";
 import { MatchCard } from "@/components/match/match-card";
+import { OnboardingCurriculum } from "@/components/layout/onboarding-curriculum";
 
 export const metadata: Metadata = { title: "Your matches · Holicruit" };
 
@@ -14,9 +16,12 @@ export default async function CandidateMatchesPage() {
   const candidateId = await getActiveCandidateId();
   const matches = await matchingService.getCandidateMatches(candidateId);
   const closed = await matchingService.getClosedMatches(candidateId);
+  const onboarding = await getCandidateOnboarding(candidateId);
 
   return (
     <div className="flex flex-col gap-6">
+      <OnboardingCurriculum onboarding={onboarding} storageKey="holicruit-onb-candidate" />
+
       <header className="flex flex-col gap-1">
         <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
           <h1 className="text-2xl font-bold tracking-tight">Your matches</h1>

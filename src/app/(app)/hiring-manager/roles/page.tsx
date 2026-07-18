@@ -55,10 +55,13 @@ export default async function RolesPage() {
       ) : (
         <ul className="flex flex-col gap-2">
           {openings.map((o) => (
-            <li key={o.id}>
+            <li
+              key={o.id}
+              className="flex items-center gap-4 rounded-2xl border border-border bg-card p-4"
+            >
               <Link
                 href={`/hiring-manager/pipeline?opening=${o.id}`}
-                className="flex items-center gap-4 rounded-2xl border border-border bg-card p-4 transition-colors hover:bg-accent"
+                className="flex min-w-0 flex-1 items-center gap-4"
               >
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
@@ -73,6 +76,12 @@ export default async function RolesPage() {
                 <span className="shrink-0 text-sm font-medium text-foreground">
                   {o._count.matches} matched
                 </span>
+              </Link>
+              <Link
+                href={`/hiring-manager/roles/${o.id}/calibration`}
+                className="shrink-0 rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+              >
+                Calibrate
               </Link>
             </li>
           ))}

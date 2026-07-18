@@ -46,9 +46,12 @@ export async function submitScenario(answers: Record<string, string>): Promise<S
       create: { profileId: candidateId, name: s.name, level: s.level },
     });
   }
+  const traitProfile = JSON.stringify(
+    Object.fromEntries(result.traits.map((t) => [t.name, t.level])),
+  );
   await prisma.candidateProfile.update({
     where: { id: candidateId },
-    data: { scenarioCompleted: true },
+    data: { scenarioCompleted: true, traitProfile },
   });
   await recalcCompleteness(candidateId);
   await runMatchingForCandidate(candidateId);
@@ -86,6 +89,18 @@ export async function addImportedSkills(names: string[], industry?: string): Pro
   await runMatchingForCandidate(candidateId);
   revalidateCandidate();
   redirect("/candidate/profile");
+}
+
+/** Save an uploaded profile photo (data URL, resized client-side). */
+export async function updateAvatar(dataUrl: string): Promise<void> {
+  const candidateId = await getActiveCandidateId();
+  // Accept only reasonably-sized image data URLs.
+  if (!dataUrl.startsWith("data:image/") || dataUrl.length > 600_000) return;
+  await prisma.candidateProfile.update({
+    where: { id: candidateId },
+    data: { avatarUrl: dataUrl },
+  });
+  revalidateCandidate();
 }
 
 /** Add a self-declared (unverified) hard skill. */
@@ -149,14 +164,26 @@ export async function enroll(programId: string): Promise<void> {
     data: { enrollments: { increment: 1 }, completions: { increment: 1 }, reMatches: { increment: 1 } },
   });
 
+  // Close the gap on the profile, then re-run matching — the flywheel.
   if (program.gapType === "hard") {
     await prisma.hardSkill.upsert({
       where: { profileId_name: { profileId: candidateId, name: program.closesGap } },
       update: { verified: true },
       create: { profileId: candidateId, name: program.closesGap, verified: true },
     });
-    await recalcCompleteness(candidateId);
-    await runMatchingForCandidate(candidateId);
+  } else {
+    // Soft gap: raise the assessed level to clear the role bar (min 80).
+    const existing = await prisma.softSkillScore.findUnique({
+      where: { profileId_name: { profileId: candidateId, name: program.closesGap } },
+    });
+    const level = Math.max(existing?.level ?? 0, 80);
+    await prisma.softSkillScore.upsert({
+      where: { profileId_name: { profileId: candidateId, name: program.closesGap } },
+      update: { level },
+      create: { profileId: candidateId, name: program.closesGap, level },
+    });
   }
+  await recalcCompleteness(candidateId);
+  await runMatchingForCandidate(candidateId);
   revalidateCandidate();
 }

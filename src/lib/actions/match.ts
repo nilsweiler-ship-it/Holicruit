@@ -29,12 +29,19 @@ export async function sendMessage(matchId: string, senderName: string, text: str
 }
 
 /** Schedule (or reschedule) the interview on a match's thread. */
-export async function scheduleInterview(matchId: string, whenText: string): Promise<void> {
+export async function scheduleInterview(
+  matchId: string,
+  whenText: string,
+  medium = "video",
+  whenISO?: string,
+): Promise<void> {
   const threadId = await getOrCreateThread(matchId);
+  const whenAt = whenISO ? new Date(whenISO) : null;
+  const validAt = whenAt && !Number.isNaN(whenAt.getTime()) ? whenAt : null;
   await prisma.interview.upsert({
     where: { threadId },
-    update: { whenText, medium: "video" },
-    create: { threadId, whenText, medium: "video" },
+    update: { whenText, medium, whenAt: validAt },
+    create: { threadId, whenText, medium, whenAt: validAt },
   });
   revalidatePath(`/candidate/chat/${matchId}`);
   revalidatePath(`/hiring-manager/chat/${matchId}`);

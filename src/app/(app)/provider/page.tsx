@@ -124,6 +124,19 @@ export default async function ProviderDeskPage() {
         <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
           Your programs
         </h2>
+        {programs.length === 0 && (
+          <div className="flex flex-col items-center gap-3 rounded-2xl border border-dashed border-border bg-card/40 px-6 py-10 text-center">
+            <p className="text-sm text-muted-foreground">
+              No programs yet. Offer one to start reaching candidates with the exact gaps it closes.
+            </p>
+            <Button asChild size="sm">
+              <Link href="/provider/new">
+                <Plus className="size-4" />
+                Offer a program
+              </Link>
+            </Button>
+          </div>
+        )}
         <ul className="flex flex-col gap-2">
           {programs.map((p) => (
             <li

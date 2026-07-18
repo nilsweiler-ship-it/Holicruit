@@ -25,6 +25,10 @@ const SAMPLE: HiringAnalytics = {
     { skill: "Leadership", count: 4 },
   ],
   stalledTalking: 5,
+  offerAvgFit: 86,
+  silverMedalists: 12,
+  reviewedShare: 78,
+  panelAgreement: 84,
 };
 
 export default async function HiringAnalyticsPage() {
@@ -45,7 +49,7 @@ export default async function HiringAnalyticsPage() {
     <div className="flex flex-col gap-6">
       <Header />
       <div className="relative">
-        <div aria-hidden className="pointer-events-none select-none opacity-40 blur-[1px]">
+        <div aria-hidden className="pointer-events-none select-none opacity-25 blur-md">
           <Dashboard a={SAMPLE} />
         </div>
         <div className="absolute inset-0 flex items-center justify-center p-4">
@@ -56,7 +60,8 @@ export default async function HiringAnalyticsPage() {
             <div className="flex flex-col gap-1.5">
               <h2 className="text-lg font-semibold text-foreground">Unlock hiring analytics</h2>
               <p className="text-sm text-muted-foreground">
-                See your funnel, conversion, scorecards and blocking gaps across every role.
+                Quality-of-hire, fairness &amp; consistency, funnel conversion, and the gaps
+                blocking your roles — across every role.
               </p>
             </div>
             <Button asChild className="w-full">
@@ -101,9 +106,62 @@ function Dashboard({ a }: { a: HiringAnalytics }) {
         <Stat label="Stalled in talking" value={a.stalledTalking} />
       </section>
 
+      <QualityAndFairness a={a} />
+
       <Funnel funnel={a.funnel} />
 
       <TopGaps gaps={a.topGaps} />
+    </div>
+  );
+}
+
+function QualityAndFairness({ a }: { a: HiringAnalytics }) {
+  return (
+    <div className="grid gap-4 lg:grid-cols-2">
+      <section className="rounded-2xl border border-border bg-card p-5">
+        <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+          Quality of hire
+        </h2>
+        <div className="mt-4 grid grid-cols-2 gap-4">
+          <Stat
+            label="Avg fit at offer"
+            value={a.offerAvgFit === null ? "—" : a.offerAvgFit}
+            hint="mutual fit of offered candidates"
+            emphasis
+          />
+          <Stat
+            label="Silver medalists"
+            value={a.silverMedalists}
+            hint="strong passes kept warm"
+          />
+        </div>
+        <p className="mt-4 text-xs text-muted-foreground">
+          Higher fit at offer predicts stronger on-the-job success — the lever against the
+          ~30%-of-salary cost of a bad hire.
+        </p>
+      </section>
+
+      <section className="rounded-2xl border border-border bg-card p-5">
+        <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+          Fairness &amp; consistency
+        </h2>
+        <div className="mt-4 grid grid-cols-2 gap-4">
+          <Stat
+            label="Reviewed on a scorecard"
+            value={`${a.reviewedShare}%`}
+            hint="active candidates with structured scoring"
+          />
+          <Stat
+            label="Panel agreement"
+            value={a.panelAgreement === null ? "—" : `${a.panelAgreement}%`}
+            hint="raters within one point"
+            emphasis
+          />
+        </div>
+        <p className="mt-4 text-xs text-muted-foreground">
+          Consistent, multi-rater scoring makes decisions defensible and reduces single-decider bias.
+        </p>
+      </section>
     </div>
   );
 }

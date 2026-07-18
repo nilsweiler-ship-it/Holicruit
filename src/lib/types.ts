@@ -130,6 +130,8 @@ export interface ChatMessage {
 export interface ScheduledInterview {
   /** e.g. "Thu · 2:00pm". */
   when: string;
+  /** ISO start time, when a concrete slot was chosen (powers .ics export). */
+  whenAt?: string;
   /** e.g. "video". */
   medium: string;
   scoreSheetAttached: boolean;

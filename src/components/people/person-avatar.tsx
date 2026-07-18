@@ -26,7 +26,7 @@ export function PersonAvatar({
       title={person.name}
     >
       {person.avatarUrl ? (
-        <Image src={person.avatarUrl} alt={person.name} fill className="object-cover" sizes={`${size}px`} />
+        <Image src={person.avatarUrl} alt={person.name} fill unoptimized className="object-cover" sizes={`${size}px`} />
       ) : (
         <span aria-hidden>{person.initials}</span>
       )}

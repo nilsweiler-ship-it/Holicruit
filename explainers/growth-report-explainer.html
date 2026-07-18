@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Holicruit — the Growth Report</title>
+<style>
+  :root{
+    --ink:#161514; --coral:#E0533D; --cream:#F4EFE7; --card:#211F1D;
+    --muted:#B7B0A6; --line:#343230; --green:#2E7D5B; --track:#3a3733;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    background:var(--ink); color:var(--cream);
+    font-family:"Outfit",-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;
+    display:flex; align-items:center; justify-content:center; min-height:100%;
+  }
+  .stage{width:760px; max-width:96vw; padding:34px}
+  .eyebrow{color:var(--coral); font-size:13px; font-weight:700; letter-spacing:3px; text-transform:uppercase}
+  h1{font-size:29px; font-weight:800; margin:8px 0 4px; letter-spacing:-.3px}
+  .sub{color:var(--muted); font-size:15px; max-width:620px}
+  .card{
+    margin-top:20px; background:var(--card); border:1px solid var(--line);
+    border-radius:18px; padding:22px 24px;
+  }
+  .card-head{display:flex; align-items:center; justify-content:space-between; margin-bottom:16px}
+  .card-head .role{font-weight:700; font-size:16px}
+  .card-head .closed{
+    font-size:11px; font-weight:700; letter-spacing:1px; text-transform:uppercase;
+    color:var(--muted); background:#2c2926; border-radius:20px; padding:4px 10px;
+  }
+  .row{margin:14px 0}
+  .row-top{display:flex; justify-content:space-between; font-size:14px; margin-bottom:7px}
+  .row-top .lab{font-weight:600}
+  .row-top .val{font-weight:700; font-variant-numeric:tabular-nums}
+  .track{position:relative; height:12px; background:var(--track); border-radius:8px; overflow:visible}
+  .fill{height:100%; width:0; border-radius:8px; background:var(--green); transition:width 1s cubic-bezier(.4,0,.2,1), background .5s}
+  .fill.under{background:var(--coral)}
+  .marker{position:absolute; top:-5px; bottom:-5px; width:2px; background:var(--cream); opacity:.65}
+  .marker::after{content:"bar"; position:absolute; top:-16px; left:50%; transform:translateX(-50%);
+    font-size:9px; letter-spacing:.5px; color:var(--muted)}
+  .row.dim{opacity:.4; transition:opacity .4s}
+  .row.focus{opacity:1}
+  .gap{
+    margin-top:16px; border-radius:12px; padding:12px 14px; font-size:14px;
+    background:rgba(224,83,61,.12); border:1px solid rgba(224,83,61,.35);
+    opacity:0; transform:translateY(6px); transition:opacity .45s, transform .45s, background .45s, border-color .45s;
+  }
+  .gap.show{opacity:1; transform:none}
+  .gap.done{background:rgba(46,125,91,.12); border-color:rgba(46,125,91,.4)}
+  .gap b{color:var(--cream)}
+  .gap .k{color:var(--coral); font-weight:700}
+  .gap.done .k{color:var(--green)}
+  .caption{margin:16px auto 0; text-align:center; min-height:48px; max-width:620px}
+  .caption b{color:var(--cream); font-size:17px; font-weight:700}
+  .caption span{display:block; color:var(--muted); font-size:14px; margin-top:3px}
+  .foot{margin-top:12px; text-align:center; color:#6f6a63; font-size:12px}
+</style>
+</head>
+<body>
+<div class="stage">
+  <div class="eyebrow">The hero screen</div>
+  <h1>The Growth Report</h1>
+  <p class="sub">When a role doesn&rsquo;t work out, you don&rsquo;t get a form-letter &ldquo;no.&rdquo; You see exactly where you stood, the one gap that decided it, and the path to close it.</p>
+
+  <div class="card">
+    <div class="card-head">
+      <span class="role">Senior Product Engineer &middot; Orbit</span>
+      <span class="closed">Closed</span>
+    </div>
+
+    <div class="row" data-k="hard">
+      <div class="row-top"><span class="lab">Hard fit</span><span class="val">You 82 &middot; bar 75</span></div>
+      <div class="track"><div class="fill" data-you="82"></div><div class="marker" style="left:75%"></div></div>
+    </div>
+
+    <div class="row" data-k="soft">
+      <div class="row-top"><span class="lab">Soft fit (assessed)</span><span class="val" id="softVal">You 61 &middot; bar 70</span></div>
+      <div class="track"><div class="fill under" id="softFill" data-you="61"></div><div class="marker" style="left:70%"></div></div>
+    </div>
+
+    <div class="row" data-k="mutual">
+      <div class="row-top"><span class="lab">Mutual fit</span><span class="val" id="mutualVal">You 74 &middot; bar 60</span></div>
+      <div class="track"><div class="fill" id="mutualFill" data-you="74"></div><div class="marker" style="left:60%"></div></div>
+    </div>
+
+    <div class="gap" id="gap"></div>
+  </div>
+
+  <div class="caption" id="caption"></div>
+  <div class="foot">holicruit.com &middot; rejection is never silent</div>
+</div>
+
+<script>
+  const fills=[...document.querySelectorAll(".fill")];
+  const rows=[...document.querySelectorAll(".row")];
+  const softFill=document.getElementById("softFill");
+  const softVal=document.getElementById("softVal");
+  const mutualFill=document.getElementById("mutualFill");
+  const mutualVal=document.getElementById("mutualVal");
+  const gap=document.getElementById("gap");
+  const caption=document.getElementById("caption");
+
+  const cap=(t,s)=>caption.innerHTML="<b>"+t+"</b><span>"+s+"</span>";
+  const setRows=(k)=>rows.forEach(r=>{
+    r.classList.toggle("dim", k!=="all" && r.dataset.k!==k);
+    r.classList.toggle("focus", r.dataset.k===k);
+  });
+
+  function reset(){
+    fills.forEach(f=>f.style.width="0");
+    softFill.classList.add("under"); softFill.dataset.you="61";
+    softVal.textContent="You 61 · bar 70";
+    mutualVal.textContent="You 74 · bar 60";
+    gap.className="gap"; gap.innerHTML="";
+    setRows("all");
+    cap("Not this time — here's exactly why","");
+  }
+
+  const P=[
+    // 0: fill bars to where you stood
+    ()=>{ setRows("all");
+      fills.forEach(f=>f.style.width=f.dataset.you+"%");
+      cap("You vs. the role's bar","Hard and soft sub-scores, measured — not guessed."); },
+    // 1: the one gap
+    ()=>{ setRows("soft");
+      gap.className="gap show";
+      gap.innerHTML="<b>Your gap:</b> <span class='k'>&ldquo;stakeholder influence&rdquo;</span> (soft) — the one thing between you and the role.";
+      cap("The one gap that decided it","Nothing hidden — you see precisely what to work on."); },
+    // 2: close it
+    ()=>{ setRows("soft");
+      softFill.classList.remove("under"); softFill.style.width="84%";
+      softVal.textContent="You 84 · bar 70";
+      gap.className="gap show done";
+      gap.innerHTML="<b>Close it:</b> <span class='k'>3 programs</span> match this gap — ranked by real completions, not ad spend.";
+      cap("Close the gap","A partner program updates your verified profile."); },
+    // 3: re-match stronger
+    ()=>{ setRows("mutual");
+      mutualFill.style.width="86%"; mutualVal.textContent="You 86 · bar 60";
+      cap("Re-match, stronger","Your profile compounds — and you clear the bar next time."); },
+  ];
+
+  let step=-1;
+  reset();
+  function loop(){
+    step++;
+    if(step>=P.length){ step=-1; reset(); }
+    else P[step]();
+    setTimeout(loop, step===-1 ? 1000 : 2600);
+  }
+  setTimeout(loop, 600);
+</script>
+</body>
+</html>

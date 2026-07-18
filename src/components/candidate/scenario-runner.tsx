@@ -1,13 +1,24 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useMemo, useState, useTransition } from "react";
 import Link from "next/link";
 import { ArrowLeft, ArrowRight, Check, Loader2 } from "lucide-react";
 import type { ScenarioQuestion, ScenarioResult } from "@/lib/scenario/types";
 import { submitScenario } from "@/lib/actions/candidate";
 import { SoftSkillBars } from "@/components/candidate/soft-skill-bars";
+import { PersonalityBars } from "@/components/candidate/personality-bars";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+
+/** Shuffle a copy of an array (Fisher–Yates). */
+function shuffle<T>(arr: T[]): T[] {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j]!, a[i]!];
+  }
+  return a;
+}
 
 /**
  * Client stepper that walks a candidate through the soft-skill scenario one
@@ -15,7 +26,12 @@ import { cn } from "@/lib/utils";
  * shows the scenario-measured soft-skill profile.
  */
 export function ScenarioRunner({ questions }: { questions: ScenarioQuestion[] }) {
-  const total = questions.length;
+  // Shuffle option order once per session so position never cues an answer.
+  const shuffled = useMemo(
+    () => questions.map((q) => ({ ...q, options: shuffle(q.options) })),
+    [questions],
+  );
+  const total = shuffled.length;
   const [index, setIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [result, setResult] = useState<ScenarioResult | null>(null);
@@ -23,7 +39,7 @@ export function ScenarioRunner({ questions }: { questions: ScenarioQuestion[] })
 
   const answeredCount = Object.keys(answers).length;
   const progress = total > 0 ? Math.round((answeredCount / total) * 100) : 0;
-  const question = questions[index];
+  const question = shuffled[index];
 
   function submit(allAnswers: Record<string, string>) {
     startScoring(async () => {
@@ -66,6 +82,20 @@ export function ScenarioRunner({ questions }: { questions: ScenarioQuestion[] })
           </p>
         </div>
         <SoftSkillBars scores={result.scores} />
+
+        <div className="flex flex-col gap-1 border-t border-primary/20 pt-4">
+          <div className="flex items-baseline justify-between gap-2">
+            <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+              Personality
+            </h3>
+            <span className="text-xs text-muted-foreground">Big Five + Integrity</span>
+          </div>
+          <p className="text-sm text-muted-foreground">
+            Your choices, mapped to the scientifically validated Big Five model.
+          </p>
+        </div>
+        <PersonalityBars traits={result.traits} />
+
         <Button asChild size="lg" className="self-start">
           <Link href="/candidate/profile">
             Back to profile

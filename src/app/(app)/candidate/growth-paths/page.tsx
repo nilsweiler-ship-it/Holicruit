@@ -40,8 +40,8 @@ export default async function GrowthPathsPage({
         >
           ← Back
         </Link>
-        <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-          Roadmap
+        <span className="rounded-full bg-primary/12 px-2 py-0.5 text-xs font-medium uppercase tracking-wide text-primary">
+          Live
         </span>
       </div>
 
@@ -73,8 +73,8 @@ export default async function GrowthPathsPage({
       )}
 
       <p className="text-center text-xs text-muted-foreground">
-        Roadmap feature — designed, not yet built. Education providers are partners and a future
-        revenue line. Completing a program updates your profile and re-runs matching automatically.
+        Completing a program closes the gap on your profile and re-runs matching automatically —
+        then takes you to your refreshed matches. Training providers are partners and a revenue line.
       </p>
     </div>
   );

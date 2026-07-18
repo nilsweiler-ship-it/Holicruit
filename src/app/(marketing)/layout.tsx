@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Wordmark } from "@/components/brand/wordmark";
 import { Button } from "@/components/ui/button";
 import { MarketingMobileNav } from "@/components/layout/marketing-mobile-nav";
+import { WelcomeBanner } from "@/components/brand/welcome-banner";
 
 /**
  * Public marketing shell — distinct from the authenticated app shell.
@@ -14,6 +15,7 @@ export default function MarketingLayout({
 }) {
   return (
     <div className="flex min-h-dvh flex-col bg-background text-foreground">
+      <WelcomeBanner />
       <header className="sticky top-0 z-40 border-b border-border bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/70">
         <div className="mx-auto flex h-16 w-full max-w-6xl items-center justify-between gap-4 px-4 sm:px-6">
           <Wordmark className="text-xl" />
