@@ -66,7 +66,7 @@ export default async function MatchDetailPage({
 
       <header className="flex flex-wrap items-start justify-between gap-4">
         <div className="flex flex-col gap-1">
-          <h1 className="text-2xl font-bold tracking-tight">
+          <h1 className="font-serif text-2xl tracking-tight">
             {opening.title} · {opening.company.name}
           </h1>
           <p className="text-sm text-muted-foreground">

@@ -83,7 +83,7 @@ export default async function HiringAnalyticsPage() {
 function Header() {
   return (
     <header className="flex flex-col gap-1">
-      <h1 className="text-2xl font-bold tracking-tight text-foreground">Hiring analytics</h1>
+      <h1 className="font-serif text-2xl tracking-tight text-foreground">Hiring analytics</h1>
       <p className="text-sm text-muted-foreground">
         Your funnel, conversion and blocking gaps across every role.
       </p>

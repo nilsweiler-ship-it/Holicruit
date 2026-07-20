@@ -15,7 +15,7 @@ export default async function ScenarioPage() {
   return (
     <div className="flex flex-col gap-6">
       <header className="flex flex-col gap-1">
-        <h1 className="text-xl font-bold tracking-tight">Skill scenario</h1>
+        <h1 className="font-serif text-xl tracking-tight">Skill scenario</h1>
         <p className="text-sm text-muted-foreground">
           ~8 minutes · situational judgment · measures behavior, not field
           knowledge — the same test works in any industry

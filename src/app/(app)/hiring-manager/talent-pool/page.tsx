@@ -191,7 +191,7 @@ export default async function TalentPoolPage({
 function Header() {
   return (
     <header className="flex flex-col gap-1">
-      <h1 className="text-2xl font-bold tracking-tight text-foreground">Talent pool</h1>
+      <h1 className="font-serif text-2xl tracking-tight text-foreground">Talent pool</h1>
       <p className="text-sm text-muted-foreground">
         Strong candidates you passed on — kept warm against the gap that cost them the role.
       </p>

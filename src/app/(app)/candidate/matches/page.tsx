@@ -24,7 +24,7 @@ export default async function CandidateMatchesPage() {
 
       <header className="flex flex-col gap-1">
         <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-          <h1 className="text-2xl font-bold tracking-tight">Your matches</h1>
+          <h1 className="font-serif text-2xl tracking-tight">Your matches</h1>
           <span className="text-sm text-muted-foreground">ranked by mutual fit</span>
         </div>
         <p className="text-sm text-muted-foreground">

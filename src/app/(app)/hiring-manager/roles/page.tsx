@@ -20,7 +20,7 @@ export default async function RolesPage() {
     <div className="flex flex-col gap-6">
       <header className="flex items-center justify-between gap-3">
         <div className="flex flex-col gap-1">
-          <h1 className="text-2xl font-bold tracking-tight text-foreground">Roles</h1>
+          <h1 className="font-serif text-2xl tracking-tight text-foreground">Roles</h1>
           <p className="text-sm text-muted-foreground">Openings you own and their matches.</p>
         </div>
         <div className="flex items-center gap-2">

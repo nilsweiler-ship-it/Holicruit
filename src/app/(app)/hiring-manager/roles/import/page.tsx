@@ -23,7 +23,7 @@ export default function ImportRolePage() {
       </Link>
 
       <header className="flex flex-col gap-1">
-        <h1 className="flex items-center gap-2 text-2xl font-bold tracking-tight">
+        <h1 className="font-serif flex items-center gap-2 text-2xl tracking-tight">
           <Wand2 className="size-5 text-primary" />
           Import a job ad
         </h1>

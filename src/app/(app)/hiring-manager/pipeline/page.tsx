@@ -55,7 +55,7 @@ export default async function PipelinePage({
 
       <header className="flex flex-col gap-1">
         <div className="flex items-center gap-2">
-          <h1 className="text-2xl font-bold tracking-tight text-foreground">
+          <h1 className="font-serif text-2xl tracking-tight text-foreground">
             {opening?.title ?? "Pipeline"}
           </h1>
           {opening?.priority && <PriorityBadge />}

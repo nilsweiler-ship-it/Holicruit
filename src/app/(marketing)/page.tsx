@@ -76,7 +76,7 @@ export default function MarketingHomePage() {
           <Handshake className="size-3.5 text-primary" />
           Holistic recruiting · radically transparent
         </span>
-        <h1 className="mt-6 text-balance text-4xl font-extrabold tracking-tight sm:text-6xl">
+        <h1 className="font-serif mt-6 text-balance text-4xl tracking-tight sm:text-6xl">
           The whole person. The honest truth.
         </h1>
         <p className="mx-auto mt-6 max-w-2xl text-balance text-lg text-muted-foreground sm:text-xl">

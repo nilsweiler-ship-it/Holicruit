@@ -19,7 +19,7 @@ export default function NewIntroPage() {
           <ArrowLeft className="size-4" />
           Recruiter desk
         </Link>
-        <h1 className="text-2xl font-bold tracking-tight text-foreground">Log an introduction</h1>
+        <h1 className="font-serif text-2xl tracking-tight text-foreground">Log an introduction</h1>
       </header>
 
       <form action={createIntro} className="flex flex-col gap-4">

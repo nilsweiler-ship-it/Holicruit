@@ -34,7 +34,7 @@ export default async function CandidateProfilePage() {
       <header className="flex items-center gap-4">
         <AvatarUpload person={profile} size={64} />
         <div className="min-w-0 flex-1">
-          <h1 className="truncate text-xl font-bold tracking-tight">{profile.name}</h1>
+          <h1 className="font-serif truncate text-xl tracking-tight">{profile.name}</h1>
           <p className="truncate text-sm text-muted-foreground">{profile.headline}</p>
         </div>
         <div className="flex flex-col items-center gap-1">

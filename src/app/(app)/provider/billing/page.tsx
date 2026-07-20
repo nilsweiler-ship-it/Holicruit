@@ -28,7 +28,7 @@ export default async function ProviderBillingPage({
   return (
     <div className="flex flex-col gap-6">
       <header className="flex flex-col gap-1">
-        <h1 className="text-2xl font-bold tracking-tight text-foreground">Billing</h1>
+        <h1 className="font-serif text-2xl tracking-tight text-foreground">Billing</h1>
         <p className="text-sm text-muted-foreground">
           Plans for training providers — billed by invoice, annual contracts.
         </p>

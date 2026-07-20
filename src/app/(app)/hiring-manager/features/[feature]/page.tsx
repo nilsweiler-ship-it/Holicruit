@@ -183,7 +183,7 @@ export default async function FeaturePage({
             {f.tier}
           </span>
         </div>
-        <h1 className="text-3xl font-bold tracking-tight text-foreground">{f.title}</h1>
+        <h1 className="font-serif text-3xl tracking-tight text-foreground">{f.title}</h1>
         <p className="max-w-2xl text-base text-muted-foreground">{f.lead}</p>
       </header>
 

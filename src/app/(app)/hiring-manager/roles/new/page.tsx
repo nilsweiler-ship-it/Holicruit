@@ -44,7 +44,7 @@ export default async function NewRolePage({
           <ArrowLeft className="size-4" />
           Roles
         </Link>
-        <h1 className="text-2xl font-bold tracking-tight text-foreground">
+        <h1 className="font-serif text-2xl tracking-tight text-foreground">
           {imported ? "Review the imported role" : "Post a role"}
         </h1>
       </header>

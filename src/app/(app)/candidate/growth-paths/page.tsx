@@ -49,7 +49,7 @@ export default async function GrowthPathsPage({
       <header className="flex items-start gap-3 rounded-2xl border border-primary/30 bg-primary/8 p-5">
         <Target className="mt-0.5 size-5 shrink-0 text-primary" />
         <div>
-          <h1 className="text-lg font-bold tracking-tight">
+          <h1 className="font-serif text-lg tracking-tight">
             Your gap: {gap}
           </h1>
           <p className="text-sm text-muted-foreground">

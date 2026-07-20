@@ -33,7 +33,7 @@ export default async function ProviderDeskPage() {
       <header className="flex items-center gap-3">
         <PersonAvatar person={provider} size={48} />
         <div>
-          <h1 className="text-xl font-bold tracking-tight">{provider.name}</h1>
+          <h1 className="font-serif text-xl tracking-tight">{provider.name}</h1>
           <p className="flex items-center gap-1.5 text-sm text-muted-foreground">
             <GraduationCap className="size-4" />
             {provider.kind} · provider desk

@@ -31,7 +31,7 @@ export default async function TodayPage() {
   return (
     <div className="mx-auto flex max-w-md flex-col gap-6">
       <header className="flex flex-col gap-1 text-center">
-        <h1 className="text-2xl font-bold tracking-tight">Today — hand-picked</h1>
+        <h1 className="font-serif text-2xl tracking-tight">Today — hand-picked</h1>
         <p className="text-sm text-muted-foreground">
           {daily.length} job{daily.length === 1 ? "" : "s"} · {programs.length} training
           {programs.length === 1 ? "" : "s"} to close your gaps. Swipe to triage.

@@ -84,7 +84,7 @@ export default async function CandidatePage({
         <div className="flex items-center gap-4">
           <PersonAvatar person={match.candidate} size={56} />
           <div className="min-w-0">
-            <h1 className="text-xl font-bold tracking-tight text-foreground">
+            <h1 className="font-serif text-xl tracking-tight text-foreground">
               {match.candidate.name}
             </h1>
             <p className="truncate text-sm text-muted-foreground">{match.candidate.headline}</p>

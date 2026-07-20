@@ -12,7 +12,7 @@ export default function TermsPage() {
   return (
     <div className="mx-auto w-full max-w-3xl px-4 py-16 sm:px-6">
       <p className="text-sm font-medium text-muted-foreground">Legal</p>
-      <h1 className="mt-2 text-4xl font-extrabold tracking-tight">
+      <h1 className="font-serif mt-2 text-4xl tracking-tight">
         General Terms &amp; Conditions
       </h1>
       <p className="mt-3 text-sm text-muted-foreground">

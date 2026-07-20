@@ -41,7 +41,7 @@ export default async function EditCalibrationPage({
           <ArrowLeft className="size-4" />
           Back to pipeline
         </Link>
-        <h1 className="text-2xl font-bold tracking-tight text-foreground">Calibrate: {opening.title}</h1>
+        <h1 className="font-serif text-2xl tracking-tight text-foreground">Calibrate: {opening.title}</h1>
         <p className="text-sm text-muted-foreground">
           {opening.company.name} — tune the balance and bar, then we re-rank the pipeline.
         </p>

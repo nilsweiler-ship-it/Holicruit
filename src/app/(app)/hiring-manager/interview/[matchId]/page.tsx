@@ -38,7 +38,7 @@ export default async function InterviewGuidePage({
       </Link>
       <div className="flex items-center gap-2">
         <Sparkles className="size-5 text-primary" />
-        <h1 className="text-2xl font-bold tracking-tight text-foreground">Interview guide</h1>
+        <h1 className="font-serif text-2xl tracking-tight text-foreground">Interview guide</h1>
       </div>
     </div>
   );
