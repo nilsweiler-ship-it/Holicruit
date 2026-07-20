@@ -6,8 +6,8 @@ export default function manifest(): MetadataRoute.Manifest {
     short_name: "Holicruit",
     start_url: "/",
     display: "standalone",
-    background_color: "#ffffff",
-    theme_color: "#0a0a0a",
+    background_color: "#FBF4EA",
+    theme_color: "#C75B39",
     icons: [
       {
         src: "/icons/icon-192x192.png",

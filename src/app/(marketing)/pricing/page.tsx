@@ -195,7 +195,7 @@ export default function PricingPage() {
   return (
     <div className="mx-auto w-full max-w-6xl px-4 py-20 sm:px-6">
       <div className="mx-auto max-w-2xl text-center">
-        <h1 className="text-4xl font-extrabold tracking-tight sm:text-5xl">
+        <h1 className="font-serif text-5xl tracking-tight sm:text-6xl">
           Simple pricing for every hat
         </h1>
         <p className="mt-4 text-lg text-muted-foreground">

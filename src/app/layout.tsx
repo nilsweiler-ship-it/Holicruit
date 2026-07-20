@@ -1,14 +1,24 @@
 import type { Metadata, Viewport } from "next";
-import "@fontsource/outfit/400.css";
-import "@fontsource/outfit/500.css";
-import "@fontsource/outfit/600.css";
-import "@fontsource/outfit/700.css";
-import "@fontsource/outfit/800.css";
+import { Figtree, Instrument_Serif } from "next/font/google";
 import "./globals.css";
 import { Providers } from "@/components/layout/providers";
 
+// Brand type: Figtree (body/UI) + Instrument Serif (display headlines).
+const figtree = Figtree({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700", "800"],
+  variable: "--font-figtree",
+  display: "swap",
+});
+const instrumentSerif = Instrument_Serif({
+  subsets: ["latin"],
+  weight: "400",
+  variable: "--font-instrument",
+  display: "swap",
+});
+
 export const viewport: Viewport = {
-  themeColor: "#E0533D",
+  themeColor: "#C75B39",
 };
 
 export const metadata: Metadata = {
@@ -31,10 +41,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body
-        className="antialiased"
-      >
+    <html lang="en" className={`${figtree.variable} ${instrumentSerif.variable}`}>
+      <body className="antialiased">
         <Providers>{children}</Providers>
       </body>
     </html>

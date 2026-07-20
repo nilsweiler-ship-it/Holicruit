@@ -3,8 +3,8 @@ import { LogoMark } from "@/components/brand/logo-mark";
 import { cn } from "@/lib/utils";
 
 /**
- * The Holicruit lockup: the fit-gauge mark + the wordmark (Outfit, lowercase,
- * with the dot on the "i" in coral).
+ * The Holicruit lockup: the whole-person mark + the wordmark (Instrument Serif,
+ * lowercase, with the "i" in terracotta).
  */
 export function Wordmark({
   href = "/",
@@ -20,7 +20,7 @@ export function Wordmark({
   return (
     <Link href={href} className={cn("inline-flex items-center gap-1.5", className)}>
       {showMark && <LogoMark size={markSize} />}
-      <span className="text-lg font-extrabold lowercase tracking-tight text-foreground">
+      <span className="font-serif text-xl lowercase tracking-tight text-foreground">
         hol<span className="text-primary">i</span>cruit
       </span>
     </Link>
