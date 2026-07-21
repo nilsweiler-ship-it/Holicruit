@@ -32,6 +32,16 @@ const traitFor = (id: string) =>
   TRAIT_PROFILES[id] ?? { Conscientiousness: 65, "Emotional stability": 62, Agreeableness: 64, Extraversion: 60, Openness: 63, Integrity: 66 };
 
 async function main() {
+  // On the server (SEED_ONLY_IF_EMPTY=1) don't wipe a database that already has
+  // data — only seed a fresh/empty one. Locally, `npm run db:seed` still resets.
+  if (process.env.SEED_ONLY_IF_EMPTY === "1") {
+    const existing = await prisma.user.count().catch(() => 0);
+    if (existing > 0) {
+      console.log(`Seed skipped — ${existing} users already present.`);
+      return;
+    }
+  }
+
   // Idempotent: clear everything (order respects FKs via cascade on User/parent).
   await prisma.message.deleteMany();
   await prisma.interview.deleteMany();
