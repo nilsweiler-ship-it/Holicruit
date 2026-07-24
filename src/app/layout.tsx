@@ -1,21 +1,14 @@
 import type { Metadata, Viewport } from "next";
-import { Figtree, Instrument_Serif } from "next/font/google";
+// Brand type, self-hosted (bundled at build — no external fetch):
+// Figtree (body/UI) + Instrument Serif (display headlines).
+import "@fontsource/figtree/400.css";
+import "@fontsource/figtree/500.css";
+import "@fontsource/figtree/600.css";
+import "@fontsource/figtree/700.css";
+import "@fontsource/figtree/800.css";
+import "@fontsource/instrument-serif/400.css";
 import "./globals.css";
 import { Providers } from "@/components/layout/providers";
-
-// Brand type: Figtree (body/UI) + Instrument Serif (display headlines).
-const figtree = Figtree({
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700", "800"],
-  variable: "--font-figtree",
-  display: "swap",
-});
-const instrumentSerif = Instrument_Serif({
-  subsets: ["latin"],
-  weight: "400",
-  variable: "--font-instrument",
-  display: "swap",
-});
 
 export const viewport: Viewport = {
   themeColor: "#C75B39",
@@ -41,7 +34,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${figtree.variable} ${instrumentSerif.variable}`}>
+    <html lang="en">
       <body className="antialiased">
         <Providers>{children}</Providers>
       </body>
