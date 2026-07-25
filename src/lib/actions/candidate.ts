@@ -7,8 +7,21 @@ import { getActiveCandidateId } from "@/lib/persona";
 import { scenarioService } from "@/lib/services/scenario";
 import { jobAdParser } from "@/lib/services/ingest";
 import { runMatchingForCandidate } from "@/lib/matching/engine";
-import { itemsForSkill, scoreSkillCheck, SKILL_CHECK_PASS } from "@/lib/fixtures/skill-checks";
+import { itemsForSkill, scoreSkillCheck, SKILL_CHECK_PASS, type SkillCheckItem } from "@/lib/fixtures/skill-checks";
 import type { ScenarioResult } from "@/lib/scenario/types";
+
+/** A role's custom assessment items, if the HM has configured one. */
+async function roleQuizItems(openingId?: string): Promise<SkillCheckItem[] | null> {
+  if (!openingId) return null;
+  const o = await prisma.opening.findUnique({ where: { id: openingId }, select: { quiz: true } });
+  if (!o?.quiz) return null;
+  try {
+    const items = JSON.parse(o.quiz) as SkillCheckItem[];
+    return Array.isArray(items) && items.length > 0 ? items : null;
+  } catch {
+    return null;
+  }
+}
 
 function initialsOf(name: string): string {
   const w = name.trim().split(/\s+/).filter(Boolean);
@@ -111,12 +124,15 @@ export async function updateAvatar(dataUrl: string): Promise<void> {
 export async function submitSkillCheck(
   skill: string,
   answers: Record<string, string>,
+  openingId?: string,
 ): Promise<{ score: number; passed: boolean }> {
   const candidateId = await getActiveCandidateId();
   const clean = skill.trim();
   if (!clean) return { score: 0, passed: false };
 
-  const items = itemsForSkill(clean);
+  // Score against the same items the candidate saw: a role's custom assessment
+  // if one exists, otherwise the universal applied bank.
+  const items = (await roleQuizItems(openingId)) ?? itemsForSkill(clean);
   const score = scoreSkillCheck(items, answers);
   const passed = score >= SKILL_CHECK_PASS;
 

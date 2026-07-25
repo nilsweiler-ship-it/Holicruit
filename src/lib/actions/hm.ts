@@ -192,6 +192,59 @@ export async function updateCalibration(openingId: string, formData: FormData): 
   redirect(`/hiring-manager/pipeline?opening=${openingId}`);
 }
 
+/**
+ * Save a role's custom applied assessment (Scale plan). Stores a validated JSON
+ * quiz on the opening; the candidate skill-check uses it when present.
+ */
+export async function saveRoleQuiz(openingId: string, formData: FormData): Promise<void> {
+  const user = await requireUser();
+  const { plan } = await getActivePlan(user.id, "hiring_manager");
+  if (!plan.customAssessments) redirect("/hiring-manager/billing?feature=assessments");
+
+  const opening = await prisma.opening.findFirst({
+    where: { id: openingId, company: { ownerId: user.id } },
+    select: { id: true },
+  });
+  if (!opening) redirect("/hiring-manager/roles");
+
+  let quiz: string | null = null;
+  const raw = String(formData.get("quiz") ?? "");
+  if (raw) {
+    try {
+      const parsed = JSON.parse(raw) as unknown;
+      if (Array.isArray(parsed)) {
+        // Keep only well-formed items/options.
+        const clean = parsed
+          .map((it, i) => {
+            const item = it as { id?: string; prompt?: string; note?: string; options?: unknown };
+            const prompt = String(item.prompt ?? "").trim();
+            const opts = Array.isArray(item.options)
+              ? item.options
+                  .map((o, j) => {
+                    const opt = o as { id?: string; text?: string; score?: unknown };
+                    const text = String(opt.text ?? "").trim();
+                    const score = Math.min(10, Math.max(0, Math.round(Number(opt.score) || 0)));
+                    return text ? { id: opt.id || `o${j}`, text, score } : null;
+                  })
+                  .filter(Boolean)
+              : [];
+            return prompt && opts.length >= 2
+              ? { id: item.id || `q${i}`, prompt, note: item.note, options: opts }
+              : null;
+          })
+          .filter(Boolean);
+        if (clean.length > 0) quiz = JSON.stringify(clean);
+      }
+    } catch {
+      /* ignore malformed */
+    }
+  }
+
+  await prisma.opening.update({ where: { id: openingId }, data: { quiz } });
+  revalidatePath(`/hiring-manager/roles/${openingId}/assessment`);
+  redirect(`/hiring-manager/pipeline?opening=${openingId}`);
+}
+
 /** Save / unsave (shortlist) a candidate match. */
 export async function toggleSaved(matchId: string): Promise<void> {
   await requireUser();

@@ -12,7 +12,15 @@ import { cn } from "@/lib/utils";
  * Applied skill-check stepper. Presents work-sample/judgment items one at a
  * time, scores them server-side, and (if passed) verifies the skill.
  */
-export function SkillCheckRunner({ skill, items }: { skill: string; items: SkillCheckItem[] }) {
+export function SkillCheckRunner({
+  skill,
+  items,
+  openingId,
+}: {
+  skill: string;
+  items: SkillCheckItem[];
+  openingId?: string;
+}) {
   const total = items.length;
   const [index, setIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, string>>({});
@@ -29,7 +37,7 @@ export function SkillCheckRunner({ skill, items }: { skill: string; items: Skill
     if (index < total - 1) {
       setIndex((i) => i + 1);
     } else {
-      startScoring(async () => setResult(await submitSkillCheck(skill, next)));
+      startScoring(async () => setResult(await submitSkillCheck(skill, next, openingId)));
     }
   }
 
