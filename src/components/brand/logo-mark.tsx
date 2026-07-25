@@ -1,38 +1,40 @@
 import { cn } from "@/lib/utils";
 
 /**
- * Holicruit logo mark — the "whole person": a *complete* ring of four rounded
- * facets (hard skills, soft skills, evidence, growth) around a coral core.
- * Keeps the fit-gauge DNA but closes the loop — holistic, nothing missing.
- * Uses Tailwind stroke/fill classes so it inherits the brand tokens.
+ * Holicruit logo mark — three overlapping rounded squares (terracotta, sage,
+ * amber): the layered "whole person". Matches the marketing landing exactly.
  */
-const R = 9;
-const C = 2 * Math.PI * R;
-const SEGMENTS = 4;
-const GAP = 5; // visual gap between facets (dash units)
-const SEG = C / SEGMENTS - GAP;
-
 export function LogoMark({ size = 24, className }: { size?: number; className?: string }) {
   return (
     <svg
-      viewBox="0 0 24 24"
+      viewBox="0 0 26 26"
       width={size}
       height={size}
+      fill="none"
       className={cn("shrink-0", className)}
       aria-hidden
     >
-      <circle
-        cx="12"
-        cy="12"
-        r={R}
-        fill="none"
-        strokeWidth="3"
-        strokeLinecap="round"
-        strokeDasharray={`${SEG.toFixed(2)} ${GAP.toFixed(2)}`}
-        transform="rotate(-90 12 12)"
-        className="stroke-primary"
+      <rect x="3" y="3" width="13" height="13" rx="4" fill="#C75B39" />
+      <rect
+        x="10"
+        y="7"
+        width="13"
+        height="13"
+        rx="4"
+        fill="#7C8B6B"
+        opacity="0.82"
+        style={{ mixBlendMode: "multiply" }}
       />
-      <circle cx="12" cy="12" r="3.2" className="fill-primary" />
+      <rect
+        x="6.5"
+        y="10"
+        width="10"
+        height="10"
+        rx="3.4"
+        fill="#E6A15C"
+        opacity="0.85"
+        style={{ mixBlendMode: "multiply" }}
+      />
     </svg>
   );
 }
