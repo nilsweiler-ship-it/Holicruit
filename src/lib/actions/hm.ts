@@ -166,9 +166,25 @@ export async function updateCalibration(openingId: string, formData: FormData): 
   const hardWeight = Number.isFinite(hw) ? Math.min(100, Math.max(0, Math.round(hw))) : 60;
   const passBar = Number.isFinite(pb) ? Math.min(100, Math.max(0, Math.round(pb))) : 60;
 
+  // Per-skill importance map (JSON of skill → essential|important|bonus), validated.
+  let skillWeights = "{}";
+  const raw = String(formData.get("skillWeights") ?? "");
+  if (raw) {
+    try {
+      const parsed = JSON.parse(raw) as Record<string, unknown>;
+      const clean: Record<string, string> = {};
+      for (const [k, v] of Object.entries(parsed)) {
+        if (v === "essential" || v === "important" || v === "bonus") clean[k] = v;
+      }
+      skillWeights = JSON.stringify(clean);
+    } catch {
+      /* keep default */
+    }
+  }
+
   await prisma.opening.update({
     where: { id: openingId },
-    data: { hardWeight, softWeight: 100 - hardWeight, passBar },
+    data: { hardWeight, softWeight: 100 - hardWeight, passBar, skillWeights },
   });
   await runMatchingForOpening(openingId);
   revalidatePath("/hiring-manager/pipeline");

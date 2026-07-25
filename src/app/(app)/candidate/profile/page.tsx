@@ -70,6 +70,32 @@ export default async function CandidateProfilePage() {
         </Link>
       </section>
 
+      {/* Prove your skills — applied checks that verify a claimed skill */}
+      {profile.hardSkills.some((s) => !s.verified) && (
+        <section className="flex flex-col gap-3">
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+            Prove your skills
+          </h2>
+          <p className="text-sm text-muted-foreground">
+            Turn a claimed skill into <span className="font-medium text-foreground">verified</span>{" "}
+            evidence with a short applied check — judgment on real situations, not trivia.
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {profile.hardSkills
+              .filter((s) => !s.verified)
+              .map((s) => (
+                <Link
+                  key={s.name}
+                  href={`/candidate/skill-check/${encodeURIComponent(s.name)}`}
+                  className="inline-flex items-center gap-1.5 rounded-full border border-primary/30 bg-primary/5 px-3 py-1.5 text-sm font-medium text-primary transition-colors hover:bg-primary/10"
+                >
+                  Check: {s.name}
+                </Link>
+              ))}
+          </div>
+        </section>
+      )}
+
       {/* Soft skills */}
       <section className="flex flex-col gap-3">
         <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">

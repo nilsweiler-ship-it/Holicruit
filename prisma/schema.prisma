@@ -60,6 +60,8 @@ model HardSkill {
   profileId String
   name      String
   verified  Boolean          @default(false)
+  // Applied skill-check score (0–100), when the candidate passed a work-sample quiz.
+  assessedScore Int?
 
   @@unique([profileId, name])
 }
@@ -128,6 +130,10 @@ model Opening {
   hardWeight          Int     @default(60)
   softWeight          Int     @default(40)
   passBar             Int     @default(60)
+  // Per-skill importance (Team plan): JSON map skill → "essential"|"important"|"bonus".
+  skillWeights        String  @default("{}")
+  // Applied skill quiz (Scale plan): JSON of custom quiz items, if enabled.
+  quiz                String?
   matches             Match[]
 }
 

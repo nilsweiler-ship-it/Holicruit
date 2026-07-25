@@ -11,6 +11,19 @@ const SOFT_BAR = 75; // default role soft-skill bar
 const DEFAULT_HARD_W = 55; // default hard weight (0–100) when a role isn't calibrated
 const DEFAULT_SOFT_W = 45;
 
+/** Per-skill importance → numeric weight and default gap severity. */
+const LEVEL_W: Record<string, number> = { essential: 3, important: 2, bonus: 1 };
+
+/** Parse an opening's skillWeights JSON safely into a skill→level map. */
+function parseWeights(json: string | null | undefined): Record<string, string> {
+  if (!json) return {};
+  try {
+    return JSON.parse(json) as Record<string, string>;
+  } catch {
+    return {};
+  }
+}
+
 interface ComputeInput {
   hardSkills: { name: string; verified: boolean }[];
   softSkills: { name: string; level: number }[];
@@ -19,42 +32,58 @@ interface ComputeInput {
   /** Custom role calibration (0–100). Falls back to the platform default. */
   hardWeight?: number | null;
   softWeight?: number | null;
+  /** Per-skill importance map: skill name → "essential" | "important" | "bonus". */
+  skillWeights?: Record<string, string> | null;
 }
 
 export function computeFit(input: ComputeInput): FitObject {
   const have = new Map(input.hardSkills.map((s) => [s.name.toLowerCase(), s]));
   const gaps: SkillGap[] = [];
 
-  let hardScore = 0;
-  for (const req of input.requiredHard) {
-    const s = have.get(req.toLowerCase());
-    if (s?.verified) hardScore += 1;
-    else if (s) hardScore += 0.7;
-    else gaps.push({ skill: req, type: "hard", severity: "major" });
+  // Look up a skill's importance weight (case-insensitive); default "important".
+  const wmap = new Map<string, number>();
+  if (input.skillWeights) {
+    for (const [k, v] of Object.entries(input.skillWeights)) {
+      wmap.set(k.toLowerCase(), LEVEL_W[v] ?? 2);
+    }
   }
-  const hardFit = input.requiredHard.length
-    ? Math.round((100 * hardScore) / input.requiredHard.length)
-    : 70;
+  const wOf = (skill: string) => wmap.get(skill.toLowerCase()) ?? 2;
+  const sevOf = (skill: string): SkillGap["severity"] => {
+    const w = wOf(skill);
+    return w >= 3 ? "major" : w >= 2 ? "moderate" : "minor";
+  };
+
+  let hardScore = 0;
+  let hardWtot = 0;
+  for (const req of input.requiredHard) {
+    const w = wOf(req);
+    hardWtot += w;
+    const s = have.get(req.toLowerCase());
+    hardScore += w * (s?.verified ? 1 : s ? 0.7 : 0);
+    if (!s) gaps.push({ skill: req, type: "hard", severity: sevOf(req) });
+  }
+  const hardFit = hardWtot ? Math.round((100 * hardScore) / hardWtot) : 70;
 
   const softMap = new Map(input.softSkills.map((s) => [s.name.toLowerCase(), s.level]));
   const relevant = input.requiredSoft.length
     ? input.requiredSoft
     : input.softSkills.map((s) => s.name);
   let softSum = 0;
-  let softN = 0;
+  let softWtot = 0;
   for (const req of relevant) {
+    const w = wOf(req);
     const lvl = softMap.get(req.toLowerCase());
     if (lvl != null) {
-      softSum += lvl;
-      softN += 1;
+      softSum += w * lvl;
+      softWtot += w;
       if (lvl < SOFT_BAR) {
         gaps.push({ skill: req, type: "soft", severity: lvl < SOFT_BAR - 15 ? "moderate" : "minor" });
       }
     } else {
-      gaps.push({ skill: req, type: "soft", severity: "moderate" });
+      gaps.push({ skill: req, type: "soft", severity: sevOf(req) });
     }
   }
-  const softFit = softN ? Math.round(softSum / softN) : 60;
+  const softFit = softWtot ? Math.round(softSum / softWtot) : 60;
 
   // Calibration: weight hard vs. soft by the role's configured balance.
   const hw = input.hardWeight ?? DEFAULT_HARD_W;
@@ -94,6 +123,7 @@ export async function recomputeCandidateMatches(candidateId: string): Promise<vo
       requiredSoft: JSON.parse(m.opening.requiredSoft) as string[],
       hardWeight: m.opening.hardWeight,
       softWeight: m.opening.softWeight,
+      skillWeights: parseWeights(m.opening.skillWeights),
     });
     await prisma.match.update({
       where: { id: m.id },
@@ -146,7 +176,13 @@ export const PRIORITY_THRESHOLD = 40;
 
 function fitFor(
   profile: { hardSkills: { name: string; verified: boolean }[]; softSkills: { name: string; level: number }[] },
-  opening: { requiredHard: string; requiredSoft: string; hardWeight?: number | null; softWeight?: number | null },
+  opening: {
+    requiredHard: string;
+    requiredSoft: string;
+    hardWeight?: number | null;
+    softWeight?: number | null;
+    skillWeights?: string | null;
+  },
 ) {
   return computeFit({
     hardSkills: profile.hardSkills,
@@ -155,6 +191,7 @@ function fitFor(
     requiredSoft: JSON.parse(opening.requiredSoft) as string[],
     hardWeight: opening.hardWeight,
     softWeight: opening.softWeight,
+    skillWeights: parseWeights(opening.skillWeights),
   });
 }
 

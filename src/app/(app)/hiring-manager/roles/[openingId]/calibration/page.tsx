@@ -7,6 +7,7 @@ import { requireUser } from "@/lib/persona";
 import { getActivePlan } from "@/lib/services/billing";
 import { updateCalibration } from "@/lib/actions/hm";
 import { CalibrationFields } from "@/components/pipeline/calibration-fields";
+import { SkillWeightFields } from "@/components/pipeline/skill-weight-fields";
 import { LockedFeature } from "@/components/billing/locked-feature";
 import { Button } from "@/components/ui/button";
 
@@ -27,9 +28,27 @@ export default async function EditCalibrationPage({
 
   const opening = await prisma.opening.findFirst({
     where: { id: openingId, company: { ownerId: user.id } },
-    select: { id: true, title: true, hardWeight: true, passBar: true, company: { select: { name: true } } },
+    select: {
+      id: true,
+      title: true,
+      hardWeight: true,
+      passBar: true,
+      requiredHard: true,
+      requiredSoft: true,
+      skillWeights: true,
+      company: { select: { name: true } },
+    },
   });
   if (!opening) notFound();
+
+  const requiredHard = JSON.parse(opening.requiredHard) as string[];
+  const requiredSoft = JSON.parse(opening.requiredSoft) as string[];
+  let skillWeights: Record<string, string> = {};
+  try {
+    skillWeights = JSON.parse(opening.skillWeights) as Record<string, string>;
+  } catch {
+    skillWeights = {};
+  }
 
   return (
     <div className="flex flex-col gap-6">
@@ -50,6 +69,11 @@ export default async function EditCalibrationPage({
       {plan.calibration ? (
         <form action={updateCalibration.bind(null, opening.id)} className="flex flex-col gap-4">
           <CalibrationFields defaultHard={opening.hardWeight} defaultBar={opening.passBar} />
+          <SkillWeightFields
+            hardSkills={requiredHard}
+            softSkills={requiredSoft}
+            defaultWeights={skillWeights}
+          />
           <div className="flex">
             <Button type="submit">Save &amp; re-rank pipeline</Button>
           </div>

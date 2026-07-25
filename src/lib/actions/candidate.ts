@@ -7,6 +7,7 @@ import { getActiveCandidateId } from "@/lib/persona";
 import { scenarioService } from "@/lib/services/scenario";
 import { jobAdParser } from "@/lib/services/ingest";
 import { runMatchingForCandidate } from "@/lib/matching/engine";
+import { itemsForSkill, scoreSkillCheck, SKILL_CHECK_PASS } from "@/lib/fixtures/skill-checks";
 import type { ScenarioResult } from "@/lib/scenario/types";
 
 function initialsOf(name: string): string {
@@ -101,6 +102,33 @@ export async function updateAvatar(dataUrl: string): Promise<void> {
     data: { avatarUrl: dataUrl },
   });
   revalidateCandidate();
+}
+
+/**
+ * Take an applied skill check. Scores the answers (judgment, not recall),
+ * records the score, verifies the skill if passed, and re-runs matching.
+ */
+export async function submitSkillCheck(
+  skill: string,
+  answers: Record<string, string>,
+): Promise<{ score: number; passed: boolean }> {
+  const candidateId = await getActiveCandidateId();
+  const clean = skill.trim();
+  if (!clean) return { score: 0, passed: false };
+
+  const items = itemsForSkill(clean);
+  const score = scoreSkillCheck(items, answers);
+  const passed = score >= SKILL_CHECK_PASS;
+
+  await prisma.hardSkill.upsert({
+    where: { profileId_name: { profileId: candidateId, name: clean } },
+    update: { assessedScore: score, verified: passed },
+    create: { profileId: candidateId, name: clean, assessedScore: score, verified: passed },
+  });
+  await recalcCompleteness(candidateId);
+  await runMatchingForCandidate(candidateId);
+  revalidateCandidate();
+  return { score, passed };
 }
 
 /** Add a self-declared (unverified) hard skill. */
