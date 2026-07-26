@@ -317,7 +317,10 @@ function isFetchableUrl(u: string): URL | null {
   return url;
 }
 
-const IMPORT_UA = "Mozilla/5.0 (compatible; HolicruitBot/1.0; +https://holicruit.com)";
+// A real browser UA — many job sites serve a bot challenge (or nothing) to
+// obviously-automated agents, so we present as a normal browser.
+const IMPORT_UA =
+  "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36";
 
 async function fetchWithTimeout(u: string, ms: number, headers: Record<string, string>) {
   const controller = new AbortController();
@@ -329,35 +332,124 @@ async function fetchWithTimeout(u: string, ms: number, headers: Record<string, s
   }
 }
 
+const bodyLen = (s: string) => s.replace(/\s/g, "").length;
+
 /**
- * Get readable text for a URL. Primary path is a reader service that renders
- * JavaScript and returns clean text (so we get the real job description, not an
- * empty shell); falls back to a direct fetch of the raw HTML. Never redirects —
- * it returns data or throws, so the caller controls navigation.
+ * Scrape a URL via Firecrawl — runs a real headless browser, executes the
+ * page's JavaScript, and gets past most bot-blocks, returning clean markdown.
+ * Only active when FIRECRAWL_API_KEY is set; otherwise returns null so the
+ * caller falls back to the plain fetch / reader paths.
+ */
+async function fetchViaFirecrawl(url: URL): Promise<{ text: string; title?: string } | null> {
+  const key = process.env.FIRECRAWL_API_KEY;
+  if (!key) return null;
+  try {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 25000);
+    let res: Response;
+    try {
+      res = await fetch("https://api.firecrawl.dev/v1/scrape", {
+        method: "POST",
+        signal: controller.signal,
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${key}` },
+        body: JSON.stringify({ url: url.toString(), formats: ["markdown"], onlyMainContent: true }),
+      });
+    } finally {
+      clearTimeout(timer);
+    }
+    if (!res.ok) return null;
+    const j = (await res.json()) as {
+      success?: boolean;
+      data?: { markdown?: string; metadata?: { title?: string; ogTitle?: string } };
+    };
+    const md = j?.data?.markdown;
+    if (j?.success && md && md.trim().length > 0) {
+      return { text: md, title: j.data?.metadata?.title || j.data?.metadata?.ogTitle };
+    }
+  } catch {
+    /* fall back */
+  }
+  return null;
+}
+
+/** Rewrite known listing/search URLs to their server-rendered detail page. */
+function canonicalizeJobUrl(url: URL): URL {
+  const host = url.hostname.toLowerCase();
+  const jobid = url.searchParams.get("jobid");
+  // jobs.ch / jobup.ch search pages carry the job in ?jobid= → use /detail/<id>/.
+  if ((host.endsWith("jobs.ch") || host.endsWith("jobup.ch")) && jobid) {
+    return new URL(`/en/vacancies/detail/${jobid}/`, url.origin);
+  }
+  return url;
+}
+
+/**
+ * Get readable text for a URL. Tries a direct fetch first (works for the many
+ * server-rendered job pages), follows a canonical link if the first page is
+ * thin, and only then falls back to a reader service that renders JavaScript
+ * (for single-page-app boards). Never redirects — returns data or throws.
  */
 async function fetchReadable(url: URL): Promise<{ text: string; title?: string; company?: string }> {
+  const norm = canonicalizeJobUrl(url);
+  const htmlHeaders = { "User-Agent": IMPORT_UA, Accept: "text/html,application/xhtml+xml" };
+  let best: { text: string; title?: string; company?: string } | null = null;
+
+  // 0) Firecrawl (renders JS, bypasses bot-blocks) — the reliable path when set.
+  const fc = await fetchViaFirecrawl(norm);
+  if (fc && bodyLen(fc.text) > 300) return fc;
+
+  // 1) Direct fetch (server-rendered pages).
   try {
-    const r = await fetchWithTimeout(`https://r.jina.ai/${url.toString()}`, 13000, {
+    const res = await fetchWithTimeout(norm.toString(), 9000, htmlHeaders);
+    if (res.ok) {
+      const html = await res.text();
+      let ex = htmlToImportable(html);
+      // If thin, follow the page's canonical/og:url and try that once.
+      if (bodyLen(ex.text) < 400) {
+        const canon =
+          html.match(/<link[^>]+rel=["']canonical["'][^>]+href=["']([^"']+)["']/i)?.[1] ||
+          html.match(/<meta[^>]+property=["']og:url["'][^>]+content=["']([^"']+)["']/i)?.[1];
+        if (canon) {
+          try {
+            const cu = new URL(canon, norm);
+            if (cu.toString() !== norm.toString()) {
+              const r2 = await fetchWithTimeout(cu.toString(), 9000, htmlHeaders);
+              if (r2.ok) {
+                const ex2 = htmlToImportable(await r2.text());
+                if (bodyLen(ex2.text) > bodyLen(ex.text)) ex = ex2;
+              }
+            }
+          } catch {
+            /* ignore */
+          }
+        }
+      }
+      if (bodyLen(ex.text) > 300) return ex;
+      best = ex;
+    }
+  } catch {
+    /* fall through to reader */
+  }
+
+  // 2) Reader service (renders JS) for single-page-app pages.
+  try {
+    const r = await fetchWithTimeout(`https://r.jina.ai/${norm.toString()}`, 13000, {
       "User-Agent": IMPORT_UA,
       Accept: "text/plain",
       "X-Return-Format": "text",
     });
     if (r.ok) {
       const md = await r.text();
-      if (md.replace(/\s/g, "").length > 200) {
-        const title = md.match(/^Title:\s*(.+)$/m)?.[1]?.trim();
-        return { text: md, title };
+      if (bodyLen(md) > 300) {
+        return { text: md, title: md.match(/^Title:\s*(.+)$/m)?.[1]?.trim() };
       }
     }
   } catch {
-    /* fall through to direct fetch */
+    /* ignore */
   }
-  const res = await fetchWithTimeout(url.toString(), 9000, {
-    "User-Agent": IMPORT_UA,
-    Accept: "text/html,application/xhtml+xml",
-  });
-  if (!res.ok) throw new Error(`fetch failed (${res.status})`);
-  return htmlToImportable(await res.text());
+
+  if (best) return best;
+  throw new Error("unreadable");
 }
 
 /**

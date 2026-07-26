@@ -145,6 +145,23 @@ const HARD_VOCAB = [
   "People operations",
   "Supply chain",
   "Operations management",
+  // Regulated industries (pharma / quality / life sciences / clinical)
+  "Quality Assurance",
+  "Quality Management",
+  "Quality Control",
+  "GMP",
+  "cGMP",
+  "GxP",
+  "CAPA",
+  "Aseptic processing",
+  "Validation",
+  "Auditing",
+  "Regulatory affairs",
+  "Pharmacovigilance",
+  "Clinical research",
+  "Batch record review",
+  "Deviation management",
+  "Root cause analysis",
 ];
 
 /** Soft dimension → trigger substrings (all lower-case). */
@@ -172,11 +189,24 @@ const INDUSTRY_SIGNALS: { skill: string; industry: string }[] = [
   { skill: "Classroom management", industry: "Education" },
   { skill: "IFRS 17 reporting", industry: "Finance" },
   { skill: "Financial modeling", industry: "Finance" },
+  { skill: "cGMP", industry: "Pharma / Life Sciences" },
+  { skill: "GMP", industry: "Pharma / Life Sciences" },
+  { skill: "Quality Assurance", industry: "Pharma / Life Sciences" },
+  { skill: "Aseptic processing", industry: "Pharma / Life Sciences" },
+  { skill: "Pharmacovigilance", industry: "Pharma / Life Sciences" },
 ];
 
+/**
+ * Whole-term match so "Excel" doesn't match inside "Excellent". Treats letters,
+ * digits, and `+`/`#` as term characters (so C++, C#, Node.js still match).
+ */
+function hasTerm(text: string, term: string): boolean {
+  const esc = term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return new RegExp(`(?<![A-Za-z0-9+#])${esc}(?![A-Za-z0-9+#])`, "i").test(text);
+}
+
 function extractHard(text: string): string[] {
-  const lower = text.toLowerCase();
-  const found = HARD_VOCAB.filter((s) => lower.includes(s.toLowerCase()));
+  const found = HARD_VOCAB.filter((s) => hasTerm(text, s));
   // Drop any skill that is a substring of a more specific matched skill.
   return found.filter(
     (s) => !found.some((o) => o !== s && o.toLowerCase().includes(s.toLowerCase())),
@@ -195,6 +225,9 @@ function inferIndustry(hard: string[], text: string): string {
     if (hard.includes(sig.skill)) return sig.industry;
   }
   const lower = text.toLowerCase();
+  if (/\bgmp\b|pharmaceutical|aseptic|life sciences|biotech|drug substance/.test(lower)) {
+    return "Pharma / Life Sciences";
+  }
   if (/nurse|clinical|patient|hospital/.test(lower)) return "Healthcare";
   if (/sales|account executive|quota|pipeline/.test(lower)) return "Sales";
   if (/engineer|developer|software/.test(lower)) return "Software";
