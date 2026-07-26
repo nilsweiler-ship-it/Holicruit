@@ -264,8 +264,19 @@ function htmlToImportable(html: string): { text: string; title?: string; company
   };
   const titleTag = html.match(/<title[^>]*>([^<]+)<\/title>/i)?.[1]?.trim();
   const h1 = html.match(/<h1[^>]*>([\s\S]*?)<\/h1>/i)?.[1]?.replace(/<[^>]+>/g, " ").trim();
-  const title = meta("og:title") || h1 || titleTag;
-  const company = meta("og:site_name");
+  let title = meta("og:title") || h1 || titleTag;
+  let company = meta("og:site_name");
+  // Titles are often "Role | Company — Careers"; keep the role, salvage the company.
+  if (title) {
+    const parts = title.split(/\s+[|–—··-]\s+/).map((p) => p.trim()).filter(Boolean);
+    if (parts.length > 1) {
+      title = parts[0];
+      if (!company) {
+        const tail = parts[parts.length - 1].replace(/\bcareers?\b|\bjobs?\b/i, "").trim();
+        if (tail) company = tail;
+      }
+    }
+  }
 
   const text = html
     .replace(/<script[\s\S]*?<\/script>/gi, " ")

@@ -42,7 +42,7 @@ export default async function RoleAssessmentPage({
         <ArrowLeft className="size-4" />
         Back to pipeline
       </Link>
-      <h1 className="font-serif text-2xl tracking-tight text-foreground">
+      <h1 className="font-serif text-3xl tracking-tight text-foreground">
         Assessment: {opening.title}
       </h1>
       <p className="text-sm text-muted-foreground">

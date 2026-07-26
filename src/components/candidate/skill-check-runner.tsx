@@ -63,7 +63,7 @@ export function SkillCheckRunner({
             <ShieldCheck className="size-6" />
           </span>
           <div>
-            <h2 className="font-serif text-2xl tracking-tight">
+            <h2 className="font-serif text-3xl tracking-tight">
               {result.passed ? `${skill} — verified` : `${skill} — not yet`}
             </h2>
             <p className="text-sm text-muted-foreground">

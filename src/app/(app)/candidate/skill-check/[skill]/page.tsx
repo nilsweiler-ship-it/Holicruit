@@ -49,7 +49,7 @@ export default async function SkillCheckPage({
           <ArrowLeft className="size-4" />
           Profile
         </Link>
-        <h1 className="font-serif text-2xl tracking-tight text-foreground">
+        <h1 className="font-serif text-3xl tracking-tight text-foreground">
           Skill check: {skill}
         </h1>
         <p className="text-sm text-muted-foreground">
