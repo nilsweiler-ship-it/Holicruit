@@ -256,6 +256,106 @@ export async function toggleSaved(matchId: string): Promise<void> {
   revalidatePath(`/hiring-manager/candidate/${matchId}`);
 }
 
+/** Strip HTML to readable text and pull a likely job title from the markup. */
+function htmlToImportable(html: string): { text: string; title?: string; company?: string } {
+  const meta = (prop: string) => {
+    const re = new RegExp(`<meta[^>]+(?:property|name)=["']${prop}["'][^>]+content=["']([^"']+)["']`, "i");
+    return html.match(re)?.[1]?.trim();
+  };
+  const titleTag = html.match(/<title[^>]*>([^<]+)<\/title>/i)?.[1]?.trim();
+  const h1 = html.match(/<h1[^>]*>([\s\S]*?)<\/h1>/i)?.[1]?.replace(/<[^>]+>/g, " ").trim();
+  const title = meta("og:title") || h1 || titleTag;
+  const company = meta("og:site_name");
+
+  const text = html
+    .replace(/<script[\s\S]*?<\/script>/gi, " ")
+    .replace(/<style[\s\S]*?<\/style>/gi, " ")
+    .replace(/<(br|\/p|\/div|\/li|\/h[1-6])[^>]*>/gi, "\n")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/&nbsp;/gi, " ")
+    .replace(/&amp;/gi, "&")
+    .replace(/&lt;/gi, "<")
+    .replace(/&gt;/gi, ">")
+    .replace(/&#39;|&rsquo;|&apos;/gi, "'")
+    .replace(/&quot;|&ldquo;|&rdquo;/gi, '"')
+    .replace(/[ \t]+/g, " ")
+    .replace(/\n\s*\n\s*\n+/g, "\n\n")
+    .trim();
+
+  return { text, title, company };
+}
+
+/** Reject non-http and obviously-internal hosts (basic SSRF guard). */
+function isFetchableUrl(u: string): URL | null {
+  let url: URL;
+  try {
+    url = new URL(u);
+  } catch {
+    return null;
+  }
+  if (url.protocol !== "http:" && url.protocol !== "https:") return null;
+  const host = url.hostname.toLowerCase();
+  if (
+    host === "localhost" ||
+    host.endsWith(".local") ||
+    /^(127\.|10\.|0\.|169\.254\.|192\.168\.)/.test(host) ||
+    /^172\.(1[6-9]|2\d|3[01])\./.test(host)
+  ) {
+    return null;
+  }
+  return url;
+}
+
+/**
+ * Import a role from a job-posting URL: fetch the page, extract the text, parse
+ * it into a structured opening, and hand off to the review form prefilled.
+ * Falls back to the paste flow when a page can't be read (e.g. JS-only boards).
+ */
+export async function importOpeningFromUrl(formData: FormData): Promise<void> {
+  await requireUser();
+  const raw = String(formData.get("url") ?? "").trim();
+  const url = isFetchableUrl(raw);
+  if (!url) redirect("/hiring-manager/roles/import?error=url");
+
+  let html = "";
+  try {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 9000);
+    const res = await fetch(url.toString(), {
+      signal: controller.signal,
+      redirect: "follow",
+      headers: {
+        "User-Agent":
+          "Mozilla/5.0 (compatible; HolicruitBot/1.0; +https://holicruit.com)",
+        Accept: "text/html,application/xhtml+xml",
+      },
+    });
+    clearTimeout(timer);
+    if (!res.ok) redirect("/hiring-manager/roles/import?error=fetch");
+    html = await res.text();
+  } catch {
+    redirect("/hiring-manager/roles/import?error=fetch");
+  }
+
+  const { text, title, company } = htmlToImportable(html);
+  // Too little usable text usually means a JS-rendered board → ask to paste.
+  if (text.replace(/\s/g, "").length < 200) {
+    redirect("/hiring-manager/roles/import?error=empty");
+  }
+
+  const parsed = await jobAdParser.parseJobAd(`${title ? `Title: ${title}\n` : ""}${text}`);
+  const params = new URLSearchParams({
+    title: parsed.title || title || "",
+    companyName: parsed.company ?? company ?? "",
+    location: parsed.location,
+    industry: parsed.industry,
+    requiredHard: parsed.requiredHard.join(", "),
+    requiredSoft: parsed.requiredSoft.join(", "),
+    imported: "1",
+  });
+  redirect(`/hiring-manager/roles/new?${params.toString()}`);
+}
+
 /** Advance/move a candidate between pipeline stages. */
 export async function setStage(
   matchId: string,
