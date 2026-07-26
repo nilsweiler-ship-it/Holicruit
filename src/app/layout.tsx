@@ -15,9 +15,9 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  title: "Holicruit - Transparent, Holistic Recruiting",
+  title: "Holicruit — No black box. No cold applications. No silent no.",
   description:
-    "Radical transparency in hiring. Candidates see exactly which skills they lack. Hiring managers see every candidate scored. Everyone wins when everyone knows where they stand.",
+    "Just the whole person, measured and matched in the open — with an honest path forward for everyone. Holistic, opt-in, radically transparent hiring.",
   appleWebApp: {
     capable: true,
     title: "Holicruit",

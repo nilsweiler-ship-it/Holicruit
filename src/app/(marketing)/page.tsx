@@ -16,9 +16,9 @@ import {
 import { Button } from "@/components/ui/button";
 
 export const metadata: Metadata = {
-  title: "Holicruit — Recruiting that tells you the truth",
+  title: "Holicruit — No black box. No cold applications. No silent no.",
   description:
-    "Holistic, opt-in recruiting built on radical transparency. Every candidate sees their fit, the gap that cost them the role, and a path to close it. No black box, no silent rejections.",
+    "Just the whole person, measured and matched in the open — with an honest path forward for everyone. Holistic, opt-in, radically transparent hiring.",
 };
 
 const FEATURES = [
@@ -77,12 +77,11 @@ export default function MarketingHomePage() {
           Holistic recruiting · radically transparent
         </span>
         <h1 className="font-serif mt-6 text-balance text-4xl tracking-tight sm:text-6xl">
-          The whole person. The honest truth.
+          No black box. No cold applications. No silent no.
         </h1>
         <p className="mx-auto mt-6 max-w-2xl text-balance text-lg text-muted-foreground sm:text-xl">
-          Holicruit weighs the whole person — hard skills, scenario-measured soft
-          skills, and verified evidence — then shows every candidate exactly where
-          they stood and how to close the gap. Holistic, and radically transparent.
+          Just the whole person, measured and matched in the open — with an honest
+          path forward for everyone.
         </p>
         <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
           <Button asChild size="lg">
