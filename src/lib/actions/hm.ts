@@ -317,10 +317,53 @@ function isFetchableUrl(u: string): URL | null {
   return url;
 }
 
+const IMPORT_UA = "Mozilla/5.0 (compatible; HolicruitBot/1.0; +https://holicruit.com)";
+
+async function fetchWithTimeout(u: string, ms: number, headers: Record<string, string>) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), ms);
+  try {
+    return await fetch(u, { signal: controller.signal, redirect: "follow", headers });
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 /**
- * Import a role from a job-posting URL: fetch the page, extract the text, parse
- * it into a structured opening, and hand off to the review form prefilled.
- * Falls back to the paste flow when a page can't be read (e.g. JS-only boards).
+ * Get readable text for a URL. Primary path is a reader service that renders
+ * JavaScript and returns clean text (so we get the real job description, not an
+ * empty shell); falls back to a direct fetch of the raw HTML. Never redirects —
+ * it returns data or throws, so the caller controls navigation.
+ */
+async function fetchReadable(url: URL): Promise<{ text: string; title?: string; company?: string }> {
+  try {
+    const r = await fetchWithTimeout(`https://r.jina.ai/${url.toString()}`, 13000, {
+      "User-Agent": IMPORT_UA,
+      Accept: "text/plain",
+      "X-Return-Format": "text",
+    });
+    if (r.ok) {
+      const md = await r.text();
+      if (md.replace(/\s/g, "").length > 200) {
+        const title = md.match(/^Title:\s*(.+)$/m)?.[1]?.trim();
+        return { text: md, title };
+      }
+    }
+  } catch {
+    /* fall through to direct fetch */
+  }
+  const res = await fetchWithTimeout(url.toString(), 9000, {
+    "User-Agent": IMPORT_UA,
+    Accept: "text/html,application/xhtml+xml",
+  });
+  if (!res.ok) throw new Error(`fetch failed (${res.status})`);
+  return htmlToImportable(await res.text());
+}
+
+/**
+ * Import a role from a job-posting URL: fetch the page (rendering JS via a
+ * reader service), extract the text, parse it into a structured opening, and
+ * hand off to the review form prefilled. Falls back to paste when unreadable.
  */
 export async function importOpeningFromUrl(formData: FormData): Promise<void> {
   await requireUser();
@@ -328,28 +371,16 @@ export async function importOpeningFromUrl(formData: FormData): Promise<void> {
   const url = isFetchableUrl(raw);
   if (!url) redirect("/hiring-manager/roles/import?error=url");
 
-  let html = "";
+  let extracted: { text: string; title?: string; company?: string } | null = null;
   try {
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 9000);
-    const res = await fetch(url.toString(), {
-      signal: controller.signal,
-      redirect: "follow",
-      headers: {
-        "User-Agent":
-          "Mozilla/5.0 (compatible; HolicruitBot/1.0; +https://holicruit.com)",
-        Accept: "text/html,application/xhtml+xml",
-      },
-    });
-    clearTimeout(timer);
-    if (!res.ok) redirect("/hiring-manager/roles/import?error=fetch");
-    html = await res.text();
+    extracted = await fetchReadable(url);
   } catch {
-    redirect("/hiring-manager/roles/import?error=fetch");
+    extracted = null;
   }
+  if (!extracted) redirect("/hiring-manager/roles/import?error=fetch");
 
-  const { text, title, company } = htmlToImportable(html);
-  // Too little usable text usually means a JS-rendered board → ask to paste.
+  const { text, title, company } = extracted;
+  // Too little usable text means we couldn't read it → ask to paste.
   if (text.replace(/\s/g, "").length < 200) {
     redirect("/hiring-manager/roles/import?error=empty");
   }
