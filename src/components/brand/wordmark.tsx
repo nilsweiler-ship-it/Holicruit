@@ -4,12 +4,12 @@ import { cn } from "@/lib/utils";
 
 /**
  * The Holicruit lockup: the whole-person mark + the wordmark (Instrument Serif,
- * lowercase, with the "i" in terracotta).
+ * lowercase). One consistent color, matching the landing page.
  */
 export function Wordmark({
   href = "/",
   className,
-  markSize = 22,
+  markSize = 30,
   showMark = true,
 }: {
   href?: string;
@@ -18,10 +18,10 @@ export function Wordmark({
   showMark?: boolean;
 }) {
   return (
-    <Link href={href} className={cn("inline-flex items-center gap-1.5", className)}>
+    <Link href={href} className={cn("inline-flex items-center gap-2", className)}>
       {showMark && <LogoMark size={markSize} />}
       <span className="font-serif text-2xl lowercase tracking-tight text-foreground">
-        hol<span className="text-primary">i</span>cruit
+        holicruit
       </span>
     </Link>
   );
