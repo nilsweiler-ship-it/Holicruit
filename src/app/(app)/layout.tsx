@@ -1,5 +1,6 @@
 import { Wordmark } from "@/components/brand/wordmark";
 import { UserMenu } from "@/components/layout/user-menu";
+import { FeedbackWidget } from "@/components/feedback/feedback-widget";
 import { requireUser, getRole } from "@/lib/persona";
 
 const ROLE_LABEL: Record<string, string> = {
@@ -30,6 +31,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         </div>
       </header>
       <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-6">{children}</main>
+      <FeedbackWidget />
     </div>
   );
 }

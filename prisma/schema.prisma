@@ -29,6 +29,22 @@ model User {
   intros        RecruiterIntro[]
   subscriptions Subscription[]
   sentMessages  Message[]
+  feedback      ProductFeedback[]
+}
+
+// Low-barrier product feedback from anyone using the app. Backs the "best
+// hiring tool" pledge — every submission lands in the in-app feedback inbox.
+model ProductFeedback {
+  id        String   @id @default(cuid())
+  message   String   @default("")
+  sentiment String? // "great" | "ok" | "bad"
+  path      String? // page it was sent from
+  role      String? // persona at submit time
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
 }
 
 // ── Candidate ─────────────────────────────────────────────────────────────
