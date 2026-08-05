@@ -8,19 +8,27 @@ import type { FitObject, GrowthReport, SkillGap } from "../fit/types";
 import type { Match, PipelineStage } from "../types";
 import { prisma } from "../db";
 import { GAP_DEMAND } from "../fixtures";
+import { personIdentity, employerIdentity } from "../identity";
+
+/** Who is looking at a match — decides which side's identity may be masked. */
+export type Viewer = "candidate" | "employer";
 
 export interface MatchingService {
   getCandidateMatches(candidateId: string): Promise<Match[]>;
   getDailyMatches(candidateId: string): Promise<Match[]>;
   getClosedMatches(candidateId: string): Promise<Match[]>;
-  getMatch(matchId: string): Promise<Match | null>;
+  getMatch(matchId: string, viewer?: Viewer): Promise<Match | null>;
   getPipeline(openingId: string): Promise<Record<PipelineStage, Match[]>>;
   getGrowthReport(matchId: string): Promise<GrowthReport | null>;
   rolesClearedIfGapClosed(gap: SkillGap): Promise<number>;
 }
 
 const matchInclude = {
-  candidate: { include: { user: { select: { name: true, initials: true } } } },
+  candidate: {
+    include: {
+      user: { select: { name: true, initials: true, alias: true, anonymous: true } },
+    },
+  },
   opening: { include: { company: { select: { name: true, location: true } } } },
   thread: { select: { id: true } },
 } as const;
@@ -38,7 +46,14 @@ type MatchRow = {
   saved: boolean;
   candidateOptIn: boolean;
   managerOptIn: boolean;
-  candidate: { id: string; headline: string; avatarUrl: string | null; user: { name: string; initials: string } };
+  candidateRevealed: boolean;
+  employerRevealed: boolean;
+  candidate: {
+    id: string;
+    headline: string;
+    avatarUrl: string | null;
+    user: { name: string; initials: string; alias: string | null; anonymous: boolean };
+  };
   opening: {
     id: string;
     title: string;
@@ -50,6 +65,10 @@ type MatchRow = {
     hiringManagerName: string;
     hiringManagerHeadline: string;
     hiringManagerInitials: string;
+    companyConfidential: boolean;
+    hmAnonymous: boolean;
+    companyAlias: string | null;
+    hiringManagerAlias: string | null;
     requiredHard: string;
     requiredSoft: string;
     priority: boolean;
@@ -58,7 +77,23 @@ type MatchRow = {
   thread: { id: string } | null;
 };
 
-function toMatch(r: MatchRow): Match {
+function toMatch(r: MatchRow, viewer: Viewer): Match {
+  // Each side always sees its own real identity; the other side is masked until
+  // that person explicitly reveals for this match.
+  const cand = personIdentity(r.candidate.user, viewer === "candidate" || r.candidateRevealed);
+  const emp = employerIdentity(
+    {
+      companyName: r.opening.company.name,
+      companyConfidential: r.opening.companyConfidential,
+      companyAlias: r.opening.companyAlias,
+      hmName: r.opening.hiringManagerName,
+      hmInitials: r.opening.hiringManagerInitials,
+      hmHeadline: r.opening.hiringManagerHeadline,
+      hmAnonymous: r.opening.hmAnonymous,
+      hmAlias: r.opening.hiringManagerAlias,
+    },
+    viewer === "employer" || r.employerRevealed,
+  );
   const fit: FitObject = {
     hardFit: r.hardFit,
     softFit: r.softFit,
@@ -72,25 +107,26 @@ function toMatch(r: MatchRow): Match {
     id: r.id,
     candidate: {
       id: r.candidate.id,
-      name: r.candidate.user.name,
+      name: cand.name,
       headline: r.candidate.headline,
-      initials: r.candidate.user.initials,
-      avatarUrl: r.candidate.avatarUrl ?? undefined,
+      initials: cand.initials,
+      // Hide the photo while the candidate is masked to this viewer.
+      avatarUrl: cand.masked ? undefined : r.candidate.avatarUrl ?? undefined,
     },
     opening: {
       id: r.opening.id,
       title: r.opening.title,
       industry: r.opening.industry,
-      company: { id: "", name: r.opening.company.name, location: r.opening.company.location },
+      company: { id: "", name: emp.companyName, location: r.opening.company.location },
       location: r.opening.location,
       salaryMin: r.opening.salaryMin ?? undefined,
       salaryMax: r.opening.salaryMax ?? undefined,
       currency: r.opening.currency,
       hiringManager: {
         id: "",
-        name: r.opening.hiringManagerName,
-        headline: r.opening.hiringManagerHeadline,
-        initials: r.opening.hiringManagerInitials,
+        name: emp.hmName,
+        headline: emp.hmHeadline,
+        initials: emp.hmInitials,
       },
       requiredHard: JSON.parse(r.opening.requiredHard) as string[],
       requiredSoft: JSON.parse(r.opening.requiredSoft) as string[],
@@ -111,7 +147,7 @@ class DbMatchingService implements MatchingService {
       include: matchInclude,
       orderBy: { mutualFit: "desc" },
     });
-    return rows.map(toMatch);
+    return rows.map((r) => toMatch(r, "candidate"));
   }
 
   async getDailyMatches(candidateId: string): Promise<Match[]> {
@@ -121,7 +157,7 @@ class DbMatchingService implements MatchingService {
       orderBy: { mutualFit: "desc" },
       take: 3,
     });
-    return rows.map(toMatch);
+    return rows.map((r) => toMatch(r, "candidate"));
   }
 
   async getClosedMatches(candidateId: string): Promise<Match[]> {
@@ -130,12 +166,12 @@ class DbMatchingService implements MatchingService {
       include: matchInclude,
       orderBy: { mutualFit: "desc" },
     });
-    return rows.map(toMatch);
+    return rows.map((r) => toMatch(r, "candidate"));
   }
 
-  async getMatch(matchId: string): Promise<Match | null> {
+  async getMatch(matchId: string, viewer: Viewer = "employer"): Promise<Match | null> {
     const row = await prisma.match.findUnique({ where: { id: matchId }, include: matchInclude });
-    return row ? toMatch(row) : null;
+    return row ? toMatch(row, viewer) : null;
   }
 
   async getPipeline(openingId: string): Promise<Record<PipelineStage, Match[]>> {
@@ -145,7 +181,7 @@ class DbMatchingService implements MatchingService {
       orderBy: { mutualFit: "desc" },
     });
     const grouped: Record<PipelineStage, Match[]> = { new: [], talking: [], offer: [], closed: [] };
-    for (const r of rows) grouped[r.stage as PipelineStage]?.push(toMatch(r));
+    for (const r of rows) grouped[r.stage as PipelineStage]?.push(toMatch(r, "employer"));
     return grouped;
   }
 

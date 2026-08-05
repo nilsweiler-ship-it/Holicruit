@@ -296,6 +296,32 @@ async function main() {
     }
   }
 
+  // ── Privacy showcase: make the alias/anonymity feature visible on a fresh
+  // demo without any setup. One candidate works under an alias; one role is
+  // posted confidentially so the candidate sees a masked employer + reveal flow.
+  const aishaProfileId = profileByCandidateId.get("cand-aisha");
+  if (aishaProfileId) {
+    await prisma.candidateProfile.update({
+      where: { id: aishaProfileId },
+      data: { user: { update: { anonymous: true, alias: "Nightingale" } } },
+    });
+  }
+  const samConfidential = await prisma.match.findFirst({
+    where: { candidateId: samProfileId, stage: { notIn: ["talking", "closed"] } },
+    select: { openingId: true },
+  });
+  if (samConfidential) {
+    await prisma.opening.update({
+      where: { id: samConfidential.openingId },
+      data: {
+        companyConfidential: true,
+        hmAnonymous: true,
+        companyAlias: "A stealth-mode startup",
+        hiringManagerAlias: "Hiring lead",
+      },
+    });
+  }
+
   // ── Recruiter account + intros ──
   const recUser = await prisma.user.create({
     data: {
@@ -374,6 +400,7 @@ async function main() {
   console.log("  hiring manager: priya@holicruit.test");
   console.log("  recruiter: jordan@holicruit.test");
   console.log("  provider: fm@holicruit.test");
+  console.log("Privacy demo: 'aisha' works under the alias 'Nightingale'; one of Sam's roles is confidential.");
   void recUser;
 }
 

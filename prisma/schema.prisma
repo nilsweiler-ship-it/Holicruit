@@ -19,6 +19,11 @@ model User {
   passwordHash String
   name         String
   initials     String
+  // Privacy: an optional public alias. When `anonymous` is on, counterparties
+  // see the alias instead of the real name until the user explicitly reveals
+  // themselves for a specific match. Real name/contact stay private meanwhile.
+  alias        String?
+  anonymous    Boolean @default(false)
   // JSON array of hats the user holds: "candidate" | "hiring_manager" | "recruiter" | "provider"
   roles        String  @default("[\"candidate\"]")
   createdAt    DateTime @default(now())
@@ -137,6 +142,15 @@ model Opening {
   hiringManagerName   String
   hiringManagerHeadline String
   hiringManagerInitials String
+  // Employer-side privacy (per role, configurable at creation):
+  //  • companyConfidential — hide the company identity from candidates
+  //  • hmAnonymous — hide the hiring manager's real name
+  // Masked values fall back to the *Alias strings (or a generic label), and are
+  // revealed to a candidate only when the employer opts in (Match.employerRevealed).
+  companyConfidential Boolean @default(false)
+  hmAnonymous         Boolean @default(false)
+  companyAlias        String?
+  hiringManagerAlias  String?
   // JSON arrays of required skill names
   requiredHard        String  @default("[]")
   requiredSoft        String  @default("[]")
@@ -177,6 +191,11 @@ model Match {
   candidateOptIn Boolean         @default(false)
   managerOptIn  Boolean          @default(false)
   saved         Boolean          @default(false)
+  // Explicit, per-counterparty identity reveal (only when the person chooses).
+  // candidateRevealed → the candidate showed their real identity to this employer.
+  // employerRevealed  → the employer showed company/HM identity to this candidate.
+  candidateRevealed Boolean      @default(false)
+  employerRevealed  Boolean      @default(false)
   createdAt     DateTime         @default(now())
 
   thread       Thread?

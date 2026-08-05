@@ -1,6 +1,7 @@
 "use client";
 
-import { LogOut } from "lucide-react";
+import Link from "next/link";
+import { LogOut, ShieldCheck } from "lucide-react";
 import { signOutAction } from "@/lib/actions/auth";
 import {
   DropdownMenu,
@@ -23,6 +24,12 @@ export function UserMenu({ name, initials }: { name: string; initials: string })
       <DropdownMenuContent align="end" className="w-48">
         <DropdownMenuLabel className="truncate">{name}</DropdownMenuLabel>
         <DropdownMenuSeparator />
+        <DropdownMenuItem asChild>
+          <Link href="/settings/privacy" className="flex w-full cursor-pointer items-center gap-2">
+            <ShieldCheck className="size-4" />
+            Privacy &amp; data
+          </Link>
+        </DropdownMenuItem>
         <DropdownMenuItem asChild>
           <form action={signOutAction}>
             <button type="submit" className="flex w-full cursor-pointer items-center gap-2">

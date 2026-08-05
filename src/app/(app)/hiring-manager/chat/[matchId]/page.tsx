@@ -6,6 +6,7 @@ import type { ChatMessage } from "@/lib/types";
 import { matchingService } from "@/lib/services/matching";
 import { getThreadView } from "@/lib/services/thread";
 import { ChatThread } from "@/components/chat/chat-thread";
+import { IdentityBanner } from "@/components/identity/identity-banner";
 
 export const metadata: Metadata = { title: "Direct line · Holicruit" };
 
@@ -41,6 +42,8 @@ export default async function HmChatPage({ params }: { params: Promise<{ matchId
       <h1 className="truncate text-sm font-semibold text-foreground">
         Direct line · {view.them.name} · {match.opening.title}
       </h1>
+
+      <IdentityBanner matchId={matchId} side="employer" />
 
       <ChatThread
         matchId={matchId}

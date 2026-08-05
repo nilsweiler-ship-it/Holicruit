@@ -27,7 +27,7 @@ export default async function MatchDetailPage({
   params: Promise<{ matchId: string }>;
 }) {
   const { matchId } = await params;
-  const match = await matchingService.getMatch(matchId);
+  const match = await matchingService.getMatch(matchId, "candidate");
   if (!match) notFound();
 
   const { opening, fit } = match;

@@ -5,6 +5,7 @@
  */
 import type { ChatMessage, Person, ScheduledInterview } from "../types";
 import { prisma } from "../db";
+import { personIdentity, employerIdentity } from "../identity";
 
 export interface ThreadView {
   threadId: string;
@@ -33,24 +34,57 @@ export async function getThreadView(
   const match = await prisma.match.findUnique({
     where: { id: matchId },
     include: {
-      candidate: { include: { user: { select: { name: true, initials: true } } } },
-      opening: { select: { hiringManagerName: true, hiringManagerInitials: true, hiringManagerHeadline: true, title: true } },
+      candidate: {
+        include: { user: { select: { name: true, initials: true, alias: true, anonymous: true } } },
+      },
+      opening: {
+        select: {
+          hiringManagerName: true,
+          hiringManagerInitials: true,
+          hiringManagerHeadline: true,
+          hmAnonymous: true,
+          hiringManagerAlias: true,
+          companyConfidential: true,
+          companyAlias: true,
+          title: true,
+          company: { select: { name: true } },
+        },
+      },
       thread: { include: { messages: { orderBy: { createdAt: "asc" } }, interview: true } },
     },
   });
   if (!match) return null;
 
+  // Mask each side unless the viewer is that side or it has explicitly revealed.
+  const candId = personIdentity(
+    match.candidate.user,
+    viewer === "candidate" || match.candidateRevealed,
+  );
+  const emp = employerIdentity(
+    {
+      companyName: match.opening.company.name,
+      companyConfidential: match.opening.companyConfidential,
+      companyAlias: match.opening.companyAlias,
+      hmName: match.opening.hiringManagerName,
+      hmInitials: match.opening.hiringManagerInitials,
+      hmHeadline: match.opening.hiringManagerHeadline,
+      hmAnonymous: match.opening.hmAnonymous,
+      hmAlias: match.opening.hiringManagerAlias,
+    },
+    viewer === "manager" || match.employerRevealed,
+  );
+
   const candidate: Person = {
-    id: match.candidate.user.name,
-    name: match.candidate.user.name,
+    id: candId.name,
+    name: candId.name,
     headline: match.candidate.headline,
-    initials: match.candidate.user.initials,
+    initials: candId.initials,
   };
   const manager: Person = {
-    id: match.opening.hiringManagerName,
-    name: match.opening.hiringManagerName,
-    headline: match.opening.hiringManagerHeadline,
-    initials: match.opening.hiringManagerInitials,
+    id: emp.hmName,
+    name: emp.hmName,
+    headline: emp.hmHeadline,
+    initials: emp.hmInitials,
   };
 
   const me = viewer === "candidate" ? candidate : manager;

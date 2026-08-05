@@ -108,6 +108,45 @@ export default async function NewRolePage({
           <span className="text-xs text-muted-foreground">comma-separated</span>
         </label>
 
+        <fieldset className="flex flex-col gap-3 rounded-2xl border border-border bg-card p-4">
+          <legend className={labelClass}>Employer privacy</legend>
+          <p className="text-xs text-muted-foreground">
+            Radical transparency about fit doesn&apos;t require exposing who you are. Hidden details
+            are shown to a candidate only when you choose to reveal them, per conversation.
+          </p>
+
+          <label className="flex items-start gap-3">
+            <input type="checkbox" name="companyConfidential" className="mt-0.5 size-4 accent-[var(--primary)]" />
+            <span className="text-sm">
+              <span className="font-medium text-foreground">Post confidentially</span>
+              <span className="block text-muted-foreground">
+                Hide the company (and your name) from candidates until you reveal.
+              </span>
+            </span>
+          </label>
+
+          <label className="flex items-start gap-3">
+            <input type="checkbox" name="hmAnonymous" className="mt-0.5 size-4 accent-[var(--primary)]" />
+            <span className="text-sm">
+              <span className="font-medium text-foreground">Hide my name</span>
+              <span className="block text-muted-foreground">
+                Appear as the hiring team; the company stays visible.
+              </span>
+            </span>
+          </label>
+
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <label className="flex flex-col gap-1.5">
+              <span className={labelClass}>Company alias (optional)</span>
+              <input name="companyAlias" className={inputClass} placeholder="e.g. A Series-B fintech" />
+            </label>
+            <label className="flex flex-col gap-1.5">
+              <span className={labelClass}>Your alias (optional)</span>
+              <input name="hiringManagerAlias" className={inputClass} placeholder="e.g. Engineering lead" />
+            </label>
+          </div>
+        </fieldset>
+
         {plan.calibration ? (
           <CalibrationFields />
         ) : (

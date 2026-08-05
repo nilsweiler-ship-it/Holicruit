@@ -6,6 +6,7 @@ import type { ChatMessage } from "@/lib/types";
 import { matchingService } from "@/lib/services/matching";
 import { getThreadView } from "@/lib/services/thread";
 import { ChatThread } from "@/components/chat/chat-thread";
+import { IdentityBanner } from "@/components/identity/identity-banner";
 
 export const metadata: Metadata = { title: "Direct line · Holicruit" };
 
@@ -16,7 +17,7 @@ export default async function CandidateChatPage({
   params: Promise<{ matchId: string }>;
 }) {
   const { matchId } = await params;
-  const match = await matchingService.getMatch(matchId);
+  const match = await matchingService.getMatch(matchId, "candidate");
   if (!match) notFound();
   const view = await getThreadView(matchId, "candidate");
   if (!view) notFound();
@@ -45,6 +46,8 @@ export default async function CandidateChatPage({
       <h1 className="truncate text-sm font-semibold text-foreground">
         Direct line · {match.opening.title} @ {match.opening.company.name}
       </h1>
+
+      <IdentityBanner matchId={matchId} side="candidate" />
 
       <ChatThread
         matchId={matchId}

@@ -8,6 +8,8 @@ CREATE TABLE "User" (
     "passwordHash" TEXT NOT NULL,
     "name" TEXT NOT NULL,
     "initials" TEXT NOT NULL,
+    "alias" TEXT,
+    "anonymous" BOOLEAN NOT NULL DEFAULT false,
     "roles" TEXT NOT NULL DEFAULT '["candidate"]',
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
@@ -109,6 +111,10 @@ CREATE TABLE "Opening" (
     "hiringManagerName" TEXT NOT NULL,
     "hiringManagerHeadline" TEXT NOT NULL,
     "hiringManagerInitials" TEXT NOT NULL,
+    "companyConfidential" BOOLEAN NOT NULL DEFAULT false,
+    "hmAnonymous" BOOLEAN NOT NULL DEFAULT false,
+    "companyAlias" TEXT,
+    "hiringManagerAlias" TEXT,
     "requiredHard" TEXT NOT NULL DEFAULT '[]',
     "requiredSoft" TEXT NOT NULL DEFAULT '[]',
     "priority" BOOLEAN NOT NULL DEFAULT false,
@@ -138,6 +144,8 @@ CREATE TABLE "Match" (
     "candidateOptIn" BOOLEAN NOT NULL DEFAULT false,
     "managerOptIn" BOOLEAN NOT NULL DEFAULT false,
     "saved" BOOLEAN NOT NULL DEFAULT false,
+    "candidateRevealed" BOOLEAN NOT NULL DEFAULT false,
+    "employerRevealed" BOOLEAN NOT NULL DEFAULT false,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "Match_pkey" PRIMARY KEY ("id")

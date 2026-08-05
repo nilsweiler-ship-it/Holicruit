@@ -8,6 +8,7 @@ import { runMatchingForOpening } from "@/lib/matching/engine";
 import { jobAdParser } from "@/lib/services/ingest";
 import { getActivePlan, countOpenRoles } from "@/lib/services/billing";
 import { SCORE_CRITERIA } from "@/lib/scoresheet";
+import { employerIdentity } from "@/lib/identity";
 import type { SkillGap } from "@/lib/fit/types";
 
 /** Block posting beyond the plan's open-role limit → send to billing. */
@@ -55,6 +56,12 @@ export async function createOpening(formData: FormData): Promise<void> {
   }
   const softWeight = 100 - hardWeight;
 
+  // Employer-side privacy (per role). A confidential company also hides the HM.
+  const companyConfidential = formData.get("companyConfidential") === "on";
+  const hmAnonymous = companyConfidential || formData.get("hmAnonymous") === "on";
+  const companyAlias = String(formData.get("companyAlias") ?? "").trim() || null;
+  const hiringManagerAlias = String(formData.get("hiringManagerAlias") ?? "").trim() || null;
+
   const opening = await prisma.opening.create({
     data: {
       title,
@@ -67,6 +74,10 @@ export async function createOpening(formData: FormData): Promise<void> {
       hiringManagerName: user.name,
       hiringManagerHeadline: `Hiring manager · ${company.name}`,
       hiringManagerInitials: user.initials,
+      companyConfidential,
+      hmAnonymous,
+      companyAlias,
+      hiringManagerAlias,
       requiredHard: JSON.stringify(parseList(formData.get("requiredHard"))),
       requiredSoft: JSON.stringify(parseList(formData.get("requiredSoft"))),
       priority: plan.priorityMatching ?? false,
@@ -566,6 +577,22 @@ export async function passWithFeedback(matchId: string, body: string): Promise<v
   ).length;
   const programCount = await prisma.program.count({ where: { closesGap: primary.skill } });
 
+  // Respect a confidential role: the candidate's Growth Report shows the masked
+  // company label unless the employer has revealed itself for this match.
+  const emp = employerIdentity(
+    {
+      companyName: match.opening.company.name,
+      companyConfidential: match.opening.companyConfidential,
+      companyAlias: match.opening.companyAlias,
+      hmName: match.opening.hiringManagerName,
+      hmInitials: match.opening.hiringManagerInitials,
+      hmHeadline: match.opening.hiringManagerHeadline,
+      hmAnonymous: match.opening.hmAnonymous,
+      hmAlias: match.opening.hiringManagerAlias,
+    },
+    match.employerRevealed,
+  );
+
   await prisma.match.update({ where: { id: matchId }, data: { stage: "closed" } });
   await prisma.feedbackDraft.upsert({
     where: { matchId },
@@ -585,7 +612,7 @@ export async function passWithFeedback(matchId: string, body: string): Promise<v
     create: {
       matchId,
       roleTitle: match.opening.title,
-      company: match.opening.company.name,
+      company: emp.companyName,
       hardYou: match.hardFit,
       hardBar: HARD_BAR,
       softYou: match.softFit,

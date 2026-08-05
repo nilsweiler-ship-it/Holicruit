@@ -10,6 +10,7 @@
  * produces a structured Growth Report with a named, trackable gap.
  */
 import { prisma } from "../db";
+import { personIdentity } from "../identity";
 
 export type PoolStatus = "ready" | "nurturing";
 
@@ -50,7 +51,9 @@ export async function getTalentPool(userId: string): Promise<TalentPoolSummary> 
   const rows = await prisma.match.findMany({
     where: { stage: "closed", opening: { company: { ownerId: userId } } },
     include: {
-      candidate: { include: { user: { select: { name: true, initials: true } } } },
+      candidate: {
+        include: { user: { select: { name: true, initials: true, alias: true, anonymous: true } } },
+      },
       opening: { include: { company: { select: { name: true } } } },
       growthReport: true,
     },
@@ -82,11 +85,14 @@ export async function getTalentPool(userId: string): Promise<TalentPoolSummary> 
     // one program exists AND learners have completed it.
     const status: PoolStatus =
       programsForGap > 0 && completionsForGap > 0 ? "ready" : "nurturing";
+    // Employer is viewing a candidate they passed on: masked until the candidate
+    // reveals for this match.
+    const id = personIdentity(r.candidate.user, r.candidateRevealed);
     return {
       matchId: r.id,
       candidateId: r.candidate.id,
-      name: r.candidate.user.name,
-      initials: r.candidate.user.initials,
+      name: id.name,
+      initials: id.initials,
       headline: r.candidate.headline,
       roleTitle: r.opening.title,
       company: r.opening.company.name,
