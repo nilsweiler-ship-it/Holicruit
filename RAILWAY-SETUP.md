@@ -5,7 +5,11 @@ A beginner-friendly walkthrough to get a live URL on your own domain. Budget
 below; the flow is the same.)
 
 You'll do five things: get the code on GitHub → create the Railway app → add a
-disk for the database → set a few settings → connect your domain.
+Postgres database → set a few settings → connect your domain.
+
+> **Prerequisite:** the initial database migration must be committed first. If
+> you haven't done it, follow **POSTGRES.md → One-time setup** (a few commands on
+> your Mac) before Part 4 here.
 
 ---
 
@@ -28,7 +32,8 @@ Skip if the project is already on GitHub.
    (Replace `<your-username>`. GitHub will ask you to sign in.)
 
 > Note: your `.env` file is gitignored (good — it holds secrets). You'll re-enter
-> those values in Railway in Part 3.
+> those values in Railway in Part 3. Your `prisma/migrations/` folder **is**
+> committed — that's what production applies.
 
 ---
 
@@ -39,38 +44,35 @@ Skip if the project is already on GitHub.
 3. The first time, Railway asks to access your GitHub — approve it, and pick the
    `holicruit` repo.
 4. Railway starts building automatically. **Let the first build fail or finish —
-   we still need to add the database disk and settings**, so don't worry about
-   the result yet.
+   we still need to add the database and settings**, so don't worry about the
+   result yet.
 
 ---
 
-## Part 2 — Add a disk for the database (important)
+## Part 2 — Add a Postgres database
 
-Holicruit's database is a single file (SQLite). Without a persistent disk it
-would reset on every deploy. So:
-
-1. Open your service (the box named `holicruit`) → **Settings** tab (or the
-   **Volumes** section, depending on the UI).
-2. Click **Add Volume** (a.k.a. "Attach Volume" / "New Volume").
-3. Set the **Mount path** to:
-   ```
-   /data
-   ```
-4. Save. (A small size like 1 GB is plenty.)
+1. In your project canvas, click **New → Database → Add PostgreSQL**.
+2. Railway provisions a managed Postgres service (it appears as a second box next
+   to your `holicruit` app). That's it — it's automatically backed up and holds
+   your data across deploys. No volume/disk needed.
 
 ---
 
 ## Part 3 — Set the settings & environment variables
 
-Still in your service:
+Open your **app** service (the `holicruit` box, not the database):
 
 1. Go to the **Variables** tab → add these (click **New Variable** for each):
 
    | Name | Value |
    |------|-------|
-   | `DATABASE_URL` | `file:/data/prod.db` |
+   | `DATABASE_URL` | `${{Postgres.DATABASE_URL}}` |
    | `AUTH_SECRET` | *(generate — see below)* |
    | `NEXT_PUBLIC_APP_URL` | `https://<your-domain>` (your reserved domain) |
+
+   `${{Postgres.DATABASE_URL}}` references the database service — Railway offers
+   it as a suggestion when you start typing `${{`. (If your Postgres service has a
+   different name, use that name.)
 
    To generate `AUTH_SECRET`, run this on your Mac and paste the output as the value:
    ```
@@ -86,32 +88,27 @@ Still in your service:
    - **Build command:** `npm install && npm run build`
    - **Start command:** `npm run start`
 
-3. Click **Deploy** (or it redeploys automatically after saving variables). Wait
-   for it to finish (green).
-
 ---
 
-## Part 4 — Create the database tables & demo data (one time)
+## Part 4 — Deploy (tables are created automatically)
 
-The disk is empty on first deploy, so create the schema and seed once:
+Unlike the old SQLite setup, you **don't** run any manual database command. The
+start script does it:
 
-1. In your service, open the **Command / Shell** (Railway has a "Run a command"
-   or terminal option in the service menu). If you can't find an in-dashboard
-   shell, install the Railway CLI on your Mac (`npm i -g @railway/cli`, then
-   `railway login` and `railway link`), and run the command with `railway run …`.
-2. Run:
-   ```
-   npx prisma db push && npm run db:seed
-   ```
-3. You should see "Seeded: …" in the output. This creates every table (including
-   the new `avatarUrl`, `traitProfile`, `whenAt` columns) and loads the demo
-   accounts.
+```
+prisma migrate deploy   →   seed demo data (if empty)   →   next start
+```
+
+1. Make sure your initial migration is committed (POSTGRES.md → One-time setup).
+2. Click **Deploy** (or it redeploys automatically after saving variables).
+3. Watch the deploy logs — you should see the migration apply and then
+   "Seeded: …". When it goes green, the schema and demo accounts are live.
 
 ---
 
 ## Part 5 — Connect your domain
 
-1. In your service → **Settings → Networking → Custom Domain** → **Add Domain**.
+1. In your app service → **Settings → Networking → Custom Domain** → **Add Domain**.
 2. Enter your domain. Two cases:
    - **A subdomain** like `app.yourdomain.com` (recommended, simplest): Railway
      shows a **CNAME target** (e.g. `xxxx.up.railway.app`).
@@ -141,12 +138,12 @@ The disk is empty on first deploy, so create the schema and seed once:
 
 ## Before you share the link with trial users
 
-- Reseed if you've changed data: rerun `npm run db:seed` (Part 4).
-- Consider replacing the initials-only avatars with a few real photos so it looks alive.
 - The demo accounts use `password123` — fine for a guided trial; change or remove
   them before anything public.
+- Consider replacing the initials-only avatars with a few real photos so it looks alive.
 - Every push to your GitHub `main` branch now auto-deploys — so I can ship
-  updates and they'll go live on your domain automatically.
+  updates and they'll go live on your domain automatically. Schema changes ship
+  the same way: their migrations are committed and apply on deploy.
 
 ---
 
@@ -155,4 +152,5 @@ The disk is empty on first deploy, so create the schema and seed once:
 Tell me where (which part/step) and paste any error text. Common ones:
 - **Build fails on `prisma generate`** → make sure `npm install` is in the build command (it runs `prisma generate` automatically via postinstall).
 - **App loads but login fails / "config" error** → `AUTH_SECRET` is missing or `NEXT_PUBLIC_APP_URL` doesn't match the domain.
-- **Data resets on deploy** → the volume isn't mounted at `/data`, or `DATABASE_URL` isn't `file:/data/prod.db`.
+- **"relation … does not exist" / no tables** → the initial migration wasn't committed before deploy. Do POSTGRES.md → One-time setup, commit `prisma/migrations`, push, redeploy.
+- **App can't reach the database** → `DATABASE_URL` isn't referencing the Postgres service; re-check `${{Postgres.DATABASE_URL}}` in Variables.

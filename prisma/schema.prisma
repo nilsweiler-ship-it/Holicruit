@@ -1,13 +1,13 @@
 // Holicruit data model — built around the fit model and opt-in matching.
-// SQLite: no native enums or Json scalar, so those are Strings (JSON-encoded
-// where noted). Helpers in src/lib/db serialize/parse them.
+// Enums and JSON payloads are stored as Strings (JSON-encoded where noted) so
+// the model stays portable; helpers in src/lib/db serialize/parse them.
 
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 

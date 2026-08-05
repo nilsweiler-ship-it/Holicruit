@@ -37,18 +37,26 @@ This repo is the implementation of the `design_handoff_holicruit/` wireframes.
 - **Tailwind CSS 4** + **shadcn/ui** (new-york) · **Outfit** type
 - Brand palette: Coral `#E0533D` (primary) · Ink `#161514` · Cream `#F4EFE7`
 
-The **matching engine** and **scenario assessment** are separate services this UI only
-consumes; here they're **mocked behind clean interfaces** (`src/lib/services/*`) over
-typed fixtures (`src/lib/fixtures/*`). No database — the app is UI-first.
+The **matching engine** and **scenario assessment** live behind clean interfaces
+(`src/lib/services/*`, `src/lib/matching/*`) over the same skill vocabulary. Data
+persists to **PostgreSQL** via **Prisma** (`prisma/schema.prisma`); migrations are
+committed in `prisma/migrations/`. See **POSTGRES.md** for the DB workflow.
 
 ## Quick start
 
+Needs a local Postgres. The included Docker one is easiest:
+
 ```bash
 npm install
+docker compose up -d                 # local Postgres on :5432
+cp .env.example .env                 # DATABASE_URL is preset for the Docker db
+echo "AUTH_SECRET=$(npx -y auth secret | tail -1)" >> .env   # or: openssl rand -base64 32
+npx prisma migrate dev               # create/apply tables (first run: --name init)
+npm run db:seed                      # demo data (all accounts use password123)
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) — it lands on the role selector.
+Open [http://localhost:3000](http://localhost:3000).
 
 ## Project structure
 

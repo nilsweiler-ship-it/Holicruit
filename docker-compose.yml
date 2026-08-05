@@ -1,0 +1,23 @@
+# Local Postgres for development. Start it with:  docker compose up -d
+# Then your local DATABASE_URL (see .env.example) points at it.
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: holicruit-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: holicruit
+      POSTGRES_PASSWORD: holicruit
+      POSTGRES_DB: holicruit
+    ports:
+      - "5432:5432"
+    volumes:
+      - holicruit_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U holicruit -d holicruit"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  holicruit_pgdata:
