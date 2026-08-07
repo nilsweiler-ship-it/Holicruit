@@ -322,6 +322,22 @@ async function main() {
     });
   }
 
+  // Terms demo: give Sam confidential pay/location expectations so "Terms fit"
+  // shows a real compatibility signal on his matches.
+  await prisma.candidateProfile.update({
+    where: { id: samProfileId },
+    data: {
+      expectedSalaryMin: 85000,
+      expectedSalaryMax: 110000,
+      salaryCurrency: "€",
+      workModes: JSON.stringify(["hybrid", "remote"]),
+      locationPref: "Berlin / EU remote",
+    },
+  });
+  if (samTalking) {
+    await prisma.opening.update({ where: { id: samTalking.openingId }, data: { workMode: "hybrid" } });
+  }
+
   // ── Recruiter account + intros ──
   const recUser = await prisma.user.create({
     data: {

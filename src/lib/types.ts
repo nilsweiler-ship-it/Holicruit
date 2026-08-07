@@ -4,6 +4,7 @@
  */
 
 import type { FitObject, GrowthReport, SkillGap, SkillType } from "./fit/types";
+import type { TermsView } from "./terms";
 
 /** One account, interchangeable "hats". The training **provider** is a
  *  fourth-party entity that offers/promotes trainings to close candidate gaps. */
@@ -105,6 +106,8 @@ export interface Match {
   hasThread?: boolean;
   /** Imported by the HM, awaiting the candidate's claim (not contactable yet). */
   invitePending?: boolean;
+  /** Pay + location compatibility (a signal; figures private until both share). */
+  terms?: TermsView;
 }
 
 /** Everything that hangs off one candidate persona — used to demo the same UI

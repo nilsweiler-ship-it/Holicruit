@@ -97,6 +97,18 @@ export default async function NewRolePage({
         </div>
 
         <label className="flex flex-col gap-1.5">
+          <span className={labelClass}>Working location</span>
+          <select name="workMode" className={inputClass} defaultValue="onsite">
+            <option value="onsite">On-site</option>
+            <option value="hybrid">Hybrid</option>
+            <option value="remote">Remote</option>
+          </select>
+          <span className="text-xs text-muted-foreground">
+            The salary band stays private — candidates see only whether it&apos;s compatible.
+          </span>
+        </label>
+
+        <label className="flex flex-col gap-1.5">
           <span className={labelClass}>Required hard skills</span>
           <input name="requiredHard" defaultValue={sp.requiredHard} className={inputClass} placeholder="React, TypeScript, GraphQL" />
           <span className="text-xs text-muted-foreground">comma-separated</span>

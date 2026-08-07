@@ -9,6 +9,7 @@ import type { Match, PipelineStage } from "../types";
 import { prisma } from "../db";
 import { GAP_DEMAND } from "../fixtures";
 import { personIdentity, employerIdentity } from "../identity";
+import { computeTermsFit, parseModes, type TermsView } from "../terms";
 
 /** Who is looking at a match — decides which side's identity may be masked. */
 export type Viewer = "candidate" | "employer";
@@ -48,11 +49,18 @@ type MatchRow = {
   managerOptIn: boolean;
   candidateRevealed: boolean;
   employerRevealed: boolean;
+  candidateSharesTerms: boolean;
+  employerSharesTerms: boolean;
   candidate: {
     id: string;
     headline: string;
     avatarUrl: string | null;
     claimed: boolean;
+    expectedSalaryMin: number | null;
+    expectedSalaryMax: number | null;
+    salaryCurrency: string | null;
+    workModes: string;
+    locationPref: string | null;
     user: { name: string; initials: string; alias: string | null; anonymous: boolean };
   };
   opening: {
@@ -63,6 +71,7 @@ type MatchRow = {
     salaryMin: number | null;
     salaryMax: number | null;
     currency: string;
+    workMode: string;
     hiringManagerName: string;
     hiringManagerHeadline: string;
     hiringManagerInitials: string;
@@ -95,6 +104,42 @@ function toMatch(r: MatchRow, viewer: Viewer): Match {
     },
     viewer === "employer" || r.employerRevealed,
   );
+
+  // Terms fit — compatibility always; raw figures only when both sides share.
+  const candidateModes = parseModes(r.candidate.workModes);
+  const compat = computeTermsFit({
+    expMin: r.candidate.expectedSalaryMin,
+    roleMax: r.opening.salaryMax,
+    candidateModes,
+    roleMode: r.opening.workMode,
+  });
+  const termsRevealed = r.candidateSharesTerms && r.employerSharesTerms;
+  const terms: TermsView = {
+    ...compat,
+    revealed: termsRevealed,
+    youShared: viewer === "candidate" ? r.candidateSharesTerms : r.employerSharesTerms,
+    theyShared: viewer === "candidate" ? r.employerSharesTerms : r.candidateSharesTerms,
+    roleMode: r.opening.workMode,
+    candidateModes,
+    roleRegion: r.opening.location,
+    candidateRegion: r.candidate.locationPref ?? undefined,
+    ...(termsRevealed
+      ? {
+          candidateRange: {
+            min: r.candidate.expectedSalaryMin ?? undefined,
+            max: r.candidate.expectedSalaryMax ?? undefined,
+            currency: r.candidate.salaryCurrency ?? "€",
+          },
+          roleBand: {
+            min: r.opening.salaryMin ?? undefined,
+            max: r.opening.salaryMax ?? undefined,
+            currency: r.opening.currency,
+          },
+        }
+      : {}),
+  };
+  // The role's raw pay stays private to candidates unless terms are shared.
+  const showRoleSalary = viewer === "employer" || termsRevealed;
   const fit: FitObject = {
     hardFit: r.hardFit,
     softFit: r.softFit,
@@ -120,8 +165,8 @@ function toMatch(r: MatchRow, viewer: Viewer): Match {
       industry: r.opening.industry,
       company: { id: "", name: emp.companyName, location: r.opening.company.location },
       location: r.opening.location,
-      salaryMin: r.opening.salaryMin ?? undefined,
-      salaryMax: r.opening.salaryMax ?? undefined,
+      salaryMin: showRoleSalary ? r.opening.salaryMin ?? undefined : undefined,
+      salaryMax: showRoleSalary ? r.opening.salaryMax ?? undefined : undefined,
       currency: r.opening.currency,
       hiringManager: {
         id: "",
@@ -139,6 +184,7 @@ function toMatch(r: MatchRow, viewer: Viewer): Match {
     saved: r.saved,
     hasThread: Boolean(r.thread),
     invitePending: !r.candidate.claimed,
+    terms,
   };
 }
 

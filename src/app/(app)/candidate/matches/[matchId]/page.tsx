@@ -7,6 +7,7 @@ import { getCandidateProfile } from "@/lib/services/profile";
 import { MutualFit } from "@/components/fit/mutual-fit";
 import { FitRadar, type RadarAxis } from "@/components/fit/fit-radar";
 import { DirectLinePanel } from "@/components/match/direct-line-panel";
+import { TermsFit } from "@/components/terms/terms-fit";
 import { cn } from "@/lib/utils";
 
 export const metadata: Metadata = { title: "Match · Holicruit" };
@@ -91,6 +92,8 @@ export default async function MatchDetailPage({
           ))}
         </ul>
       </section>
+
+      {match.terms && <TermsFit terms={match.terms} matchId={match.id} side="candidate" />}
 
       {isClosed ? (
         <Link

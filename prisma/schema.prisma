@@ -72,6 +72,14 @@ model CandidateProfile {
   claimed           Boolean @default(true)
   invitedByUserId   String?
   inviteToken       String? @unique
+  // Confidential pay + location expectations. Never shown to an employer as raw
+  // numbers — only a compatibility signal — until both sides share for a match.
+  expectedSalaryMin Int?
+  expectedSalaryMax Int?
+  salaryCurrency    String? @default("€")
+  // JSON array subset of "onsite" | "hybrid" | "remote"
+  workModes         String  @default("[]")
+  locationPref      String?
 
   hardSkills   HardSkill[]
   softSkills   SoftSkillScore[]
@@ -145,6 +153,8 @@ model Opening {
   salaryMin           Int?
   salaryMax           Int?
   currency            String  @default("€")
+  // "onsite" | "hybrid" | "remote" — matched against candidate work-mode prefs.
+  workMode            String  @default("onsite")
   hiringManagerName   String
   hiringManagerHeadline String
   hiringManagerInitials String
@@ -202,6 +212,9 @@ model Match {
   // employerRevealed  → the employer showed company/HM identity to this candidate.
   candidateRevealed Boolean      @default(false)
   employerRevealed  Boolean      @default(false)
+  // Exact pay/location figures are exchanged only when BOTH sides opt to share.
+  candidateSharesTerms Boolean   @default(false)
+  employerSharesTerms  Boolean   @default(false)
   createdAt     DateTime         @default(now())
 
   thread       Thread?

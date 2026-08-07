@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
-import { Download, ShieldCheck, TriangleAlert, VenetianMask } from "lucide-react";
+import { Coins, Download, ShieldCheck, TriangleAlert, VenetianMask } from "lucide-react";
 import { prisma } from "@/lib/db";
 import { requireUser, getRole } from "@/lib/persona";
-import { updatePrivacy, deleteMyAccount } from "@/lib/actions/privacy";
+import { updatePrivacy, updateWorkPrefs, deleteMyAccount } from "@/lib/actions/privacy";
+import { parseModes } from "@/lib/terms";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
@@ -23,6 +24,20 @@ export default async function PrivacySettingsPage({
     searchParams,
   ]);
   const isProvider = role === "provider";
+  const isCandidate = role === "candidate";
+  const prefs = isCandidate
+    ? await prisma.candidateProfile.findUnique({
+        where: { userId: user.id },
+        select: {
+          expectedSalaryMin: true,
+          expectedSalaryMax: true,
+          salaryCurrency: true,
+          workModes: true,
+          locationPref: true,
+        },
+      })
+    : null;
+  const modes = parseModes(prefs?.workModes);
 
   return (
     <div className="flex max-w-2xl flex-col gap-8">
@@ -91,6 +106,83 @@ export default async function PrivacySettingsPage({
 
             <Button type="submit" className="self-start">
               Save privacy settings
+            </Button>
+          </form>
+        </section>
+      )}
+
+      {/* Pay + location expectations — candidates only */}
+      {isCandidate && (
+        <section className="flex flex-col gap-4 rounded-2xl border border-border bg-card p-5">
+          <div className="flex flex-col gap-1">
+            <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
+              <Coins className="size-4 text-primary" />
+              Pay &amp; location expectations
+            </div>
+            <p className="text-sm text-muted-foreground">
+              Private by default. Employers only see whether you&apos;re compatible — never your
+              numbers — until you both choose to share on a specific match.
+            </p>
+          </div>
+
+          <form action={updateWorkPrefs} className="flex flex-col gap-4">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+              <label className="flex flex-col gap-1.5">
+                <span className="text-xs font-medium text-foreground">Expected minimum</span>
+                <Input
+                  name="expectedSalaryMin"
+                  type="number"
+                  defaultValue={prefs?.expectedSalaryMin ?? ""}
+                  placeholder="70000"
+                />
+              </label>
+              <label className="flex flex-col gap-1.5">
+                <span className="text-xs font-medium text-foreground">Ideal</span>
+                <Input
+                  name="expectedSalaryMax"
+                  type="number"
+                  defaultValue={prefs?.expectedSalaryMax ?? ""}
+                  placeholder="90000"
+                />
+              </label>
+              <label className="flex flex-col gap-1.5">
+                <span className="text-xs font-medium text-foreground">Currency</span>
+                <Input name="salaryCurrency" defaultValue={prefs?.salaryCurrency ?? "€"} />
+              </label>
+            </div>
+
+            <div className="flex flex-col gap-2">
+              <span className="text-xs font-medium text-foreground">Open to</span>
+              <div className="flex flex-wrap gap-2">
+                {(["onsite", "hybrid", "remote"] as const).map((m) => (
+                  <label
+                    key={m}
+                    className="flex items-center gap-2 rounded-full border border-border bg-background px-3 py-1.5 text-sm capitalize"
+                  >
+                    <input
+                      type="checkbox"
+                      name="workModes"
+                      value={m}
+                      defaultChecked={modes.includes(m)}
+                      className="size-4 accent-[var(--primary)]"
+                    />
+                    {m}
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            <label className="flex flex-col gap-1.5">
+              <span className="text-xs font-medium text-foreground">Preferred location / region</span>
+              <Input
+                name="locationPref"
+                defaultValue={prefs?.locationPref ?? ""}
+                placeholder="e.g. Zurich, or EU remote"
+              />
+            </label>
+
+            <Button type="submit" className="self-start">
+              Save expectations
             </Button>
           </form>
         </section>

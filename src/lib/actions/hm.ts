@@ -71,6 +71,9 @@ export async function createOpening(formData: FormData): Promise<void> {
       salaryMin: Number(formData.get("salaryMin")) || null,
       salaryMax: Number(formData.get("salaryMax")) || null,
       currency: String(formData.get("currency") ?? "").trim() || "€",
+      workMode: ["onsite", "hybrid", "remote"].includes(String(formData.get("workMode")))
+        ? String(formData.get("workMode"))
+        : "onsite",
       hiringManagerName: user.name,
       hiringManagerHeadline: `Hiring manager · ${company.name}`,
       hiringManagerInitials: user.initials,

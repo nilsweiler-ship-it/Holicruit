@@ -44,6 +44,53 @@ export async function revealEmployer(matchId: string): Promise<void> {
   revalidatePath(`/hiring-manager/candidate/${matchId}`);
 }
 
+/** Save the candidate's confidential pay + location expectations. */
+export async function updateWorkPrefs(formData: FormData): Promise<void> {
+  const candidateId = await getActiveCandidateId();
+  const min = Number(formData.get("expectedSalaryMin")) || null;
+  const max = Number(formData.get("expectedSalaryMax")) || null;
+  const currency = String(formData.get("salaryCurrency") ?? "€").trim() || "€";
+  const modes = formData
+    .getAll("workModes")
+    .map(String)
+    .filter((m) => m === "onsite" || m === "hybrid" || m === "remote");
+  const locationPref = String(formData.get("locationPref") ?? "").trim() || null;
+  await prisma.candidateProfile.update({
+    where: { id: candidateId },
+    data: {
+      expectedSalaryMin: min,
+      expectedSalaryMax: max,
+      salaryCurrency: currency,
+      workModes: JSON.stringify(modes),
+      locationPref,
+    },
+  });
+  revalidatePath("/settings/privacy");
+}
+
+/** Candidate opts to share their exact pay/location figures for one match. */
+export async function shareTermsAsCandidate(matchId: string): Promise<void> {
+  const candidateId = await getActiveCandidateId();
+  const match = await prisma.match.findUnique({ where: { id: matchId }, select: { candidateId: true } });
+  if (!match || match.candidateId !== candidateId) return;
+  await prisma.match.update({ where: { id: matchId }, data: { candidateSharesTerms: true } });
+  revalidatePath(`/candidate/matches/${matchId}`);
+  revalidatePath(`/candidate/chat/${matchId}`);
+}
+
+/** Employer opts to share the role's exact band for one match. */
+export async function shareTermsAsEmployer(matchId: string): Promise<void> {
+  const user = await requireUser();
+  const match = await prisma.match.findUnique({
+    where: { id: matchId },
+    select: { opening: { select: { company: { select: { ownerId: true } } } } },
+  });
+  if (!match || match.opening.company.ownerId !== user.id) return;
+  await prisma.match.update({ where: { id: matchId }, data: { employerSharesTerms: true } });
+  revalidatePath(`/hiring-manager/candidate/${matchId}`);
+  revalidatePath(`/hiring-manager/chat/${matchId}`);
+}
+
 /**
  * Right to erasure (GDPR Art. 17). Deletes the account and everything that
  * cascades from it, then signs out. Requires typing DELETE to confirm.

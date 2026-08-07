@@ -11,6 +11,7 @@ import { LockedFeature } from "@/components/billing/locked-feature";
 import { ScoreSheetForm } from "@/components/pipeline/score-sheet-form";
 import { NotesForm } from "@/components/pipeline/notes-form";
 import { PersonalityBars } from "@/components/candidate/personality-bars";
+import { TermsFit } from "@/components/terms/terms-fit";
 import { scenarioService } from "@/lib/services/scenario";
 import { prisma } from "@/lib/db";
 import { requireUser } from "@/lib/persona";
@@ -94,6 +95,8 @@ export default async function CandidatePage({
       </header>
 
       <ScoreTiles fit={match.fit} />
+
+      {match.terms && <TermsFit terms={match.terms} matchId={match.id} side="employer" />}
 
       {calibration && (
         <div className="flex flex-wrap items-center gap-2 rounded-xl border border-primary/25 bg-primary/5 px-4 py-2.5 text-sm">
