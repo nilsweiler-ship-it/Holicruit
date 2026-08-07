@@ -239,6 +239,11 @@ export function HmPipelineBoard({
                       <p className="truncate text-sm font-medium text-foreground">
                         {match.candidate.name}
                       </p>
+                      {match.invitePending && (
+                        <span className="text-[10px] font-semibold uppercase tracking-wide text-[#C08a3e]">
+                          Invite pending
+                        </span>
+                      )}
                     </div>
                     {stage === "talking" && match.hasThread && (
                       <MessageCircle className="size-4 shrink-0 text-primary" aria-label="Active conversation" />

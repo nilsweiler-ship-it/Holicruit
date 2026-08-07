@@ -52,6 +52,7 @@ type MatchRow = {
     id: string;
     headline: string;
     avatarUrl: string | null;
+    claimed: boolean;
     user: { name: string; initials: string; alias: string | null; anonymous: boolean };
   };
   opening: {
@@ -137,6 +138,7 @@ function toMatch(r: MatchRow, viewer: Viewer): Match {
     contactable: r.candidateOptIn && r.managerOptIn,
     saved: r.saved,
     hasThread: Boolean(r.thread),
+    invitePending: !r.candidate.claimed,
   };
 }
 

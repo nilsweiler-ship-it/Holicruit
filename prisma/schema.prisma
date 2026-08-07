@@ -66,6 +66,12 @@ model CandidateProfile {
   traitProfile      String?
   // Uploaded profile photo, stored as a data URL (demo). Optional.
   avatarUrl         String?
+  // Import-your-pipeline: a candidate an HM imported is "unclaimed" — visible
+  // only in that HM's pipeline (never the wider marketplace) until the person
+  // accepts the invite and claims the profile. Then claimed flips to true.
+  claimed           Boolean @default(true)
+  invitedByUserId   String?
+  inviteToken       String? @unique
 
   hardSkills   HardSkill[]
   softSkills   SoftSkillScore[]

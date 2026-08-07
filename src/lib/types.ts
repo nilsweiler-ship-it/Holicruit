@@ -103,6 +103,8 @@ export interface Match {
   saved?: boolean;
   /** Active conversation indicator (drives the 💬 marker). */
   hasThread?: boolean;
+  /** Imported by the HM, awaiting the candidate's claim (not contactable yet). */
+  invitePending?: boolean;
 }
 
 /** Everything that hangs off one candidate persona — used to demo the same UI

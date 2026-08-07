@@ -252,7 +252,10 @@ export async function runMatchingForOpening(openingId: string): Promise<void> {
   // Priority roles (Scale) cast a wider net by lowering that bar.
   const base = opening.passBar ?? MATCH_THRESHOLD;
   const threshold = opening.priority ? Math.min(base, PRIORITY_THRESHOLD) : base;
+  // Only claimed candidates enter the open marketplace. Imported/unclaimed
+  // profiles are private to the HM who imported them (matched explicitly there).
   const profiles = await prisma.candidateProfile.findMany({
+    where: { claimed: true },
     include: { hardSkills: true, softSkills: true },
   });
   for (const p of profiles) {
