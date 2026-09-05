@@ -34,12 +34,17 @@ const traitFor = (id: string) =>
 async function main() {
   // On the server (SEED_ONLY_IF_EMPTY=1) don't wipe a database that already has
   // data — only seed a fresh/empty one. Locally, `npm run db:seed` still resets.
-  if (process.env.SEED_ONLY_IF_EMPTY === "1") {
+  // Escape hatch: set SEED_FORCE=1 to force a clean wipe+reseed on the next
+  // deploy (then remove it again), e.g. to refresh the demo after seed changes.
+  if (process.env.SEED_ONLY_IF_EMPTY === "1" && process.env.SEED_FORCE !== "1") {
     const existing = await prisma.user.count().catch(() => 0);
     if (existing > 0) {
       console.log(`Seed skipped — ${existing} users already present.`);
       return;
     }
+  }
+  if (process.env.SEED_FORCE === "1") {
+    console.log("SEED_FORCE=1 — wiping and reseeding the database.");
   }
 
   // Idempotent: clear everything (order respects FKs via cascade on User/parent).
@@ -96,6 +101,8 @@ async function main() {
         salaryMin: o.salaryMin ?? null,
         salaryMax: o.salaryMax ?? null,
         currency: o.currency ?? "€",
+        // Keep the work mode consistent with the location label on the fixture.
+        workMode: /remote/i.test(o.location) ? "remote" : /hybrid/i.test(o.location) ? "hybrid" : "onsite",
         hiringManagerName: o.hiringManager.name,
         hiringManagerHeadline: o.hiringManager.headline,
         hiringManagerInitials: o.hiringManager.initials,
@@ -198,9 +205,11 @@ async function main() {
   // ── HM pipeline: pool candidates + their matches to the pipeline opening ──
   // pm-6 is Sam, who already has a match to that opening — promote it to "talking".
   const samProfileId = profileByCandidateId.get("cand-sam")!;
-  async function ensurePoolProfile(person: Person): Promise<string> {
+  async function ensurePoolProfile(person: Person, opening: Opening): Promise<string> {
     const existing = profileByCandidateId.get(person.id);
     if (existing) return existing;
+    // Seed real skills matching the role so a live fit recompute agrees with the
+    // pipeline (otherwise a skill-less pool candidate scores ~0 on recompute).
     const user = await prisma.user.create({
       data: {
         email: emailFor(person.id),
@@ -209,7 +218,14 @@ async function main() {
         initials: person.initials,
         roles: JSON.stringify(["candidate"]),
         candidate: {
-          create: { headline: person.headline, industry: "Software", completeness: 60, scenarioCompleted: true },
+          create: {
+            headline: person.headline,
+            industry: opening.industry,
+            completeness: 60,
+            scenarioCompleted: true,
+            hardSkills: { create: opening.requiredHard.map((name) => ({ name, verified: true })) },
+            softSkills: { create: opening.requiredSoft.map((name) => ({ name, level: 80 })) },
+          },
         },
       },
       include: { candidate: true },
@@ -232,7 +248,7 @@ async function main() {
       }))!.id);
       continue;
     }
-    const profileId = await ensurePoolProfile(pm.candidate);
+    const profileId = await ensurePoolProfile(pm.candidate, pm.opening);
     await createMatch(pm, profileId, { optedIn: true });
   }
 

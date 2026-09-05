@@ -106,7 +106,12 @@ export default async function MatchDetailPage({
           <ArrowUpRight className="size-5 text-primary" />
         </Link>
       ) : (
-        <DirectLinePanel manager={opening.hiringManager} matchId={match.id} initiallySaved={match.saved} />
+        <DirectLinePanel
+          manager={opening.hiringManager}
+          matchId={match.id}
+          initiallySaved={match.saved}
+          managerMasked={match.employerMasked}
+        />
       )}
     </div>
   );

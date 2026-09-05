@@ -108,6 +108,8 @@ export interface Match {
   invitePending?: boolean;
   /** Pay + location compatibility (a signal; figures private until both share). */
   terms?: TermsView;
+  /** The employer (company/HM) is masked to the candidate (confidential role). */
+  employerMasked?: boolean;
 }
 
 /** Everything that hangs off one candidate persona — used to demo the same UI

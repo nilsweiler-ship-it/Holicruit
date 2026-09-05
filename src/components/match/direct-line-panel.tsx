@@ -18,16 +18,19 @@ export function DirectLinePanel({
   manager,
   matchId,
   initiallySaved = false,
+  managerMasked = false,
 }: {
   manager: Person;
   matchId: string;
   initiallySaved?: boolean;
+  managerMasked?: boolean;
 }) {
   const [requested, setRequested] = useState(false);
   const [saved, setSaved] = useState(initiallySaved);
   const [, startTransition] = useTransition();
 
   const firstName = manager.name.split(" ")[0];
+  const who = managerMasked ? "the hiring manager" : firstName;
 
   return (
     <section className="flex flex-col gap-4 rounded-2xl border border-primary/30 bg-primary/8 p-5">
@@ -36,9 +39,18 @@ export function DirectLinePanel({
         <div className="flex flex-col gap-1">
           <h2 className="font-semibold text-foreground">Direct line to the hiring manager</h2>
           <p className="text-sm text-muted-foreground">
-            You&apos;ll talk to <span className="font-medium text-foreground">{firstName}</span>,{" "}
-            {manager.headline.split(",")[0]} — the person you&apos;d actually work with. No recruiter
-            relay.
+            {managerMasked ? (
+              <>
+                You&apos;ll talk directly to the hiring manager — the person you&apos;d actually work
+                with, revealed when they choose. No recruiter relay.
+              </>
+            ) : (
+              <>
+                You&apos;ll talk to <span className="font-medium text-foreground">{firstName}</span>,{" "}
+                {manager.headline.split(",")[0]} — the person you&apos;d actually work with. No
+                recruiter relay.
+              </>
+            )}
           </p>
         </div>
       </div>
@@ -49,7 +61,7 @@ export function DirectLinePanel({
           onClick={() => {
             setRequested(true);
             startTransition(() => requestIntro(matchId));
-            toast.success(`Intro requested — ${firstName} will be notified.`);
+            toast.success(`Intro requested — ${who} will be notified.`);
           }}
         >
           {requested ? (

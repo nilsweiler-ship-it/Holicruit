@@ -185,6 +185,7 @@ function toMatch(r: MatchRow, viewer: Viewer): Match {
     hasThread: Boolean(r.thread),
     invitePending: !r.candidate.claimed,
     terms,
+    employerMasked: emp.hmMasked,
   };
 }
 

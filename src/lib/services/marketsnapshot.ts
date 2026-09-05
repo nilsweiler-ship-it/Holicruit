@@ -78,6 +78,15 @@ export async function getRoleMarketSnapshot(openingId: string): Promise<RoleMark
       skillWeights,
     });
 
+  // Candidates already matched to this role: use the fit the HM already sees
+  // (the stored match), so the landscape agrees with the pipeline instead of
+  // silently recomputing and disagreeing.
+  const existing = await prisma.match.findMany({
+    where: { openingId },
+    select: { candidateId: true, mutualFit: true, gaps: true },
+  });
+  const byCandidate = new Map(existing.map((m) => [m.candidateId, m]));
+
   let aboveBar = 0;
   let within = 0; // within 15 below the bar
   let developing = 0; // 15–30 below
@@ -86,43 +95,49 @@ export async function getRoleMarketSnapshot(openingId: string): Promise<RoleMark
   const gapTally = new Map<string, number>();
 
   for (const p of profiles) {
-    const fit = fitOf(p.hardSkills, p.softSkills);
+    const stored = byCandidate.get(p.id);
+    const recomputed = stored ? null : fitOf(p.hardSkills, p.softSkills);
+    const mutualFit = stored ? stored.mutualFit : recomputed!.mutualFit;
+    const gaps = (stored ? JSON.parse(stored.gaps) : recomputed!.gaps) as SkillGap[];
 
-    if (fit.mutualFit >= threshold) {
+    if (mutualFit >= threshold) {
       aboveBar++;
       continue;
     }
 
-    const delta = threshold - fit.mutualFit;
+    const delta = threshold - mutualFit;
     if (delta <= 15) within++;
     else if (delta <= 30) developing++;
     else early++;
 
     // Tally hard gaps for the addressable near-bar group (within 20 of the bar).
     if (delta <= 20) {
-      for (const g of fit.gaps as SkillGap[]) {
+      for (const g of gaps) {
         if (g.type === "hard") gapTally.set(g.skill, (gapTally.get(g.skill) ?? 0) + 1);
       }
     }
 
-    // "One skill away": adding a single missing hard skill (verified) clears the bar.
-    const missingHard = (fit.gaps as SkillGap[]).filter((g) => g.type === "hard").map((g) => g.skill);
-    let best: { skill: string; projected: number } | null = null;
-    for (const skill of missingHard) {
-      const projected = fitOf([...p.hardSkills, { name: skill, verified: true }], p.softSkills).mutualFit;
-      if (projected >= threshold && (!best || projected > best.projected)) {
-        best = { skill, projected };
+    // "One skill away" — only for the untapped pool (not already-matched people).
+    // Adding a single missing hard skill (verified) would clear the bar.
+    if (!stored) {
+      const missingHard = gaps.filter((g) => g.type === "hard").map((g) => g.skill);
+      let best: { skill: string; projected: number } | null = null;
+      for (const skill of missingHard) {
+        const projected = fitOf([...p.hardSkills, { name: skill, verified: true }], p.softSkills).mutualFit;
+        if (projected >= threshold && (!best || projected > best.projected)) {
+          best = { skill, projected };
+        }
       }
-    }
-    if (best) {
-      nearMisses.push({
-        candidateId: p.id,
-        headline: p.headline,
-        industry: p.industry,
-        mutualFit: fit.mutualFit,
-        unlockSkill: best.skill,
-        projectedFit: best.projected,
-      });
+      if (best) {
+        nearMisses.push({
+          candidateId: p.id,
+          headline: p.headline,
+          industry: p.industry,
+          mutualFit,
+          unlockSkill: best.skill,
+          projectedFit: best.projected,
+        });
+      }
     }
   }
 
