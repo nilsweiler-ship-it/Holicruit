@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 import { ArrowLeft, UploadCloud, MailPlus } from "lucide-react";
 import { prisma } from "@/lib/db";
@@ -31,7 +32,13 @@ export default async function ImportCandidatesPage({
     select: { id: true, headline: true, inviteToken: true, user: { select: { name: true } } },
     orderBy: { id: "desc" },
   });
-  const base = process.env.NEXT_PUBLIC_APP_URL ?? "";
+  // Derive the app's real origin from the request so invite links are always
+  // correct, even if NEXT_PUBLIC_APP_URL is unset or misconfigured.
+  const h = await headers();
+  const host = h.get("x-forwarded-host") ?? h.get("host");
+  const proto = h.get("x-forwarded-proto") ?? "https";
+  const envUrl = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "");
+  const base = host ? `${proto}://${host}` : envUrl && /^https?:\/\//.test(envUrl) ? envUrl : "";
 
   return (
     <div className="flex max-w-2xl flex-col gap-6">
