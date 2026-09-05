@@ -81,7 +81,7 @@ export default async function CandidatePage({
         Back to pipeline
       </Link>
 
-      <header className="flex items-center justify-between gap-4 rounded-2xl border border-border bg-card p-5">
+      <header className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-border bg-card p-5">
         <div className="flex items-center gap-4">
           <PersonAvatar person={match.candidate} size={56} />
           <div className="min-w-0">

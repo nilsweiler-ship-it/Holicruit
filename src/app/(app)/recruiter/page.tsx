@@ -61,7 +61,7 @@ export default async function RecruiterPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <header className="flex items-center justify-between gap-3">
+      <header className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-col gap-1">
           <h1 className="font-serif text-3xl tracking-tight">Recruiter desk</h1>
           <p className="text-sm text-muted-foreground">Facilitate matches. Paid on outcomes.</p>

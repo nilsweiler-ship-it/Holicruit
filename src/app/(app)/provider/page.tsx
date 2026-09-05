@@ -30,7 +30,7 @@ export default async function ProviderDeskPage() {
   return (
     <div className="flex flex-col gap-8">
       {/* Header */}
-      <header className="flex items-center gap-3">
+      <header className="flex flex-wrap items-center gap-3">
         <PersonAvatar person={provider} size={48} />
         <div>
           <h1 className="font-serif text-2xl tracking-tight">{provider.name}</h1>
