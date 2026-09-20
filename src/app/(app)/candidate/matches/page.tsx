@@ -5,6 +5,7 @@ import { getActiveCandidateId } from "@/lib/persona";
 import { getCandidateOnboarding } from "@/lib/services/onboarding";
 import { MatchCard } from "@/components/match/match-card";
 import { OnboardingCurriculum } from "@/components/layout/onboarding-curriculum";
+import { AiNotice } from "@/components/compliance/ai-notice";
 
 export const metadata: Metadata = { title: "Your matches · Holicruit" };
 
@@ -31,6 +32,8 @@ export default async function CandidateMatchesPage() {
           Both sides opted in. No cold applications.
         </p>
       </header>
+
+      <AiNotice />
 
       {matches.length > 0 ? (
         <>

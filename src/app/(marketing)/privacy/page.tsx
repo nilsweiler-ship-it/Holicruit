@@ -30,8 +30,9 @@ export default function PrivacyPage() {
         <section className="space-y-3">
           <h2 className="text-xl font-semibold text-foreground">1. Overview</h2>
           <p>
-            This Privacy Policy explains how Holicruit (&ldquo;we,&rdquo;
-            &ldquo;us&rdquo;) collects, uses, shares, and protects personal data
+            This Privacy Policy explains how Holicruit, operated by [COMPANY]
+            ([ADDRESS]) (&ldquo;we,&rdquo;
+            &ldquo;us&rdquo;), collects, uses, shares, and protects personal data
             when you use the Holicruit platform. We act as a data controller for
             the personal data described here. We are committed to processing
             personal data in line with the EU General Data Protection Regulation
@@ -122,7 +123,41 @@ export default function PrivacyPage() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-xl font-semibold text-foreground">6. Retention</h2>
+          <h2 className="text-xl font-semibold text-foreground">
+            6. Automated Decisions &amp; AI
+          </h2>
+          <p>
+            Holicruit uses automated processing (the Fit Model) to help evaluate how a candidate
+            fits a role — producing hard, soft, and mutual fit scores, a role &ldquo;pass bar,&rdquo;
+            and Growth Reports. These outputs <strong className="text-foreground">support</strong>{" "}
+            human decisions; they are not the decision-maker. A person makes the final hiring or
+            rejection decision, and we require hiring managers to confirm they have reviewed a
+            candidate before passing on them.
+          </p>
+          <p>
+            Because these assessments can significantly affect you, you have the right not to be
+            subject to a decision based solely on automated processing. You can always see the
+            reasoning behind an outcome (your Growth Report), request a human review of a decision,
+            express your point of view, and contest it. Recruitment AI of this kind is treated as
+            &ldquo;high-risk&rdquo; under the EU AI Act, and we apply human oversight, transparency,
+            and record-keeping accordingly.
+          </p>
+        </section>
+
+        <section className="space-y-3">
+          <h2 className="text-xl font-semibold text-foreground">
+            7. International Transfers
+          </h2>
+          <p>
+            We may process and store personal data on infrastructure located outside your country,
+            including in the United States. Where we transfer personal data internationally, we rely
+            on appropriate safeguards (such as EU Standard Contractual Clauses). Details of the
+            safeguards are available on request.
+          </p>
+        </section>
+
+        <section className="space-y-3">
+          <h2 className="text-xl font-semibold text-foreground">8. Retention</h2>
           <p>
             We retain personal data for as long as your account is active and as
             needed to provide the Platform, then for the period required to meet
@@ -134,7 +169,7 @@ export default function PrivacyPage() {
 
         <section className="space-y-3">
           <h2 className="text-xl font-semibold text-foreground">
-            7. Your Data-Subject Rights
+            9. Your Data-Subject Rights
           </h2>
           <p>
             Subject to applicable law, you have the right to access, rectify, or
@@ -147,7 +182,7 @@ export default function PrivacyPage() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-xl font-semibold text-foreground">8. Cookies</h2>
+          <h2 className="text-xl font-semibold text-foreground">10. Cookies</h2>
           <p>
             We use cookies and similar technologies to keep you signed in, to
             remember preferences, and to understand how the Platform is used.
@@ -158,7 +193,7 @@ export default function PrivacyPage() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-xl font-semibold text-foreground">9. Contact</h2>
+          <h2 className="text-xl font-semibold text-foreground">11. Contact</h2>
           <p>
             For privacy questions or to exercise your rights, contact our team
             through the Platform or at the contact details we publish. This

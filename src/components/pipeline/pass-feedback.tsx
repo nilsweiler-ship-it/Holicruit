@@ -43,11 +43,14 @@ export function PassFeedback({ match, matchId }: { match: Match; matchId: string
   const draft = FEEDBACK_DRAFTS.find((d) => d.matchId === match.id);
   const [open, setOpen] = useState(false);
   const [body, setBody] = useState(draft?.body ?? synthesizeDraft(match));
+  const [reviewed, setReviewed] = useState(false);
   const [, startTransition] = useTransition();
 
   function handleSend() {
+    if (!reviewed) return;
     startTransition(() => passWithFeedback(matchId, body));
     setOpen(false);
+    setReviewed(false);
     toast.success(`Feedback sent — ${match.candidate.name}'s growth report generated.`);
   }
 
@@ -76,11 +79,26 @@ export function PassFeedback({ match, matchId }: { match: Match; matchId: string
           On send, this generates the candidate&apos;s Growth Report — rejection is never silent.
         </p>
 
+        <label className="flex items-start gap-2 rounded-xl border border-border bg-muted/40 p-3 text-xs text-muted-foreground">
+          <input
+            type="checkbox"
+            checked={reviewed}
+            onChange={(e) => setReviewed(e.target.checked)}
+            className="mt-0.5 size-4 accent-[var(--primary)]"
+          />
+          <span>
+            I&apos;ve reviewed this candidate&apos;s evidence myself and am making this decision — the
+            score is guidance, not the decision-maker.
+          </span>
+        </label>
+
         <DialogFooter>
           <Button variant="ghost" onClick={() => setOpen(false)}>
             Cancel
           </Button>
-          <Button onClick={handleSend}>Send feedback</Button>
+          <Button onClick={handleSend} disabled={!reviewed}>
+            Send feedback
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

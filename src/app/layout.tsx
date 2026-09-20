@@ -14,10 +14,38 @@ export const viewport: Viewport = {
   themeColor: "#C75B39",
 };
 
+const TITLE = "Holicruit — No black box. No cold applications. No silent no.";
+const DESCRIPTION =
+  "Just the whole person, measured and matched in the open — with an honest path forward for everyone. Holistic, opt-in, radically transparent hiring.";
+
+/** Absolute base for social cards. Falls back to the production URL if the env var is unset/invalid. */
+function appUrl(): URL {
+  const fallback = "https://holicruit-production-f7af.up.railway.app";
+  const u = process.env.NEXT_PUBLIC_APP_URL;
+  try {
+    return new URL(u && /^https?:\/\//.test(u) ? u : fallback);
+  } catch {
+    return new URL(fallback);
+  }
+}
+
 export const metadata: Metadata = {
-  title: "Holicruit — No black box. No cold applications. No silent no.",
-  description:
-    "Just the whole person, measured and matched in the open — with an honest path forward for everyone. Holistic, opt-in, radically transparent hiring.",
+  metadataBase: appUrl(),
+  title: TITLE,
+  description: DESCRIPTION,
+  openGraph: {
+    type: "website",
+    siteName: "Holicruit",
+    title: TITLE,
+    description: DESCRIPTION,
+    images: [{ url: "/og.png", width: 1200, height: 630, alt: "Holicruit — holistic hiring, in the open" }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: TITLE,
+    description: DESCRIPTION,
+    images: ["/og.png"],
+  },
   appleWebApp: {
     capable: true,
     title: "Holicruit",

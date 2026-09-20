@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useActionState } from "react";
 import { registerAction, type AuthState } from "@/lib/actions/auth";
 import { Button } from "@/components/ui/button";
@@ -40,6 +41,21 @@ export function RegisterForm({ defaultHat = "candidate" }: { defaultHat?: string
             </option>
           ))}
         </select>
+      </label>
+      <label className="flex items-start gap-2 text-xs text-muted-foreground">
+        <input type="checkbox" name="consent" required className="mt-0.5 size-4 accent-[var(--primary)]" />
+        <span>
+          I agree to the{" "}
+          <Link href="/terms" target="_blank" className="underline underline-offset-2 hover:text-foreground">
+            Terms
+          </Link>{" "}
+          and{" "}
+          <Link href="/privacy" target="_blank" className="underline underline-offset-2 hover:text-foreground">
+            Privacy Policy
+          </Link>
+          , and I understand Holicruit uses automated assessments to help measure fit, with a person
+          making the final hiring decision.
+        </span>
       </label>
       {state?.error && <p className="text-sm text-destructive">{state.error}</p>}
       <Button type="submit" disabled={pending}>

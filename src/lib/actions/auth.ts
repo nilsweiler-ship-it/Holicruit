@@ -58,6 +58,9 @@ export async function registerAction(_prev: AuthState, formData: FormData): Prom
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Check your details." };
 
   const { name, email, password, hat } = parsed.data;
+  if (formData.get("consent") !== "on") {
+    return { error: "Please accept the Terms and Privacy Policy to continue." };
+  }
   const existing = await prisma.user.findUnique({ where: { email: email.toLowerCase() } });
   if (existing) return { error: "An account with this email already exists." };
 
@@ -71,6 +74,7 @@ export async function registerAction(_prev: AuthState, formData: FormData): Prom
       name,
       initials,
       roles: JSON.stringify([hat]),
+      consentAt: new Date(),
       ...(hat === "candidate"
         ? { candidate: { create: { headline: "New candidate", industry: "General", completeness: 20 } } }
         : {}),

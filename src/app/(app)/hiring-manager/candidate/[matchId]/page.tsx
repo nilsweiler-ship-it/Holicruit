@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, ChevronRight, FileText, Handshake, SlidersHorizontal, Sparkles, Users, Wrench } from "lucide-react";
+import { ArrowLeft, ChevronRight, FileText, Handshake, Scale, SlidersHorizontal, Sparkles, Users, Wrench } from "lucide-react";
 import { matchingService } from "@/lib/services/matching";
 import { ScoreTiles } from "@/components/fit/score-tiles";
 import { MutualFit } from "@/components/fit/mutual-fit";
@@ -56,6 +56,11 @@ export default async function CandidatePage({
       : Promise.resolve(null),
   ]);
 
+  const reviewRequests = await prisma.decisionReviewRequest.findMany({
+    where: { matchId: match.id, resolved: false },
+    orderBy: { createdAt: "desc" },
+  });
+
   // Decision intelligence (Team+): panel consensus & agreement across raters.
   const overalls = sheets.map((s) => s.overall);
   const consensus =
@@ -93,6 +98,21 @@ export default async function CandidatePage({
         </div>
         <MutualFit value={match.fit.mutualFit} size="lg" />
       </header>
+
+      {reviewRequests.length > 0 && (
+        <div className="flex items-start gap-3 rounded-2xl border border-primary/40 bg-primary/8 p-4">
+          <Scale className="mt-0.5 size-5 shrink-0 text-primary" />
+          <div className="text-sm">
+            <p className="font-medium text-foreground">
+              This candidate requested a human review of the decision.
+            </p>
+            <p className="text-muted-foreground">
+              Please reconsider their case fairly — the score is guidance, not the decision-maker.
+              {reviewRequests[0]?.note ? ` Their note: “${reviewRequests[0].note}”` : ""}
+            </p>
+          </div>
+        </div>
+      )}
 
       <ScoreTiles fit={match.fit} />
 

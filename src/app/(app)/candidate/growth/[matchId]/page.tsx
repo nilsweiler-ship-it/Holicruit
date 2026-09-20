@@ -4,6 +4,8 @@ import { notFound } from "next/navigation";
 import { ArrowRight, Target } from "lucide-react";
 import { matchingService } from "@/lib/services/matching";
 import { GrowthPanel } from "@/components/match/growth-panel";
+import { RequestReview } from "@/components/match/request-review";
+import { AiNotice } from "@/components/compliance/ai-notice";
 import { Button } from "@/components/ui/button";
 
 export const metadata: Metadata = { title: "Growth report · Holicruit" };
@@ -35,6 +37,8 @@ export default async function GrowthReportPage({
           </span>
         </p>
       </header>
+
+      <AiNotice />
 
       <div className="grid gap-4 sm:grid-cols-2">
         <GrowthPanel panel={report.hard} />
@@ -70,6 +74,8 @@ export default async function GrowthReportPage({
           </Link>
         </Button>
       </section>
+
+      <RequestReview matchId={matchId} />
     </div>
   );
 }
