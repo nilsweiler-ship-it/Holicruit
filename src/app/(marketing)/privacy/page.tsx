@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { AlertTriangle } from "lucide-react";
 
 export const metadata: Metadata = {
   title: "Privacy Policy — Holicruit",
@@ -16,15 +15,7 @@ export default function PrivacyPage() {
         Privacy Policy
       </h1>
       <p className="mt-3 text-sm text-muted-foreground">Last updated: 2026</p>
-
-      <div className="mt-6 flex items-start gap-3 rounded-2xl border border-primary/40 bg-primary/8 p-4 text-sm">
-        <AlertTriangle className="mt-0.5 size-5 shrink-0 text-primary" />
-        <p className="text-foreground">
-          <strong>Template for review — not yet legal advice.</strong> This
-          document is a starting template and must be reviewed by qualified
-          counsel before launch.
-        </p>
-      </div>
+      {/* NOTE: have qualified counsel review this document before launch. */}
 
       <div className="mt-10 space-y-10 text-[15px] leading-relaxed text-muted-foreground">
         <section className="space-y-3">

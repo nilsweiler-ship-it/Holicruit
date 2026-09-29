@@ -71,9 +71,9 @@ export const PLANS: Plan[] = [
     decisionIntel: true,
     interviewKit: true,
     features: [
-      "Up to 5 open roles · 5 seats",
+      "Up to 5 open roles",
       "Silver-medalist talent pool",
-      "AI-generated interview guides",
+      "Structured interview guides, generated per candidate",
       "Custom role calibration",
       "Team decision intelligence",
     ],
@@ -96,10 +96,10 @@ export const PLANS: Plan[] = [
     customAssessments: true,
     priorityMatching: true,
     features: [
-      "Everything in Team, unlimited roles & seats",
+      "Everything in Team, unlimited roles",
       "Quality-of-hire & fairness analytics",
       "Company-specific assessments",
-      "Priority matching · SSO · DPA",
+      "Priority matching · enterprise terms",
     ],
   },
   {
@@ -120,7 +120,7 @@ export const PLANS: Plan[] = [
     canPromote: true,
     paid: true,
     highlight: true,
-    features: ["Everything in Listed", "Promoted / featured placement", "Targeted gap campaigns", "Priority support"],
+    features: ["Everything in Listed", "Promoted / featured placement in the marketplace", "Priority support"],
   },
 ];
 

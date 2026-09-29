@@ -49,7 +49,7 @@ export default async function ClaimPage({
         <div className="flex flex-col gap-4 rounded-2xl border border-border bg-card p-6">
           <div className="flex flex-col gap-1">
             <h1 className="font-serif text-2xl tracking-tight">
-              Welcome{profile?.user.name ? `, ${profile.user.name.split(" ")[0]}` : ""} 👋
+              Welcome{profile?.user.name ? `, ${profile.user.name.split(" ")[0]}` : ""}
             </h1>
             <p className="text-sm text-muted-foreground">
               Someone added you to a role on Holicruit. Set a password to claim your profile — then

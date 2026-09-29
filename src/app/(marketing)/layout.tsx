@@ -67,12 +67,22 @@ export default function MarketingLayout({
                     Pricing
                   </Link>
                 </li>
+                <li>
+                  <Link href="/contact" className="transition-colors hover:text-foreground">
+                    Contact
+                  </Link>
+                </li>
               </ul>
             </div>
 
             <div className="space-y-3">
               <h3 className="text-sm font-semibold text-foreground">Legal</h3>
               <ul className="space-y-2 text-sm text-muted-foreground">
+                <li>
+                  <Link href="/imprint" className="transition-colors hover:text-foreground">
+                    Imprint
+                  </Link>
+                </li>
                 <li>
                   <Link href="/terms" className="transition-colors hover:text-foreground">
                     Terms

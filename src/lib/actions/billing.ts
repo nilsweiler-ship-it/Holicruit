@@ -29,10 +29,20 @@ export async function choosePlan(formData: FormData): Promise<void> {
   redirect(`${billing}?activated=${plan.key}`);
 }
 
-/** Enterprise "Contact sales" — records the request; sales follows up. */
+/** Enterprise "Contact sales" — records a lead (never silently lost); sales follows up. */
 export async function contactSales(formData: FormData): Promise<void> {
-  await requireUser();
+  const user = await requireUser();
   const hat = String(formData.get("hat") ?? "hiring_manager");
+  await prisma.lead.create({
+    data: {
+      name: String(formData.get("name") ?? "").trim() || user.name,
+      email: String(formData.get("email") ?? "").trim().toLowerCase() || user.email,
+      company: String(formData.get("company") ?? "").trim() || null,
+      message: String(formData.get("message") ?? "").trim() || null,
+      source: "sales",
+      plan: String(formData.get("plan") ?? "").trim() || (hat === "provider" ? "provider-partner" : "hm-scale"),
+    },
+  });
   const billing = hat === "provider" ? "/provider/billing" : "/hiring-manager/billing";
   redirect(`${billing}?contacted=1`);
 }

@@ -76,8 +76,9 @@ const AUDIENCES: Audience[] = [
         cadence: "/mo",
         blurb: "The Holicruit advantage — a warmer pipeline and sharper decisions.",
         features: [
-          "Up to 5 open roles · 5 seats",
+          "Up to 5 open roles",
           "Silver-medalist talent pool",
+          "Structured interview guides, generated per candidate",
           "Custom role calibration",
           "Team decision intelligence",
         ],
@@ -89,12 +90,12 @@ const AUDIENCES: Audience[] = [
         price: "Custom",
         blurb: "For high-volume hiring that needs proof of quality and fairness.",
         features: [
-          "Everything in Team · unlimited roles & seats",
+          "Everything in Team · unlimited roles",
           "Quality-of-hire & fairness analytics",
           "Company-specific assessments",
-          "Priority matching · SSO · DPA",
+          "Priority matching · enterprise terms",
         ],
-        cta: { label: "Talk to sales", href: "/register?plan=hm-scale" },
+        cta: { label: "Talk to sales", href: "/contact" },
       },
     ],
   },
@@ -203,7 +204,8 @@ export default function PricingPage() {
           needle — and never for a black box.
         </p>
         <p className="mt-3 text-sm text-muted-foreground">
-          Prices in EUR. Test mode.
+          Prices in EUR, excl. VAT. Paid plans are billed annually by invoice; enterprise plans on
+          custom terms. No card required to start.
         </p>
       </div>
 

@@ -39,6 +39,22 @@ model User {
   feedback      ProductFeedback[]
 }
 
+// Inbound sales/contact leads ("Talk to us", enterprise "Contact sales").
+// Captured so a prospect is never silently lost; shown in the admin inbox.
+model Lead {
+  id        String   @id @default(cuid())
+  name      String
+  email     String
+  company   String?
+  message   String?
+  // "contact" (public form) | "sales" (enterprise contact-sales)
+  source    String   @default("contact")
+  plan      String?
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+}
+
 // Low-barrier product feedback from anyone using the app. Backs the "best
 // hiring tool" pledge — every submission lands in the in-app feedback inbox.
 model ProductFeedback {

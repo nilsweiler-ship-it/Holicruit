@@ -41,6 +41,9 @@ export default async function FeedbackInboxPage() {
     take: 200,
     include: { user: { select: { name: true, email: true } } },
   });
+  const leads = isAdmin
+    ? await prisma.lead.findMany({ orderBy: { createdAt: "desc" }, take: 100 })
+    : [];
 
   return (
     <div className="flex flex-col gap-6">
@@ -54,6 +57,30 @@ export default async function FeedbackInboxPage() {
             : "The feedback you've shared with us. Thank you — it shapes what we build next."}
         </p>
       </header>
+
+      {isAdmin && leads.length > 0 && (
+        <section className="flex flex-col gap-3">
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+            Inbound leads ({leads.length})
+          </h2>
+          <ul className="flex flex-col gap-3">
+            {leads.map((l) => (
+              <li key={l.id} className="flex flex-col gap-1 rounded-2xl border border-primary/30 bg-primary/5 p-4 text-sm">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="font-medium text-foreground">{l.name}</span>
+                  <span className="text-muted-foreground">· {l.email}</span>
+                  {l.company && <span className="text-muted-foreground">· {l.company}</span>}
+                  <span className="rounded-full bg-muted px-2 py-0.5 text-xs">
+                    {l.source === "sales" ? `Contact sales · ${l.plan ?? ""}` : "Talk to us"}
+                  </span>
+                  <span className="ml-auto text-xs tabular-nums text-muted-foreground">{fmt.format(l.createdAt)}</span>
+                </div>
+                {l.message && <p className="text-foreground">{l.message}</p>}
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       {items.length === 0 ? (
         <div className="flex flex-col items-center gap-3 rounded-2xl border border-dashed border-border p-12 text-center">
