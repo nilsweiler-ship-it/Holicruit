@@ -3,7 +3,7 @@ import { Building2, Check, CheckCircle2, Megaphone, Receipt } from "lucide-react
 import { plansFor, planByKey, type Plan } from "@/lib/plans";
 import { getActivePlan } from "@/lib/services/billing";
 import { requireUser } from "@/lib/persona";
-import { choosePlan } from "@/lib/actions/billing";
+import { choosePlan, contactSales } from "@/lib/actions/billing";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -150,48 +150,29 @@ function TierCta({ plan, current }: { plan: Plan; current: boolean }) {
   return <QuoteForm plan={plan} />;
 }
 
-/** The corporate "Request a quote" disclosure — invoice / PO, no card. */
+/**
+ * Paid tiers are quote-based: this records a sales lead (nothing activates
+ * until terms are agreed and invoiced). No card, no self-serve activation.
+ */
 function QuoteForm({ plan }: { plan: Plan }) {
   return (
     <details className="group rounded-lg border border-border bg-background/50 p-3 open:bg-background">
       <summary className="cursor-pointer list-none text-sm font-medium text-primary">
         <span className="group-open:hidden">Request a quote</span>
-        <span className="hidden group-open:inline">Billing details</span>
+        <span className="hidden group-open:inline">Your details</span>
       </summary>
-      <form action={choosePlan} className="mt-3 flex flex-col gap-3">
+      <form action={contactSales} className="mt-3 flex flex-col gap-3">
         <input type="hidden" name="plan" value={plan.key} />
-        <Field label="Company legal name" name="companyLegalName" placeholder="Acme Academy GmbH" required />
-        <Field label="VAT / Tax ID" name="vatId" placeholder="DE123456789" required />
-        <Field
-          label="Billing email"
-          name="billingEmail"
-          type="email"
-          placeholder="ap@acme.com"
-          required
-        />
-        <Field label="Seats" name="seats" type="number" min={1} defaultValue={3} required />
-        <div className="flex flex-col gap-1">
-          <label
-            htmlFor={`cycle-${plan.key}`}
-            className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground"
-          >
-            Billing cycle
-          </label>
-          <select
-            id={`cycle-${plan.key}`}
-            name="billingCycle"
-            defaultValue="Annual"
-            className="rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/30"
-          >
-            <option value="Annual">Annual</option>
-            <option value="Quarterly">Quarterly</option>
-          </select>
-        </div>
+        <input type="hidden" name="hat" value="provider" />
+        <Field label="Organisation legal name" name="company" placeholder="Acme Academy GmbH" required />
+        <Field label="Billing email" name="email" type="email" placeholder="ap@acme.com" required />
+        <Field label="Anything we should know?" name="message" placeholder="Programs, learner volume, timeline…" />
         <Button type="submit" className="w-full">
-          Request quote &amp; activate
+          Request a quote
         </Button>
         <p className="text-xs text-muted-foreground">
-          No card needed — billed annually by invoice / PO.
+          A person will come back with a quote. Nothing is activated or billed until terms are
+          agreed — annual, by invoice / PO.
         </p>
       </form>
     </details>

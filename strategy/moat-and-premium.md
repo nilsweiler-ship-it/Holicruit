@@ -84,3 +84,28 @@ Ranked by build-effort vs. willingness-to-pay:
 *Recommended order for trials: onboarding + hosted demo + seeded imagery first
 (so it looks and feels real), then scheduling + contact-masking (so the loop is
 complete and defensible).*
+
+---
+
+## Commercial model (decided Oct 2026)
+
+**Phase 1 — now (quote-based, no self-serve payment).**
+Paid tiers (HM Team/Scale, Provider Partner) are sold via "Talk to us" → quote
+→ annual invoice/PO. Rationale: buyers are corporate partners who won't put
+€500/mo on a card from a pricing page, and the product has no payment
+processing yet — so quote-based is both more appropriate *and* honest. Free
+tiers (Candidate, Starter, Listed, Recruiter) stay self-serve. Every paid-tier
+CTA records a `Lead` (tagged with plan) in the admin inbox; nothing activates
+until terms are agreed. Recruiter success fees: invoiced by Holicruit on hire
+(we take our cut without routing the placement fee through the platform).
+
+**Phase 2 — later (pay-as-you-go with a platform take-rate).**
+Full transactional control — hiring companies pay through the platform, Holicruit
+takes a cut, and pays out recruiters/providers. This is the intended destination
+but is deliberately deferred: it means becoming a payment intermediary (Stripe
+Connect or similar, payee KYC/onboarding, payouts, refunds/disputes) and can
+edge into payment-services regulation (FINMA in CH, PSD2 in EU). Earn that
+complexity *after* transaction volume and paying customers exist, not before.
+Natural trigger: several paying HM accounts plus repeat recruiter placements.
+Likely shape: per-hire / per-enrollment usage fees layered onto the same
+invoice first, then true in-platform settlement.

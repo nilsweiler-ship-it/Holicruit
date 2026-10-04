@@ -12,12 +12,19 @@ const inputCls =
   "w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/30";
 const labelCls = "text-xs font-semibold uppercase tracking-wide text-muted-foreground";
 
+const PLAN_LABEL: Record<string, string> = {
+  "hm-team": "Team plan (hiring)",
+  "hm-scale": "Scale plan (hiring, enterprise)",
+  "provider-partner": "Partner plan (training provider)",
+};
+
 export default async function ContactPage({
   searchParams,
 }: {
-  searchParams: Promise<{ sent?: string; error?: string }>;
+  searchParams: Promise<{ sent?: string; error?: string; plan?: string }>;
 }) {
-  const { sent, error } = await searchParams;
+  const { sent, error, plan } = await searchParams;
+  const planLabel = plan ? PLAN_LABEL[plan] : undefined;
 
   return (
     <div className="mx-auto w-full max-w-2xl px-4 py-16 sm:px-6">
@@ -40,6 +47,15 @@ export default async function ContactPage({
         </div>
       ) : (
         <form action={submitLead} className="mt-8 flex flex-col gap-4 rounded-2xl border border-border bg-card p-6">
+          {planLabel && (
+            <>
+              <input type="hidden" name="plan" value={plan} />
+              <p className="rounded-xl border border-primary/25 bg-primary/5 p-3 text-sm text-foreground">
+                You&apos;re enquiring about the <strong>{planLabel}</strong>. We&apos;ll come back with a
+                quote and next steps.
+              </p>
+            </>
+          )}
           {error && (
             <p className="rounded-xl border border-primary/30 bg-primary/8 p-3 text-sm text-foreground">
               Please provide your name and a valid email address.

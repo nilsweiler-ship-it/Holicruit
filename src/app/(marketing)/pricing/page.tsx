@@ -82,7 +82,7 @@ const AUDIENCES: Audience[] = [
           "Custom role calibration",
           "Team decision intelligence",
         ],
-        cta: { label: "Choose Team", href: "/register?plan=hm-team" },
+        cta: { label: "Talk to us", href: "/contact?plan=hm-team" },
         popular: true,
       },
       {
@@ -144,7 +144,7 @@ const AUDIENCES: Audience[] = [
           "Demand analytics",
           "Priority discovery",
         ],
-        cta: { label: "Become a Partner", href: "/register?plan=provider-partner" },
+        cta: { label: "Talk to us", href: "/contact?plan=provider-partner" },
         popular: true,
       },
     ],
@@ -204,8 +204,8 @@ export default function PricingPage() {
           needle — and never for a black box.
         </p>
         <p className="mt-3 text-sm text-muted-foreground">
-          Prices in EUR, excl. VAT. Paid plans are billed annually by invoice; enterprise plans on
-          custom terms. No card required to start.
+          Prices in EUR, excl. VAT. Free tiers start instantly. Paid plans are quote-based and billed
+          annually by invoice — talk to us and we&apos;ll set you up.
         </p>
       </div>
 
