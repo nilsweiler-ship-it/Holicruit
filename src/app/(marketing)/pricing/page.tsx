@@ -56,7 +56,7 @@ const AUDIENCES: Audience[] = [
   {
     icon: Briefcase,
     hat: "Hiring Manager",
-    tagline: "Meet every candidate scored against your bar.",
+    tagline: "Your ATS waits for applications. Holicruit brings you assessed, opted-in candidates against your bar.",
     tiers: [
       {
         name: "Starter",
@@ -102,17 +102,17 @@ const AUDIENCES: Audience[] = [
   {
     icon: Target,
     hat: "Recruiter",
-    tagline: "Get paid on outcomes — never on retainers.",
+    tagline: "Free during launch. Facilitate matches, earn on outcomes later.",
     tiers: [
       {
-        name: "Free + success fee",
+        name: "Free",
         price: "€0",
-        blurb: "Free to join. A platform success fee applies only on a hire.",
+        blurb: "Free to join and source while we launch — no retainers, no monthly fees.",
         features: [
           "Free to join and source",
           "Facilitate opt-in matches",
-          "Success fee only on a successful hire",
           "No retainers, no monthly fees",
+          "Outcome-based earnings to follow",
         ],
         cta: { label: "Join as recruiter", href: "/register?plan=recruiter" },
       },
@@ -121,7 +121,7 @@ const AUDIENCES: Audience[] = [
   {
     icon: GraduationCap,
     hat: "Training Provider",
-    tagline: "Reach candidates with the exact gaps you close.",
+    tagline: "Reach candidates with the exact gaps you close. Free during launch.",
     tiers: [
       {
         name: "Listed",
@@ -129,23 +129,21 @@ const AUDIENCES: Audience[] = [
         blurb: "Get discovered by candidates who need your programs.",
         features: [
           "Programs ranked by real outcomes",
-          "Matched to candidates' gaps",
-          "Outcome-based discovery",
+          "Matched to candidates' measured gaps",
+          "Gap-demand analytics",
         ],
         cta: { label: "List for free", href: "/register?plan=provider-listed" },
       },
       {
         name: "Partner",
-        price: "€300",
-        cadence: "/mo",
-        blurb: "Promote your programs against targeted gaps.",
+        price: "On request",
+        blurb: "Promoted placement for providers who want more reach.",
         features: [
-          "Promoted placement on targeted gaps",
-          "Demand analytics",
-          "Priority discovery",
+          "Promoted / featured placement",
+          "Everything in Listed",
+          "Priority support",
         ],
         cta: { label: "Talk to us", href: "/contact?plan=provider-partner" },
-        popular: true,
       },
     ],
   },
@@ -197,11 +195,11 @@ export default function PricingPage() {
     <div className="mx-auto w-full max-w-6xl px-4 py-20 sm:px-6">
       <div className="mx-auto max-w-2xl text-center">
         <h1 className="font-serif text-5xl tracking-tight sm:text-6xl">
-          Simple pricing for every hat
+          Simple pricing. One thing your ATS can&apos;t do.
         </h1>
         <p className="mt-4 text-lg text-muted-foreground">
-          Candidates are always free. Everyone else pays only for what moves the
-          needle — and never for a black box.
+          Candidates are always free. Hiring teams pay for assessed, opted-in talent — not
+          for a black box. Recruiters and training providers are free during launch.
         </p>
         <p className="mt-3 text-sm text-muted-foreground">
           Prices in EUR, excl. VAT. Free tiers start instantly. Paid plans are quote-based and billed

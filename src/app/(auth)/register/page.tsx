@@ -26,6 +26,10 @@ export default async function RegisterPage({
       <div className="flex flex-col items-center gap-2 text-center">
         <Wordmark href="/" className="text-2xl" />
         <p className="text-muted-foreground">Create your account</p>
+        <p className="max-w-sm text-sm text-muted-foreground">
+          Be measured on the whole person — your skills and judgment, not a keyword scan of your
+          CV. Experience is a feature here, not a flag.
+        </p>
       </div>
       <RegisterForm defaultHat={planToHat(plan)} />
       <p className="text-center text-sm text-muted-foreground">

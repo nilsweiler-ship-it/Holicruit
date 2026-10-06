@@ -56,6 +56,7 @@ export default async function CandidateMatchesPage() {
             <p className="mx-auto mt-1 max-w-sm text-sm text-muted-foreground">
               Matching is opt-in on both sides. Build out your profile and take the
               scenario assessment so we can match you on the whole picture — not a keyword scan.
+              Here, thirty years of judgment counts for more than the right words on a CV.
             </p>
           </div>
           <div className="flex flex-wrap items-center justify-center gap-2">
