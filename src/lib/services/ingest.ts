@@ -256,6 +256,70 @@ function extractLocation(text: string): string {
   return "Remote";
 }
 
+/**
+ * General skill extraction for CVs — picks up skills the fixed vocabulary
+ * doesn't know, by reading the document's structure rather than only its
+ * words. Three signals, in order of reliability:
+ *  1. An explicit "Skills"/"Kenntnisse"/"Competencies" section (comma- or
+ *     bullet-separated items until the next section heading).
+ *  2. Lines that are themselves short delimited lists (e.g. "SAP · Excel · Jira").
+ *  3. Recognisable capitalised tool/certification tokens (ISO 13485, PMP, SAP,
+ *     Six Sigma, …) anywhere in the text.
+ * Results are deduped and merged with the vocabulary matches; the candidate
+ * reviews everything before it's saved.
+ */
+const SECTION_HEADS =
+  /^(?:(?:key |core |technical |it[- ])?skills?|competenc(?:y|ies)|expertise|tools?|technolog(?:y|ies)|kenntnisse|fähigkeiten|kompetenzen|qualifikationen|certifications?|zertifi(?:kate|zierungen))\s*[:\-–]?\s*$/i;
+const NEXT_HEAD =
+  /^(?:experience|work experience|employment|education|ausbildung|berufserfahrung|projects?|languages?|sprachen|interests?|references?|profile|summary|about|contact)\b/i;
+const CERT_TOKEN =
+  /\b(?:ISO\s?\d{4,5}|IEC\s?\d{4,5}|GMP|cGMP|GxP|GLP|GCP|HACCP|PMP|PRINCE2|ITIL|CISSP|CISA|CPA|CFA|ACCA|SAP(?:\s[A-Z]{2,4})?|Six Sigma|Lean(?:\sSix Sigma)?|Scrum(?:\sMaster)?|Kanban|Agile|OKR|CRM|ERP|BI|ETL|REST|SQL|NoSQL|AWS|GCP|Azure|MATLAB|AutoCAD|SolidWorks|CATIA|Revit|LabVIEW|SPSS|Stata|Tableau|Power BI|Salesforce|HubSpot|Jira|Confluence|Figma|Excel|VBA|R|Python|Java|C\+\+|C#|Go|Rust|Kotlin|Swift|TypeScript|JavaScript|React|Angular|Vue|Node\.js|Docker|Kubernetes|Terraform|Linux)\b/g;
+
+function splitList(line: string): string[] {
+  return line
+    .split(/[,;•·|]|\s{2,}|\t/)
+    .map((s) => s.replace(/^[-–*•\s]+|[.\s]+$/g, "").trim())
+    .filter((s) => s.length >= 2 && s.length <= 40 && !/^\d+$/.test(s));
+}
+
+function extractCvSkills(text: string): string[] {
+  const lines = text.split(/\r?\n/).map((l) => l.trim());
+  const found = new Map<string, string>(); // lower → display
+  const add = (s: string) => {
+    const k = s.toLowerCase();
+    if (!found.has(k)) found.set(k, s);
+  };
+
+  // 1) Skills section
+  for (let i = 0; i < lines.length; i++) {
+    if (!SECTION_HEADS.test(lines[i]!)) continue;
+    for (let j = i + 1; j < lines.length && j < i + 25; j++) {
+      const l = lines[j]!;
+      if (!l) continue;
+      if (NEXT_HEAD.test(l) || SECTION_HEADS.test(l)) break;
+      if (/^(?:languages?|sprachen|contact|kontakt)\b/i.test(l)) continue;
+      const items = splitList(l);
+      // a line with several items is a list; a single short line is one skill
+      if (items.length > 1 || (items.length === 1 && l.length <= 40)) items.forEach(add);
+    }
+  }
+  // 2) Delimited list lines anywhere
+  for (const l of lines) {
+    if (/^(?:languages?|sprachen|contact|kontakt|e-?mail|tel|phone)\b/i.test(l)) continue;
+    if (/[,;•·|]/.test(l) && l.length <= 160) {
+      const items = splitList(l);
+      if (items.length >= 3 && items.every((it) => it.split(/\s+/).length <= 4)) items.forEach(add);
+    }
+  }
+  // 3) Certification / tool tokens
+  for (const m of text.matchAll(CERT_TOKEN)) add(m[0].replace(/\s+/g, " "));
+
+  // drop obvious non-skills
+  const NOISE =
+    /@|\d{4}\s*[-–]\s*\d{4}|^(?:and|und|or|oder|the|with|mit)$|\b(?:analyst|manager|lead|engineer|specialist|director|head|senior|junior|intern|consultant)\b|^(?:deutsch|englisch|französisch|german|english|french|italian|italienisch|spanish|spanisch)$/i;
+  return [...found.values()].filter((s) => !NOISE.test(s));
+}
+
 class KeywordJobAdParser implements JobAdParser {
   async parseJobAd(text: string): Promise<ParsedJobAd> {
     const requiredHard = extractHard(text);
@@ -270,7 +334,17 @@ class KeywordJobAdParser implements JobAdParser {
   }
 
   async parseCv(text: string): Promise<ParsedCv> {
-    const hardSkills = extractHard(text);
+    // Vocabulary matches first (canonical names), then general extraction for
+    // everything the vocabulary doesn't know — merged, deduped, vocab wins.
+    const vocab = extractHard(text);
+    const seen = new Set(vocab.map((s) => s.toLowerCase()));
+    const extra = extractCvSkills(text).filter((s) => {
+      const k = s.toLowerCase();
+      if (seen.has(k)) return false;
+      seen.add(k);
+      return true;
+    });
+    const hardSkills = [...vocab, ...extra].slice(0, 40);
     const firstLine = text.split("\n").map((l) => l.trim()).find(Boolean);
     return {
       headline: firstLine?.slice(0, 80),
