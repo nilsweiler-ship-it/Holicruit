@@ -44,6 +44,25 @@ export default async function FeedbackInboxPage() {
   const leads = isAdmin
     ? await prisma.lead.findMany({ orderBy: { createdAt: "desc" }, take: 100 })
     : [];
+  // Sign-up visibility: real accounts only (exclude seeded demo accounts).
+  const signups = isAdmin
+    ? await prisma.user.findMany({
+        where: { email: { not: { endsWith: "@holicruit.test" } } },
+        orderBy: { createdAt: "desc" },
+        take: 50,
+        select: { id: true, name: true, email: true, roles: true, createdAt: true, consentAt: true },
+      })
+    : [];
+  const signupTotal = isAdmin
+    ? await prisma.user.count({ where: { email: { not: { endsWith: "@holicruit.test" } } } })
+    : 0;
+  const roleOf = (roles: string) => {
+    try {
+      return ROLE_LABEL[(JSON.parse(roles) as string[])[0] ?? ""] ?? "—";
+    } catch {
+      return "—";
+    }
+  };
 
   return (
     <div className="flex flex-col gap-6">
@@ -57,6 +76,38 @@ export default async function FeedbackInboxPage() {
             : "The feedback you've shared with us. Thank you — it shapes what we build next."}
         </p>
       </header>
+
+      {isAdmin && (
+        <section className="flex flex-col gap-3">
+          <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+            <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+              Sign-ups
+            </h2>
+            <span className="font-serif text-3xl leading-none tracking-tight text-primary">{signupTotal}</span>
+            <span className="text-sm text-muted-foreground">real accounts (demo accounts excluded)</span>
+          </div>
+          {signups.length === 0 ? (
+            <p className="rounded-2xl border border-dashed border-border p-6 text-sm text-muted-foreground">
+              No real sign-ups yet. When someone registers via the site, they&apos;ll appear here with their
+              role and date.
+            </p>
+          ) : (
+            <ul className="divide-y divide-border rounded-2xl border border-border bg-card">
+              {signups.map((u) => (
+                <li key={u.id} className="flex flex-wrap items-center gap-2 px-4 py-2.5 text-sm">
+                  <span className="font-medium text-foreground">{u.name}</span>
+                  <span className="text-muted-foreground">· {u.email}</span>
+                  <span className="rounded-full bg-muted px-2 py-0.5 text-xs">{roleOf(u.roles)}</span>
+                  {!u.consentAt && (
+                    <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs text-primary">imported / unclaimed</span>
+                  )}
+                  <span className="ml-auto text-xs tabular-nums text-muted-foreground">{fmt.format(u.createdAt)}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+      )}
 
       {isAdmin && leads.length > 0 && (
         <section className="flex flex-col gap-3">
