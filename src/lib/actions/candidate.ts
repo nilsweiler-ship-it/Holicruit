@@ -84,6 +84,32 @@ export async function parseProfileText(text: string): Promise<{ skills: string[]
   return { skills: parsed.hardSkills, industry: parsed.industry };
 }
 
+/**
+ * PDF variant of the parse step: extract the text server-side (unpdf, no
+ * upload stored anywhere) and run it through the same parser. 5 MB cap.
+ */
+export async function parseProfilePdf(
+  formData: FormData,
+): Promise<{ skills: string[]; industry: string; text: string } | { error: string }> {
+  await getActiveCandidateId();
+  const file = formData.get("file");
+  if (!(file instanceof File)) return { error: "Please choose a PDF file." };
+  if (file.type !== "application/pdf" && !file.name.toLowerCase().endsWith(".pdf")) {
+    return { error: "Only PDF files are supported. Paste the text instead if your CV is in another format." };
+  }
+  if (file.size > 5 * 1024 * 1024) return { error: "That PDF is over 5 MB. Please use a smaller file." };
+
+  const { extractText } = await import("unpdf");
+  const buf = new Uint8Array(await file.arrayBuffer());
+  const { text } = await extractText(buf, { mergePages: true });
+  const clean = (Array.isArray(text) ? text.join("\n") : text).trim();
+  if (clean.length < 40) {
+    return { error: "We couldn't read text from that PDF (it may be a scanned image). Paste the text instead." };
+  }
+  const parsed = await jobAdParser.parseCv(clean);
+  return { skills: parsed.hardSkills, industry: parsed.industry, text: clean };
+}
+
 /** Confirm step of import: add the reviewed skills and re-run matching. */
 export async function addImportedSkills(names: string[], industry?: string): Promise<void> {
   const candidateId = await getActiveCandidateId();

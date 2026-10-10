@@ -73,7 +73,7 @@ export default async function NewRolePage({
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <label className="flex flex-col gap-1.5">
             <span className={labelClass}>Location</span>
-            <input name="location" defaultValue={sp.location} className={inputClass} placeholder="Remote · EU" />
+            <input name="location" required defaultValue={sp.location} className={inputClass} placeholder="Zürich, or Remote · EU" />
           </label>
           <label className="flex flex-col gap-1.5">
             <span className={labelClass}>Industry</span>
@@ -84,11 +84,11 @@ export default async function NewRolePage({
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
           <label className="flex flex-col gap-1.5">
             <span className={labelClass}>Salary min</span>
-            <input name="salaryMin" type="number" className={inputClass} placeholder="60000" />
+            <input name="salaryMin" type="number" required min={1} className={inputClass} placeholder="60000" />
           </label>
           <label className="flex flex-col gap-1.5">
             <span className={labelClass}>Salary max</span>
-            <input name="salaryMax" type="number" className={inputClass} placeholder="90000" />
+            <input name="salaryMax" type="number" required min={1} className={inputClass} placeholder="90000" />
           </label>
           <label className="flex flex-col gap-1.5">
             <span className={labelClass}>Currency</span>
@@ -98,13 +98,14 @@ export default async function NewRolePage({
 
         <label className="flex flex-col gap-1.5">
           <span className={labelClass}>Working location</span>
-          <select name="workMode" className={inputClass} defaultValue="onsite">
+          <select name="workMode" required className={inputClass} defaultValue="onsite">
             <option value="onsite">On-site</option>
             <option value="hybrid">Hybrid</option>
             <option value="remote">Remote</option>
           </select>
           <span className="text-xs text-muted-foreground">
-            The salary band stays private — candidates see only whether it&apos;s compatible.
+            Required. Pay, location and work mode are must-haves: candidates who can&apos;t meet them
+            won&apos;t surface, and the band itself stays private — candidates see only compatibility.
           </span>
         </label>
 

@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { Check, Loader2, Wand2 } from "lucide-react";
-import { parseProfileText, addImportedSkills } from "@/lib/actions/candidate";
+import { Check, FileUp, Loader2, Wand2 } from "lucide-react";
+import { parseProfileText, parseProfilePdf, addImportedSkills } from "@/lib/actions/candidate";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -16,11 +16,28 @@ export function ImportReview() {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [parsing, startParse] = useTransition();
   const [adding, startAdd] = useTransition();
+  const [uploadError, setUploadError] = useState<string | null>(null);
 
   function extract() {
     startParse(async () => {
       const r = await parseProfileText(text);
       setParsed(r);
+      setSelected(new Set(r.skills));
+    });
+  }
+
+  function extractPdf(file: File) {
+    setUploadError(null);
+    const fd = new FormData();
+    fd.set("file", file);
+    startParse(async () => {
+      const r = await parseProfilePdf(fd);
+      if ("error" in r) {
+        setUploadError(r.error);
+        return;
+      }
+      setText(r.text);
+      setParsed({ skills: r.skills, industry: r.industry });
       setSelected(new Set(r.skills));
     });
   }
@@ -37,6 +54,32 @@ export function ImportReview() {
   if (!parsed) {
     return (
       <div className="flex flex-col gap-3">
+        <label className="flex cursor-pointer flex-col items-center gap-2 rounded-2xl border-2 border-dashed border-border bg-card/60 p-6 text-center transition-colors hover:border-primary/40 hover:bg-accent">
+          <FileUp className="size-6 text-primary" />
+          <span className="text-sm font-medium text-foreground">Upload your CV as a PDF</span>
+          <span className="text-xs text-muted-foreground">
+            We read the text and extract your skills — the file itself isn&apos;t stored. Max 5 MB.
+          </span>
+          <input
+            type="file"
+            accept="application/pdf,.pdf"
+            className="sr-only"
+            disabled={parsing}
+            onChange={(e) => {
+              const f = e.target.files?.[0];
+              if (f) extractPdf(f);
+              e.target.value = "";
+            }}
+          />
+        </label>
+        {uploadError && <p className="text-sm text-primary">{uploadError}</p>}
+
+        <div className="flex items-center gap-3">
+          <span className="h-px flex-1 bg-border" />
+          <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">or paste the text</span>
+          <span className="h-px flex-1 bg-border" />
+        </div>
+
         <textarea
           value={text}
           onChange={(e) => setText(e.target.value)}

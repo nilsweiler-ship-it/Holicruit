@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { requireUser, getActiveCandidateId } from "@/lib/persona";
 import { signOut } from "@/lib/auth";
+import { runMatchingForCandidate } from "@/lib/matching/engine";
 
 /**
  * Save alias + anonymity preference. When anonymous is on, counterparties see
@@ -44,7 +45,11 @@ export async function revealEmployer(matchId: string): Promise<void> {
   revalidatePath(`/hiring-manager/candidate/${matchId}`);
 }
 
-/** Save the candidate's confidential pay + location expectations. */
+/**
+ * Save the candidate's confidential pay + location expectations. These are
+ * must-haves for matching, so saving re-runs matching (hard incompatibilities
+ * are filtered out of what the candidate sees).
+ */
 export async function updateWorkPrefs(formData: FormData): Promise<void> {
   const candidateId = await getActiveCandidateId();
   const min = Number(formData.get("expectedSalaryMin")) || null;
@@ -55,6 +60,14 @@ export async function updateWorkPrefs(formData: FormData): Promise<void> {
     .map(String)
     .filter((m) => m === "onsite" || m === "hybrid" || m === "remote");
   const locationPref = String(formData.get("locationPref") ?? "").trim() || null;
+  const redirectTo = String(formData.get("redirectTo") ?? "").trim();
+
+  // Must-haves: a minimum and at least one work mode. (Settings page is lenient;
+  // the onboarding page marks these required in the form as well.)
+  if (redirectTo && (!min || modes.length === 0)) {
+    redirect("/candidate/profile/expectations?error=1");
+  }
+
   await prisma.candidateProfile.update({
     where: { id: candidateId },
     data: {
@@ -65,7 +78,11 @@ export async function updateWorkPrefs(formData: FormData): Promise<void> {
       locationPref,
     },
   });
+  await runMatchingForCandidate(candidateId);
   revalidatePath("/settings/privacy");
+  revalidatePath("/candidate/matches");
+  revalidatePath("/candidate/today");
+  if (redirectTo.startsWith("/")) redirect(redirectTo);
 }
 
 /** Candidate opts to share their exact pay/location figures for one match. */

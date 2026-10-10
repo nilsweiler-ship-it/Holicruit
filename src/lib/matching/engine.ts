@@ -6,6 +6,7 @@
  */
 import type { FitObject, SkillGap } from "../fit/types";
 import { prisma } from "../db";
+import { computeTermsFit, parseModes } from "../terms";
 
 const SOFT_BAR = 75; // default role soft-skill bar
 const DEFAULT_HARD_W = 55; // default hard weight (0–100) when a role isn't calibrated
@@ -195,6 +196,27 @@ function fitFor(
   });
 }
 
+/**
+ * Must-have gate. A candidate's pay floor and work-mode preferences are
+ * requirements, not preferences: a role that can't meet them is excluded from
+ * matching entirely. A "stretch" (slightly under the floor) still surfaces as a
+ * visible signal. Candidates who haven't set must-haves yet are not gated.
+ */
+export function meetsMustHaves(
+  profile: { expectedSalaryMin: number | null; workModes: string },
+  opening: { salaryMax: number | null; workMode: string },
+): boolean {
+  const modes = parseModes(profile.workModes);
+  if (!profile.expectedSalaryMin && modes.length === 0) return true; // not set yet
+  const t = computeTermsFit({
+    expMin: profile.expectedSalaryMin,
+    roleMax: opening.salaryMax,
+    candidateModes: modes,
+    roleMode: opening.workMode,
+  });
+  return t.salary !== "gap" && t.location !== "mismatch";
+}
+
 async function upsertMatch(
   candidateId: string,
   openingId: string,
@@ -235,6 +257,7 @@ export async function runMatchingForCandidate(candidateId: string): Promise<void
   const openings = await prisma.opening.findMany();
   const affected = new Set<string>();
   for (const o of openings) {
+    if (!meetsMustHaves(profile, o)) continue;
     await upsertMatch(candidateId, o.id, fitFor(profile, o));
     affected.add(o.id);
   }
@@ -259,6 +282,7 @@ export async function runMatchingForOpening(openingId: string): Promise<void> {
     include: { hardSkills: true, softSkills: true },
   });
   for (const p of profiles) {
+    if (!meetsMustHaves(p, opening)) continue;
     await upsertMatch(p.id, openingId, fitFor(p, opening), threshold);
   }
   await rankOpening(openingId);

@@ -32,11 +32,22 @@ export async function getCandidateOnboarding(candidateId: string): Promise<Onboa
     select: {
       avatarUrl: true,
       scenarioCompleted: true,
+      expectedSalaryMin: true,
+      workModes: true,
       _count: { select: { hardSkills: true, endorsements: true, matches: true } },
     },
   });
+  const hasExpectations = Boolean(p?.expectedSalaryMin) && (p?.workModes ?? "[]") !== "[]";
 
   const steps: OnboardingStep[] = [
+    {
+      id: "expectations",
+      label: "Set your must-haves: pay, location, work mode",
+      why: "Required before matching — so you only ever see roles that fit your life, and employers only see compatibility, never your numbers.",
+      href: "/candidate/profile/expectations",
+      cta: "Set must-haves",
+      done: hasExpectations,
+    },
     {
       id: "photo",
       label: "Add a profile photo",
@@ -81,7 +92,7 @@ export async function getCandidateOnboarding(candidateId: string): Promise<Onboa
 
   return pack(
     "Get started",
-    "Five steps to a complete, verified profile that gets you matched on merit.",
+    "Six steps to a complete, verified profile that gets you matched on merit.",
     steps,
   );
 }
