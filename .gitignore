@@ -49,3 +49,8 @@ next-env.d.ts
 # uploaded files
 /public/uploads
 scripts/
+
+# test output
+/playwright-report
+/test-results
+.commitmsg

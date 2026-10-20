@@ -15,7 +15,12 @@
     "db:push": "prisma db push",
     "db:seed": "tsx prisma/seed.ts",
     "db:studio": "prisma studio",
-    "postinstall": "prisma generate"
+    "postinstall": "prisma generate",
+    "test": "npm run test:unit && npm run test:e2e",
+    "test:unit": "node --import tsx --test \"tests/unit/**/*.test.ts\"",
+    "test:e2e": "playwright test",
+    "test:e2e:smoke": "playwright test --project=smoke --project=smoke-mobile",
+    "test:e2e:prod": "BASE_URL=https://app.holicruit.com NO_WEBSERVER=1 playwright test --project=smoke --project=smoke-mobile"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
@@ -45,6 +50,7 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@playwright/test": "^1.49.1",
     "@tailwindcss/postcss": "^4",
     "@types/bcryptjs": "^2.4.6",
     "@types/node": "^20",

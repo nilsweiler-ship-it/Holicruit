@@ -1,0 +1,129 @@
+name: CI
+
+# Quality gate for every push and pull request:
+#   lint → types → unit tests → production build → seeded Postgres → browser journeys.
+# Railway is configured to "Wait for CI", so main only deploys when this is green.
+# After a main deploy, the verify job polls production until the new commit is live,
+# then runs the read-only smoke suite against it.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: 20
+  DATABASE_URL: postgresql://holicruit:holicruit@localhost:5432/holicruit?schema=public
+  AUTH_SECRET: ci-only-secret-not-for-production-0123456789
+  NEXT_PUBLIC_APP_URL: http://localhost:3000
+  NEXTAUTH_URL: http://localhost:3000
+  AUTH_TRUST_HOST: "true"
+  ADMIN_EMAILS: jordan@holicruit.test
+  NEXT_PUBLIC_DEMO_LOGINS: "1"
+
+jobs:
+  test:
+    name: Lint · types · unit · build · e2e
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: holicruit
+          POSTGRES_PASSWORD: holicruit
+          POSTGRES_DB: holicruit
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U holicruit"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Type-check
+        run: npx tsc --noEmit
+
+      - name: Unit tests
+        run: npm run test:unit
+
+      - name: Build
+        run: npm run build
+
+      - name: Install Playwright (Chromium)
+        run: npx playwright install --with-deps chromium
+
+      - name: Browser tests (smoke + journeys, seeded throwaway DB)
+        run: npm run test:e2e
+        env:
+          CI: "true"
+          BASE_URL: http://localhost:3000
+
+      - name: Upload Playwright report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report
+          retention-days: 7
+
+  verify-production:
+    name: Verify production deploy
+    needs: test
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      BASE_URL: https://app.holicruit.com
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+      - run: npm ci
+
+      - name: Wait for Railway to serve this commit
+        run: |
+          for i in $(seq 1 60); do
+            body=$(curl -fsS "$BASE_URL/api/health" || true)
+            echo "$body"
+            if echo "$body" | grep -q "\"commit\":\"${GITHUB_SHA}\""; then
+              echo "Deployed commit is live."; exit 0
+            fi
+            sleep 20
+          done
+          echo "Timed out waiting for ${GITHUB_SHA} on $BASE_URL"; exit 1
+
+      - name: Install Playwright (Chromium)
+        run: npx playwright install --with-deps chromium
+
+      - name: Production smoke (read-only)
+        run: npx playwright test --project=smoke --project=smoke-mobile
+        env:
+          CI: "true"
+          NO_WEBSERVER: "1"
+
+      - name: Upload Playwright report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: production-smoke-report
+          path: playwright-report
+          retention-days: 7
