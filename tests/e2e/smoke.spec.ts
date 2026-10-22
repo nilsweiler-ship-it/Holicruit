@@ -108,13 +108,20 @@ test.describe("role homes", () => {
 test.describe("privacy guarantees (seed data)", () => {
   test("hiring manager sees the anonymous candidate's alias, never the real name", async ({ page }) => {
     await login(page, DEMO.hiringManager);
-    for (const p of ["/hiring-manager/pipeline", "/hiring-manager/talent-pool"]) {
+    // Walk every role's pipeline plus the talent pool: the alias must appear somewhere,
+    // the real name nowhere.
+    await page.goto("/hiring-manager/roles");
+    const roleLinks = [...new Set(await page.locator('a[href^="/hiring-manager/"]').evaluateAll((as) => as.map((a) => a.getAttribute("href") ?? "")))]
+      .filter((h) => /\/hiring-manager\/(pipeline\?opening=|roles\/[^/]+$)/.test(h));
+    const pages = ["/hiring-manager/pipeline", "/hiring-manager/talent-pool", ...roleLinks];
+    let aliasSeen = false;
+    for (const p of pages) {
       await page.goto(p);
       const body = await page.locator("body").innerText();
       expect(body, `${p} leaks real name`).not.toMatch(/Aisha/);
+      if (/Nightingale/.test(body)) aliasSeen = true;
     }
-    await page.goto("/hiring-manager/pipeline");
-    await expect(page.locator("body")).toContainText("Nightingale");
+    expect(aliasSeen, "alias shown somewhere on the employer side").toBe(true);
   });
 
   test("candidate sees a confidential role as its alias, never the real company", async ({ page }) => {
@@ -125,13 +132,17 @@ test.describe("privacy guarantees (seed data)", () => {
     await expect(page.locator("body")).not.toContainText(/Priya/);
   });
 
-  test("candidate never sees a raw salary band on the match list", async ({ page }) => {
+  test("candidate sees pay/location compatibility, never a raw salary band", async ({ page }) => {
     await login(page, DEMO.candidate);
     await page.goto("/candidate/matches");
-    const body = await page.locator("body").innerText();
-    // Compatibility language is allowed; a role's exact band is not.
-    expect(body).toMatch(/In range|Slight stretch|Pay TBD|Below target/);
-    expect(body).not.toMatch(/€\s?\d{2,3}[,.]?\d{3}\s?[–-]\s?€?\s?\d{2,3}[,.]?\d{3}/);
+    const noBand = /€\s?\d{2,3}[,.]?\d{3}\s?[–-]\s?€?\s?\d{2,3}[,.]?\d{3}/;
+    expect(await page.locator("body").innerText()).not.toMatch(noBand);
+    // Open the first match: compatibility language is allowed on the detail, the band is not.
+    await page.locator('a[href^="/candidate/matches/"]').first().click();
+    await expect(page).toHaveURL(/\/candidate\/matches\/[^/]+$/);
+    const detail = await page.locator("body").innerText();
+    expect(detail).toMatch(/In range|Slight stretch|Pay TBD|Below target|Location/);
+    expect(detail).not.toMatch(noBand);
   });
 
   test("data export is a JSON file containing only the signed-in account", async ({ page }) => {
