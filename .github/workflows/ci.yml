@@ -62,7 +62,7 @@ jobs:
       - name: Install Playwright test runner
         run: |
           set -o pipefail
-          npm install --no-save --no-audit --no-fund @playwright/test@1.49.1 2>&1 | tee /tmp/npm-pw.log || { echo "::error title=playwright install failed::$(tail -c 1800 /tmp/npm-pw.log | tr '\n' ' ')"; exit 1; }
+          npm install --no-save --no-audit --no-fund @playwright/test@1.64.1 2>&1 | tee /tmp/npm-pw.log || { echo "::error title=playwright install failed::$(tail -c 1800 /tmp/npm-pw.log | tr '\n' ' ')"; exit 1; }
 
       - name: Lint
         run: npm run lint 2>&1 | tee /tmp/lint.log || { echo "::error title=lint failed::$(tail -c 1800 /tmp/lint.log | tr '\n' ' ')"; exit 1; }
@@ -107,7 +107,7 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: npm
-      - run: npm ci && npm install --no-save @playwright/test@1.49.1
+      - run: npm ci && npm install --no-save @playwright/test@1.64.1
 
       - name: Wait for Railway to serve this commit
         run: |
