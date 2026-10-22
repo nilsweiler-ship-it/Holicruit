@@ -16,7 +16,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  NODE_VERSION: 20
+  NODE_VERSION: 22
   DATABASE_URL: postgresql://holicruit:holicruit@localhost:5432/holicruit?schema=public
   AUTH_SECRET: ci-only-secret-not-for-production-0123456789
   NEXT_PUBLIC_APP_URL: http://localhost:3000
@@ -71,7 +71,7 @@ jobs:
         run: npx tsc --noEmit 2>&1 | tee /tmp/tsc.log || { echo "::error title=type-check failed::$(tail -c 1800 /tmp/tsc.log | tr '\n' ' ')"; exit 1; }
 
       - name: Unit tests
-        run: npm run test:unit 2>&1 | tee /tmp/unit.log || { echo "::error title=unit tests failed::$(grep -E 'not ok|Error|expected|actual' /tmp/unit.log | head -c 1800 | tr '\n' ' ')"; exit 1; }
+        run: npm run test:unit 2>&1 | tee /tmp/unit.log || { echo "::error title=unit tests failed::$( (grep -E 'not ok|Error|expected|actual' /tmp/unit.log; tail -c 600 /tmp/unit.log) | head -c 1800 | tr '\n' ' ')"; exit 1; }
 
       - name: Build
         run: npm run build 2>&1 | tee /tmp/build.log || { echo "::error title=build failed::$(tail -c 1800 /tmp/build.log | tr '\n' ' ')"; exit 1; }
@@ -80,7 +80,7 @@ jobs:
         run: npx playwright install --with-deps chromium
 
       - name: Browser tests (smoke + journeys, seeded throwaway DB)
-        run: npm run test:e2e 2>&1 | tee /tmp/e2e.log || { echo "::error title=browser tests failed::$(grep -E '✘|Error:|expected|received|Timeout' /tmp/e2e.log | head -c 1800 | tr '\n' ' ')"; exit 1; }
+        run: npm run test:e2e 2>&1 | tee /tmp/e2e.log || { echo "::error title=browser tests failed::$( (grep -E '✘|Error:|expected|received|Timeout' /tmp/e2e.log; tail -c 600 /tmp/e2e.log) | head -c 1800 | tr '\n' ' ')"; exit 1; }
         env:
           CI: "true"
           BASE_URL: http://localhost:3000
