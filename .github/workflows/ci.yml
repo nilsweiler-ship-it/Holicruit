@@ -52,7 +52,7 @@ jobs:
           cache: npm
 
       - name: Install
-        run: npm ci
+        run: npm ci && npm install --no-save @playwright/test@1.49.1
 
       - name: Lint
         run: npm run lint
@@ -97,7 +97,7 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: npm
-      - run: npm ci
+      - run: npm ci && npm install --no-save @playwright/test@1.49.1
 
       - name: Wait for Railway to serve this commit
         run: |
