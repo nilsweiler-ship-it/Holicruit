@@ -1,0 +1,53 @@
+name: Verify production deploy
+
+# Runs after CI succeeds on main (separate workflow, so Railway's "Wait for CI"
+# isn't blocked by it): polls /api/health until the new commit is live, then runs
+# the read-only smoke suite against production.
+
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+
+jobs:
+  verify:
+    if: github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      BASE_URL: https://app.holicruit.com
+      NO_WEBSERVER: "1"
+      CI: "true"
+      SHA: ${{ github.event.workflow_run.head_sha }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci && npm install --no-save --no-audit --no-fund @playwright/test@1.64.1
+
+      - name: Wait for Railway to serve this commit
+        run: |
+          for i in $(seq 1 60); do
+            body=$(curl -fsS "$BASE_URL/api/health" || true)
+            echo "$body"
+            if echo "$body" | grep -q "\"commit\":\"${SHA}\""; then
+              echo "Deployed commit is live."; exit 0
+            fi
+            sleep 20
+          done
+          echo "::error title=deploy not live::Timed out waiting for ${SHA} on $BASE_URL (last: $body)"; exit 1
+
+      - run: npx playwright install --with-deps chromium
+      - name: Production smoke (read-only)
+        run: npx playwright test --project=smoke --project=smoke-mobile 2>&1 | tee /tmp/e2e.log || { echo "::error title=production smoke failed::$( (grep -E '✘|Error:|expected|received|Timeout' /tmp/e2e.log; tail -c 600 /tmp/e2e.log) | head -c 1800 | tr '\n' ' ')"; exit 1; }
+      - if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: production-smoke-report
+          path: playwright-report
+          retention-days: 7

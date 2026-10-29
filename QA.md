@@ -8,7 +8,7 @@ The goal: nothing reaches app.holicruit.com that hasn't passed the same checks e
 |---|---|---|
 | Every push / PR | GitHub Actions `CI` | lint → type-check → **unit tests** (matching terms, identity masking, skill banks, CV parsing) → production build → fresh Postgres + seed → **browser journeys** (register with consent, post confidential role with must-haves, import pipeline + claim link, candidate must-haves + CV import, must-have gate, alias + export + erasure, contact lead + feedback → admin inbox) → **smoke** (desktop + mobile) |
 | Deploy to main | Railway, *Wait for CI* on | Only deploys a commit whose CI job is green |
-| After deploy | `CI › Verify production deploy` | Polls `/api/health` until the live commit matches, then runs the **read-only smoke suite against production** |
+| After deploy | `Verify production deploy` (runs after CI) | Polls `/api/health` until the live commit matches, then runs the **read-only smoke suite against production** |
 | Daily 05:00 UTC | `Production smoke` | Same smoke suite against production, independent of deploys |
 
 The smoke suite is strictly read-only (demo logins, no writes) so it is safe on production. The journey suite refuses to run against a `holicruit.*` host.
