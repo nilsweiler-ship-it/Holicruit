@@ -61,7 +61,7 @@ test("endorsementId: one per endorser × candidate × skill (case-insensitive), 
 test("links: domain from NEXT_PUBLIC_APP_URL only, path is URL-safe", () => {
   assert.equal(appBaseUrl("https://app.holicruit.com/"), "https://app.holicruit.com");
   assert.equal(appBaseUrl("http://localhost:3000"), "http://localhost:3000");
-  assert.equal(appBaseUrl(undefined), null);
+  assert.equal(appBaseUrl(""), null); // (undefined would fall back to the env default)
   assert.equal(appBaseUrl("javascript:alert(1)"), null);
   assert.equal(appBaseUrl("not a url"), null);
   assert.equal(endorsementPath("C++ / C#", "a.b"), "/endorse/C%2B%2B%20%2F%20C%23?t=a.b");
