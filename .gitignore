@@ -54,3 +54,7 @@ scripts/
 /playwright-report
 /test-results
 .commitmsg
+
+# Local-only: red-team reports (contain exploit details; repo is public) and scratch
+qa/
+_to_delete/
