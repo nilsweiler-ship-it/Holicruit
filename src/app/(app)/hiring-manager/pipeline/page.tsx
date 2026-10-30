@@ -2,7 +2,8 @@ import Link from "next/link";
 import { Plus, Zap, Radar, UploadCloud } from "lucide-react";
 import { matchingService } from "@/lib/services/matching";
 import { getRoleMarketSnapshot } from "@/lib/services/marketsnapshot";
-import { getActiveHmOpeningId, requireUser } from "@/lib/persona";
+import { getActiveHmOpeningId } from "@/lib/persona";
+import { requireHat, requireHmOpening } from "@/lib/access";
 import { getHmOnboarding } from "@/lib/services/onboarding";
 import { OnboardingCurriculum } from "@/components/layout/onboarding-curriculum";
 import { HmPipelineBoard } from "@/components/pipeline/hm-pipeline-board";
@@ -18,11 +19,18 @@ import { Button } from "@/components/ui/button";
 export default async function PipelinePage({
   searchParams,
 }: {
-  searchParams: Promise<{ opening?: string }>;
+  searchParams: Promise<{ opening?: string | string[] }>;
 }) {
   const { opening: openingParam } = await searchParams;
-  const openingId = openingParam ?? (await getActiveHmOpeningId());
-  const user = await requireUser();
+  // Ownership first: an explicit ?opening= must be one of the caller's own
+  // roles (foreign, unknown or repeated ids → 404). Without it we fall back to
+  // the caller's own busiest opening, which is owner-scoped by construction.
+  const user =
+    openingParam !== undefined
+      ? await requireHmOpening(openingParam)
+      : await requireHat("hiring_manager");
+  const openingId =
+    typeof openingParam === "string" ? openingParam : await getActiveHmOpeningId();
   const onboarding = await getHmOnboarding(user.id);
 
   if (!openingId) {

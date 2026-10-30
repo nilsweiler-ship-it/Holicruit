@@ -10,6 +10,7 @@ import { prisma } from "../db";
 import { GAP_DEMAND } from "../fixtures";
 import { personIdentity, employerIdentity } from "../identity";
 import { computeTermsFit, parseModes, type TermsView } from "../terms";
+import { growthPanel } from "../integrity/growth-notes";
 
 /** Who is looking at a match — decides which side's identity may be masked. */
 export type Viewer = "candidate" | "employer";
@@ -237,23 +238,16 @@ class DbMatchingService implements MatchingService {
   async getGrowthReport(matchId: string): Promise<GrowthReport | null> {
     const r = await prisma.growthReport.findUnique({ where: { matchId } });
     if (!r) return null;
+    const primaryGap = { skill: r.primaryGapSkill, type: (r.primaryGapType === "soft" ? "soft" : "hard") as "hard" | "soft" };
     return {
       id: r.id,
       matchId: r.matchId,
       roleTitle: r.roleTitle,
       company: r.company,
-      hard: {
-        type: "hard",
-        comparison: { label: "Hard skills", you: r.hardYou, roleBar: r.hardBar },
-        gap: { skill: r.primaryGapSkill, type: r.primaryGapType as "hard" | "soft", severity: "moderate" },
-        note: `Gap: ${r.primaryGapSkill}`,
-      },
-      soft: {
-        type: "soft",
-        comparison: { label: "Soft skills", you: r.softYou, roleBar: r.softBar },
-        aboveBar: r.softYou >= r.softBar,
-        note: "Above bar — a strength",
-      },
+      // Notes are derived from the stored values vs. the stored bars (M7):
+      // "above bar" only when you >= bar; a named gap only when below it.
+      hard: growthPanel({ type: "hard", you: r.hardYou, bar: r.hardBar, primaryGap }),
+      soft: growthPanel({ type: "soft", you: r.softYou, bar: r.softBar, primaryGap }),
       primaryGap: { skill: r.primaryGapSkill, type: r.primaryGapType as "hard" | "soft", severity: "moderate" },
       rolesClearedIfClosed: r.rolesClearedIfClosed,
       matchingProgramCount: r.matchingProgramCount,

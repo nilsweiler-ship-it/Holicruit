@@ -1,50 +1,44 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useState, useTransition } from "react";
 import Link from "next/link";
 import { ArrowLeft, ArrowRight, Check, Loader2 } from "lucide-react";
-import type { ScenarioQuestion, ScenarioResult } from "@/lib/scenario/types";
+import type { ScenarioResult } from "@/lib/scenario/types";
+import type { PublicScenarioQuestion } from "@/lib/integrity/scenario-scoring";
 import { submitScenario } from "@/lib/actions/candidate";
 import { SoftSkillBars } from "@/components/candidate/soft-skill-bars";
 import { PersonalityBars } from "@/components/candidate/personality-bars";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
-/** Shuffle a copy of an array (Fisher–Yates). */
-function shuffle<T>(arr: T[]): T[] {
-  const a = [...arr];
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [a[i], a[j]] = [a[j]!, a[i]!];
-  }
-  return a;
-}
-
 /**
  * Client stepper that walks a candidate through the soft-skill scenario one
  * question at a time, then scores the collected answers via a server action and
- * shows the scenario-measured soft-skill profile.
+ * shows the scenario-measured soft-skill profile. It receives option text and
+ * ids only — already shuffled per attempt by the server; no loadings.
  */
-export function ScenarioRunner({ questions }: { questions: ScenarioQuestion[] }) {
-  // Shuffle option order once per session so position never cues an answer.
-  const shuffled = useMemo(
-    () => questions.map((q) => ({ ...q, options: shuffle(q.options) })),
-    [questions],
-  );
-  const total = shuffled.length;
+export function ScenarioRunner({ questions }: { questions: PublicScenarioQuestion[] }) {
+  const total = questions.length;
   const [index, setIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [result, setResult] = useState<ScenarioResult | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const [isScoring, startScoring] = useTransition();
 
   const answeredCount = Object.keys(answers).length;
   const progress = total > 0 ? Math.round((answeredCount / total) * 100) : 0;
-  const question = shuffled[index];
+  const question = questions[index];
 
   function submit(allAnswers: Record<string, string>) {
+    setError(null);
     startScoring(async () => {
-      const res = await submitScenario(allAnswers);
-      setResult(res);
+      try {
+        const res = await submitScenario(allAnswers);
+        if (res.ok) setResult(res.result);
+        else setError(res.error);
+      } catch {
+        setError("We couldn't score your answers. Please reload the page and try again.");
+      }
     });
   }
 
@@ -64,6 +58,19 @@ export function ScenarioRunner({ questions }: { questions: ScenarioQuestion[] })
       <div className="flex flex-col items-center gap-3 rounded-2xl border border-border bg-card p-10 text-center">
         <Loader2 className="size-6 animate-spin text-primary" />
         <p className="text-sm text-muted-foreground">Scoring your scenario…</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex flex-col gap-4 rounded-2xl border border-border bg-card p-6">
+        <p role="alert" className="text-sm text-foreground">
+          {error}
+        </p>
+        <Button asChild variant="outline" className="self-start">
+          <Link href="/candidate/profile">Back to profile</Link>
+        </Button>
       </div>
     );
   }
@@ -91,7 +98,8 @@ export function ScenarioRunner({ questions }: { questions: ScenarioQuestion[] })
             <span className="text-xs text-muted-foreground">Big Five + Integrity</span>
           </div>
           <p className="text-sm text-muted-foreground">
-            Your choices, mapped to the scientifically validated Big Five model.
+            Your choices, mapped to Big Five + Integrity tendencies and shown as broad bands — an
+            indication from six situations, not a clinical measurement.
           </p>
         </div>
         <PersonalityBars traits={result.traits} />

@@ -4,7 +4,7 @@ import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 import { ArrowLeft, UploadCloud, MailPlus } from "lucide-react";
 import { prisma } from "@/lib/db";
-import { requireUser } from "@/lib/persona";
+import { requireHmOpening } from "@/lib/access";
 import { importCandidates } from "@/lib/actions/invites";
 import { CopyLink } from "@/components/pipeline/copy-link";
 import { Button } from "@/components/ui/button";
@@ -20,7 +20,8 @@ export default async function ImportCandidatesPage({
 }) {
   const { openingId } = await params;
   const { added, skipped } = await searchParams;
-  const user = await requireUser();
+  // HM hat + owns this opening, before any read (404 otherwise).
+  const user = await requireHmOpening(openingId);
   const opening = await prisma.opening.findUnique({
     where: { id: openingId },
     select: { title: true, company: { select: { ownerId: true } } },

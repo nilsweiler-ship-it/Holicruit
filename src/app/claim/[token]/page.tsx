@@ -23,6 +23,7 @@ export default async function ClaimPage({
 }) {
   const { token } = await params;
   const { error } = await searchParams;
+  const errorText = typeof error === "string" && Object.hasOwn(ERRORS, error) ? ERRORS[error] : null;
 
   const profile = await prisma.candidateProfile.findUnique({
     where: { inviteToken: token },
@@ -58,9 +59,9 @@ export default async function ClaimPage({
             </p>
           </div>
 
-          {error && ERRORS[error] && (
+          {errorText && (
             <div className="rounded-xl border border-primary/30 bg-primary/8 p-3 text-sm text-foreground">
-              {ERRORS[error]}
+              {errorText}
             </div>
           )}
 

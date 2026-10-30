@@ -7,6 +7,8 @@
 import type { FitObject, SkillGap } from "../fit/types";
 import { prisma } from "../db";
 import { computeTermsFit, parseModes } from "../terms";
+import { computeSoftFit } from "../integrity/soft-fit";
+import { isDemoEmail, sameWorld } from "../demo";
 
 const SOFT_BAR = 75; // default role soft-skill bar
 const DEFAULT_HARD_W = 55; // default hard weight (0–100) when a role isn't calibrated
@@ -37,7 +39,7 @@ interface ComputeInput {
   skillWeights?: Record<string, string> | null;
 }
 
-export function computeFit(input: ComputeInput): FitObject {
+export function computeFit(input: ComputeInput): FitObject & { softAssessed: boolean } {
   const have = new Map(input.hardSkills.map((s) => [s.name.toLowerCase(), s]));
   const gaps: SkillGap[] = [];
 
@@ -65,26 +67,18 @@ export function computeFit(input: ComputeInput): FitObject {
   }
   const hardFit = hardWtot ? Math.round((100 * hardScore) / hardWtot) : 70;
 
-  const softMap = new Map(input.softSkills.map((s) => [s.name.toLowerCase(), s.level]));
-  const relevant = input.requiredSoft.length
-    ? input.requiredSoft
-    : input.softSkills.map((s) => s.name);
-  let softSum = 0;
-  let softWtot = 0;
-  for (const req of relevant) {
-    const w = wOf(req);
-    const lvl = softMap.get(req.toLowerCase());
-    if (lvl != null) {
-      softSum += w * lvl;
-      softWtot += w;
-      if (lvl < SOFT_BAR) {
-        gaps.push({ skill: req, type: "soft", severity: lvl < SOFT_BAR - 15 ? "moderate" : "minor" });
-      }
-    } else {
-      gaps.push({ skill: req, type: "soft", severity: sevOf(req) });
-    }
-  }
-  const softFit = softWtot ? Math.round(softSum / softWtot) : 60;
+  // Soft side: unassessed candidates are "unknown" — neutral placeholder below
+  // the scale midpoint, no invented gaps, flagged softAssessed=false. See
+  // integrity/soft-fit.ts for the rule and why.
+  const soft = computeSoftFit({
+    softSkills: input.softSkills,
+    requiredSoft: input.requiredSoft,
+    weightOf: wOf,
+    severityOf: sevOf,
+    softBar: SOFT_BAR,
+  });
+  gaps.push(...soft.gaps);
+  const { softFit, softAssessed } = soft;
 
   // Calibration: weight hard vs. soft by the role's configured balance.
   const hw = input.hardWeight ?? DEFAULT_HARD_W;
@@ -97,7 +91,7 @@ export function computeFit(input: ComputeInput): FitObject {
   const verified =
     presentHard.length > 0 && verifiedCount >= Math.ceil(input.requiredHard.length / 2);
 
-  return { hardFit, softFit, mutualFit, verified, gaps };
+  return { hardFit, softFit, mutualFit, verified, gaps, softAssessed };
 }
 
 /**
@@ -251,12 +245,16 @@ async function upsertMatch(
 export async function runMatchingForCandidate(candidateId: string): Promise<void> {
   const profile = await prisma.candidateProfile.findUnique({
     where: { id: candidateId },
-    include: { hardSkills: true, softSkills: true },
+    include: { hardSkills: true, softSkills: true, user: { select: { email: true } } },
   });
   if (!profile) return;
-  const openings = await prisma.opening.findMany();
+  const openings = await prisma.opening.findMany({
+    include: { company: { select: { owner: { select: { email: true } } } } },
+  });
   const affected = new Set<string>();
   for (const o of openings) {
+    // Demo isolation: demo candidates only meet demo roles, real only real.
+    if (!sameWorld(profile.user.email, o.company.owner.email)) continue;
     if (!meetsMustHaves(profile, o)) continue;
     await upsertMatch(candidateId, o.id, fitFor(profile, o));
     affected.add(o.id);
@@ -269,8 +267,12 @@ export async function runMatchingForCandidate(candidateId: string): Promise<void
  * manager's pipeline when a role is posted.
  */
 export async function runMatchingForOpening(openingId: string): Promise<void> {
-  const opening = await prisma.opening.findUnique({ where: { id: openingId } });
+  const opening = await prisma.opening.findUnique({
+    where: { id: openingId },
+    include: { company: { select: { owner: { select: { email: true } } } } },
+  });
   if (!opening) return;
+  const demoOpening = isDemoEmail(opening.company.owner.email);
   // Calibration: the role's pass bar decides who clears into the pipeline.
   // Priority roles (Scale) cast a wider net by lowering that bar.
   const base = opening.passBar ?? MATCH_THRESHOLD;
@@ -279,9 +281,11 @@ export async function runMatchingForOpening(openingId: string): Promise<void> {
   // profiles are private to the HM who imported them (matched explicitly there).
   const profiles = await prisma.candidateProfile.findMany({
     where: { claimed: true },
-    include: { hardSkills: true, softSkills: true },
+    include: { hardSkills: true, softSkills: true, user: { select: { email: true } } },
   });
   for (const p of profiles) {
+    // Demo isolation: a demo role only pulls demo candidates, a real role only real ones.
+    if (isDemoEmail(p.user.email) !== demoOpening) continue;
     if (!meetsMustHaves(p, opening)) continue;
     await upsertMatch(p.id, openingId, fitFor(p, opening), threshold);
   }

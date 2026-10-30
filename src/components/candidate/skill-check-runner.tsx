@@ -3,14 +3,15 @@
 import { useState, useTransition } from "react";
 import Link from "next/link";
 import { ArrowRight, Check, Loader2, ShieldCheck } from "lucide-react";
-import type { SkillCheckItem } from "@/lib/fixtures/skill-checks";
+import type { PublicSkillCheckItem } from "@/lib/integrity/assessment-attempts";
 import { submitSkillCheck } from "@/lib/actions/candidate";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 /**
  * Applied skill-check stepper. Presents work-sample/judgment items one at a
- * time, scores them server-side, and (if passed) verifies the skill.
+ * time. It only ever holds `{ id, text }` per option (already shuffled by the
+ * server for this attempt); scoring and verification happen server-side.
  */
 export function SkillCheckRunner({
   skill,
@@ -18,13 +19,14 @@ export function SkillCheckRunner({
   openingId,
 }: {
   skill: string;
-  items: SkillCheckItem[];
+  items: PublicSkillCheckItem[];
   openingId?: string;
 }) {
   const total = items.length;
   const [index, setIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [result, setResult] = useState<{ score: number; passed: boolean } | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const [isScoring, startScoring] = useTransition();
 
   const item = items[index];
@@ -37,7 +39,16 @@ export function SkillCheckRunner({
     if (index < total - 1) {
       setIndex((i) => i + 1);
     } else {
-      startScoring(async () => setResult(await submitSkillCheck(skill, next, openingId)));
+      setError(null);
+      startScoring(async () => {
+        try {
+          const res = await submitSkillCheck(skill, next, openingId);
+          if (res.ok) setResult({ score: res.score, passed: res.passed });
+          else setError(res.error);
+        } catch {
+          setError("We couldn't score this attempt. Please reload the page and try again.");
+        }
+      });
     }
   }
 
@@ -46,6 +57,19 @@ export function SkillCheckRunner({
       <div className="flex flex-col items-center gap-3 rounded-2xl border border-border bg-card p-10 text-center">
         <Loader2 className="size-6 animate-spin text-primary" />
         <p className="text-sm text-muted-foreground">Scoring your applied answers…</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex flex-col gap-4 rounded-2xl border border-border bg-card p-6">
+        <p role="alert" className="text-sm text-foreground">
+          {error}
+        </p>
+        <Button asChild variant="outline" className="self-start">
+          <Link href="/candidate/profile">Back to profile</Link>
+        </Button>
       </div>
     );
   }
@@ -70,7 +94,7 @@ export function SkillCheckRunner({
               Applied score: <span className="font-semibold text-foreground">{result.score}/100</span>
               {result.passed
                 ? " — added to your profile as a verified skill."
-                : " — keep practising; you can retake this anytime."}
+                : " — keep practising; you can retake it in 24 hours."}
             </p>
           </div>
         </div>

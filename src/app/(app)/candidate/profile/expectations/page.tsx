@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ArrowLeft, Coins, ShieldCheck } from "lucide-react";
+import { ArrowLeft, Coins, ShieldCheck, TriangleAlert } from "lucide-react";
 import { prisma } from "@/lib/db";
 import { getActiveCandidateId } from "@/lib/persona";
 import { updateWorkPrefs } from "@/lib/actions/privacy";
@@ -15,8 +15,13 @@ export const metadata: Metadata = { title: "Your must-haves · Holicruit" };
  * are must-haves for matching — hard incompatibilities are filtered out — and
  * stay confidential (employers see compatibility only).
  */
-export default async function ExpectationsPage() {
+export default async function ExpectationsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ error?: string | string[] }>;
+}) {
   const candidateId = await getActiveCandidateId();
+  const { error } = await searchParams;
   const prefs = await prisma.candidateProfile.findUnique({
     where: { id: candidateId },
     select: {
@@ -58,6 +63,19 @@ export default async function ExpectationsPage() {
           if you and an employer both choose to, on a specific match.
         </p>
       </div>
+
+      {error === "1" && (
+        <div
+          role="alert"
+          className="flex items-start gap-2 rounded-xl border border-destructive/40 bg-destructive/10 p-3 text-sm text-foreground"
+        >
+          <TriangleAlert className="mt-0.5 size-4 shrink-0 text-destructive" aria-hidden />
+          <p>
+            Please enter your minimum yearly pay and pick at least one way you want to work — both
+            are needed before we can match you.
+          </p>
+        </div>
+      )}
 
       <form action={updateWorkPrefs} className="flex flex-col gap-5 rounded-2xl border border-border bg-card p-5">
         <input type="hidden" name="redirectTo" value="/candidate/matches" />

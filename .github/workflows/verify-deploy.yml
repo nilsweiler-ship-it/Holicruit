@@ -1,38 +1,53 @@
 name: Verify production deploy
 
-# Runs after CI succeeds on main (separate workflow, so Railway's "Wait for CI"
-# isn't blocked by it): polls /api/health until the new commit is live, then runs
-# the read-only smoke suite against production.
+# Runs AFTER Railway reports a successful deployment (GitHub deployment_status
+# event), then confirms /api/health serves that commit and runs the read-only
+# smoke suite against production.
+#
+# Why not `workflow_run` after CI: Railway's "Wait for CI" waits for EVERY GitHub
+# Actions check suite on the commit, and workflow_run runs are attached to the
+# head commit of main, i.e. the same commit Railway is holding. A job that waits
+# for Railway while Railway waits for it deadlocks until the job times out, the
+# job fails, and Railway skips the deploy. deployment_status fires only after
+# Railway has deployed, so it can never block a deploy.
+#
+# Manual run: Actions → Verify production deploy → Run workflow (optional SHA).
 
 on:
-  workflow_run:
-    workflows: [CI]
-    types: [completed]
-    branches: [main]
+  deployment_status:
+  workflow_dispatch:
+    inputs:
+      sha:
+        description: "Commit SHA expected on production (blank = skip the commit check)"
+        required: false
 
 jobs:
   verify:
-    if: github.event.workflow_run.conclusion == 'success'
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.deployment_status.state == 'success' &&
+       !contains(github.event.deployment_status.environment, 'pr-'))
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 20
     env:
       BASE_URL: https://app.holicruit.com
       NO_WEBSERVER: "1"
       CI: "true"
-      SHA: ${{ github.event.workflow_run.head_sha }}
+      SHA: ${{ github.event.deployment.sha || inputs.sha }}
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.workflow_run.head_sha }}
+          ref: ${{ github.event.deployment.sha || github.sha }}
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
-      - run: npm ci && npm install --no-save --no-audit --no-fund @playwright/test@1.64.1
+      - run: npm ci
 
-      - name: Wait for Railway to serve this commit
+      - name: Confirm production serves this commit
         run: |
-          for i in $(seq 1 60); do
+          if [ -z "$SHA" ]; then echo "No SHA given — skipping commit check."; exit 0; fi
+          for i in $(seq 1 30); do
             body=$(curl -fsS "$BASE_URL/api/health" || true)
             echo "$body"
             if echo "$body" | grep -q "\"commit\":\"${SHA}\""; then
@@ -40,7 +55,7 @@ jobs:
             fi
             sleep 20
           done
-          echo "::error title=deploy not live::Timed out waiting for ${SHA} on $BASE_URL (last: $body)"; exit 1
+          echo "::error title=deploy not live::${SHA} not served by $BASE_URL/api/health after 10 min (last: $body)"; exit 1
 
       - run: npx playwright install --with-deps chromium
       - name: Production smoke (read-only)

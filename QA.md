@@ -8,10 +8,10 @@ The goal: nothing reaches app.holicruit.com that hasn't passed the same checks e
 |---|---|---|
 | Every push / PR | GitHub Actions `CI` | lint → type-check → **unit tests** (matching terms, identity masking, skill banks, CV parsing) → production build → fresh Postgres + seed → **browser journeys** (register with consent, post confidential role with must-haves, import pipeline + claim link, candidate must-haves + CV import, must-have gate, alias + export + erasure, contact lead + feedback → admin inbox) → **smoke** (desktop + mobile) |
 | Deploy to main | Railway, *Wait for CI* on | Only deploys a commit whose CI job is green |
-| After deploy | `Verify production deploy` (runs after CI) | Polls `/api/health` until the live commit matches, then runs the **read-only smoke suite against production** |
+| After deploy | `Verify production deploy` (on Railway's GitHub `deployment_status: success`) | Confirms `/api/health` serves the deployed commit, then runs the **read-only smoke suite against production**. It never runs *before* the deploy, so it can't hold up Railway's "Wait for CI" |
 | Daily 05:00 UTC | `Production smoke` | Same smoke suite against production, independent of deploys |
 
-The smoke suite is strictly read-only (demo logins, no writes) so it is safe on production. The journey suite refuses to run against a `holicruit.*` host.
+The smoke suite is strictly read-only (it signs in to the seeded `@holicruit.test` demo accounts with the login form, no writes) so it is safe on production. It does not need the one-click demo buttons, so production can keep `NEXT_PUBLIC_DEMO_LOGINS` unset; CI sets it to `1`. Demo accounts are isolated from real users in matching (`src/lib/demo.ts`). The journey suite refuses to run against a `holicruit.*` host.
 
 Failures email the repo owner (GitHub default) and attach a Playwright report with screenshots and traces.
 

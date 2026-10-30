@@ -68,7 +68,20 @@ Open your **app** service (the `holicruit` box, not the database):
    |------|-------|
    | `DATABASE_URL` | `${{Postgres.DATABASE_URL}}` |
    | `AUTH_SECRET` | *(generate — see below)* |
-   | `NEXT_PUBLIC_APP_URL` | `https://<your-domain>` (your reserved domain) |
+   | `NEXT_PUBLIC_APP_URL` | `https://app.holicruit.com` |
+   | `AUTH_URL` | `https://app.holicruit.com` |
+
+   **`AUTH_URL` is required.** Without it NextAuth falls back to the internal
+   address — production's `/api/auth/providers` was advertising
+   `https://localhost:8080` as its sign-in and callback URL. Check after deploy:
+   `https://app.holicruit.com/api/auth/providers` must show
+   `https://app.holicruit.com/api/auth/…` URLs. (Remove any old `NEXTAUTH_URL`
+   variable, or set it to the same value.)
+
+   **Do not set `NEXT_PUBLIC_DEMO_LOGINS`** on the production service. The
+   one-click demo buttons and the "demo" banner appear only when it is `1`;
+   use that only on a separate public-demo deployment with its own database.
+   Never set `SEED_FORCE` / `SEED_FORCE_CONFIRM` here (see DEPLOY.md → Boot safety).
 
    `${{Postgres.DATABASE_URL}}` references the database service — Railway offers
    it as a suggestion when you start typing `${{`. (If your Postgres service has a
@@ -96,8 +109,12 @@ Unlike the old SQLite setup, you **don't** run any manual database command. The
 start script does it:
 
 ```
-prisma migrate deploy   →   seed demo data (if empty)   →   next start
+prisma db push --skip-generate   →   seed demo data (only if no users)   →   next start
 ```
+
+Both steps fail closed: the schema sync refuses changes that would lose data
+(the deploy stops and the previous version keeps serving), and the seed never
+touches a database that already has users. Details: DEPLOY.md → Boot safety.
 
 1. Make sure your initial migration is committed (POSTGRES.md → One-time setup).
 2. Click **Deploy** (or it redeploys automatically after saving variables).
@@ -130,9 +147,23 @@ prisma migrate deploy   →   seed demo data (if empty)   →   next start
 ## Part 6 — Test it
 
 1. Open `https://<your-domain>`.
-2. Click **Explore the demo** or go to `/login` → use a one-click demo account,
-   or sign in manually (all demo accounts use `password123`).
-3. Walk the demo path: as **Priya** (hiring manager) and **Sam** (candidate).
+2. Go to `/login` and sign in with a demo account (all use `password123`).
+   One-click demo buttons appear only on a deployment built with
+   `NEXT_PUBLIC_DEMO_LOGINS=1`.
+3. `https://<your-domain>/api/health` should return `{"ok":true,"commit":"<sha>"…}`
+   with the latest commit on `main`. A 404 or an old SHA means Railway is not
+   deploying new commits — see **Wait for CI** below.
+4. Walk the demo path: as **Priya** (hiring manager) and **Sam** (candidate).
+
+### Wait for CI
+
+With **Settings → Source → Wait for CI** on, Railway holds each `main` deploy
+until **every** GitHub Actions run attached to that commit has finished, and
+skips the deploy if **any** of them failed. So no workflow may wait for Railway
+while Railway waits for it: `verify-deploy.yml` therefore starts only from
+Railway's own "deployment succeeded" signal (GitHub `deployment_status`), never
+from a CI run. If deploys show as **Skipped** in Railway, open the commit's
+checks on GitHub — one of them failed or timed out.
 
 ---
 

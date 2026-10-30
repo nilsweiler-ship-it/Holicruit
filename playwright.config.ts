@@ -3,7 +3,7 @@ import { defineConfig, devices } from "@playwright/test";
 /**
  * Two suites, one config:
  *  - smoke   (tests/e2e/smoke.spec.ts)    read-only — safe against production.
- *  - journey (tests/e2e/journeys.spec.ts) mutating — CI only, throwaway database.
+ *  - journey (tests/e2e/journeys.spec.ts, access.spec.ts) mutating — CI only, throwaway database.
  *
  * BASE_URL picks the target. Locally: `npm run dev` then `npm run test:e2e`.
  */
@@ -26,7 +26,7 @@ export default defineConfig({
   projects: [
     { name: "smoke", testMatch: /smoke\.spec\.ts/, use: { ...devices["Desktop Chrome"] } },
     { name: "smoke-mobile", testMatch: /smoke\.spec\.ts/, use: { ...devices["Pixel 7"] } },
-    { name: "journey", testMatch: /journeys\.spec\.ts/, use: { ...devices["Desktop Chrome"] } },
+    { name: "journey", testMatch: /(journeys|access)\.spec\.ts/, use: { ...devices["Desktop Chrome"] } },
   ],
   webServer: isLocal && !process.env.NO_WEBSERVER
     ? {

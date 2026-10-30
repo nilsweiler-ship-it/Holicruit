@@ -5,6 +5,8 @@ import { prisma } from "@/lib/db";
  * GDPR data portability (Art. 20): download everything we hold about you as a
  * single JSON file. Excludes the password hash.
  */
+export const dynamic = "force-dynamic";
+
 export async function GET(): Promise<Response> {
   const user = await getCurrentUser();
   if (!user) return new Response("Unauthorized", { status: 401 });
@@ -26,10 +28,15 @@ export async function GET(): Promise<Response> {
       }),
       prisma.candidateProfile.findUnique({
         where: { userId: user.id },
+        // Secrets and other people's identifiers stay out: the claim token is a
+        // credential, and invitedByUserId identifies the importing HM.
+        omit: { inviteToken: true, invitedByUserId: true },
         include: {
           hardSkills: true,
           softSkills: true,
-          endorsements: true,
+          // Endorsements are about you, but the endorser's name/headline are
+          // someone else's personal data (GDPR Art. 20(4)) — export the claim only.
+          endorsements: { select: { id: true, skill: true, relationship: true, createdAt: true } },
           scenarioRuns: true,
           enrollments: true,
           matches: { select: { id: true, openingId: true, stage: true, createdAt: true } },
@@ -65,6 +72,8 @@ export async function GET(): Promise<Response> {
     headers: {
       "Content-Type": "application/json",
       "Content-Disposition": `attachment; filename="${filename}"`,
+      // Personal data: never store in shared/browser caches.
+      "Cache-Control": "private, no-store",
     },
   });
 }

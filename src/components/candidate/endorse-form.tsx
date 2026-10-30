@@ -1,29 +1,30 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { CheckCircle2, ShieldCheck } from "lucide-react";
+import { CheckCircle2, Loader2, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 import { giveEndorsement } from "@/lib/actions/candidate";
+import { ENDORSEMENT_RELATIONSHIPS, type EndorsementRelationship } from "@/lib/integrity/endorsement-shared";
 import { Button } from "@/components/ui/button";
 
-const RELATIONSHIPS = ["Manager", "Teammate", "Mentor", "Client / stakeholder", "Other"];
-
 /**
- * The "give" side of peer endorsement — a peer follows a shared link and
- * vouches for a candidate's skill. On submit, the candidate's skill becomes
- * verified (mocked).
+ * The "give" side of peer endorsement — a signed-in peer follows a signed link
+ * and vouches for a candidate's skill. Success is shown only after the server
+ * action has recorded it; every refusal (expired link, self-endorsement,
+ * duplicate) is shown as-is.
  */
 export function EndorseForm({
-  candidateId,
+  token,
   candidateName,
   skill,
 }: {
-  candidateId: string;
+  token: string;
   candidateName: string;
   skill: string;
 }) {
-  const [relationship, setRelationship] = useState<string | null>(null);
+  const [relationship, setRelationship] = useState<EndorsementRelationship | null>(null);
   const [done, setDone] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
   if (done) {
@@ -32,11 +33,29 @@ export function EndorseForm({
         <CheckCircle2 className="size-10 text-success" />
         <h2 className="text-lg font-semibold">Endorsement recorded</h2>
         <p className="text-sm text-muted-foreground">
-          Thank you. <span className="font-medium text-foreground">{skill}</span> now carries your
-          verification on {candidateName}&apos;s profile.
+          Thank you. Your endorsement of <span className="font-medium text-foreground">{skill}</span> is now
+          on {candidateName}&apos;s profile.
         </p>
       </div>
     );
+  }
+
+  function submit() {
+    if (!relationship) return;
+    setError(null);
+    startTransition(async () => {
+      try {
+        const res = await giveEndorsement({ token, relationship });
+        if (res.ok) {
+          setDone(true);
+          toast.success(`You endorsed ${candidateName} for ${skill}.`);
+        } else {
+          setError(res.error);
+        }
+      } catch {
+        setError("Something went wrong — your endorsement wasn't saved. Please try again.");
+      }
+    });
   }
 
   return (
@@ -49,11 +68,12 @@ export function EndorseForm({
         How do you know {candidateName}? This is attached to your endorsement.
       </p>
       <div className="flex flex-wrap gap-2">
-        {RELATIONSHIPS.map((r) => (
+        {ENDORSEMENT_RELATIONSHIPS.map((r) => (
           <button
             key={r}
             type="button"
             onClick={() => setRelationship(r)}
+            aria-pressed={relationship === r}
             className={
               "rounded-full border px-3 py-1.5 text-sm font-medium transition-colors " +
               (relationship === r
@@ -65,18 +85,13 @@ export function EndorseForm({
           </button>
         ))}
       </div>
-      <Button
-        disabled={!relationship || pending}
-        className="self-start"
-        onClick={() => {
-          if (candidateId && relationship) {
-            startTransition(() => void giveEndorsement({ candidateId, skill, relationship }));
-          }
-          setDone(true);
-          toast.success(`You endorsed ${candidateName} for ${skill}.`);
-        }}
-      >
-        <ShieldCheck className="size-4" />
+      {error && (
+        <p role="alert" className="text-sm text-destructive">
+          {error}
+        </p>
+      )}
+      <Button disabled={!relationship || pending} className="self-start" onClick={submit}>
+        {pending ? <Loader2 className="size-4 animate-spin" /> : <ShieldCheck className="size-4" />}
         Endorse {skill}
       </Button>
     </div>

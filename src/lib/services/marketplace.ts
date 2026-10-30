@@ -1,11 +1,14 @@
 /**
- * MarketplaceService — programs read from the DB; the aggregate gap-demand
- * analytics stays a static fixture (it's a cross-tenant rollup, not per-row).
+ * MarketplaceService — programs, provider stats and the aggregate gap-demand
+ * rollup, all read from the DB (no fixture numbers reach real users).
  */
 
 import type { GapDemand, Program, ProviderStats } from "../types";
 import { prisma } from "../db";
-import { GAP_DEMAND, PROVIDER_STATS } from "../fixtures";
+import { aggregateGapDemand } from "../integrity/gap-demand";
+
+/** Currency for provider earnings. There's no payout ledger yet, so earnings are 0. */
+const PROVIDER_CURRENCY = "€";
 
 export interface MarketplaceService {
   getProgramsForGap(skill: string): Promise<Program[]>;
@@ -121,8 +124,27 @@ class DbMarketplaceService implements MarketplaceService {
     return rows.map(toProgram);
   }
 
+  /**
+   * Gaps carried by real, claimed candidates in open (non-closed) matches,
+   * k-anonymized (see integrity/gap-demand.ts). Empty on a fresh install.
+   */
   async getGapDemand(): Promise<GapDemand[]> {
-    return [...GAP_DEMAND].sort((a, b) => b.candidatesWithGap - a.candidatesWithGap);
+    const [matches, programs] = await Promise.all([
+      prisma.match.findMany({
+        where: { stage: { not: "closed" }, candidate: { claimed: true } },
+        select: { candidateId: true, openingId: true, gaps: true, opening: { select: { industry: true } } },
+      }),
+      prisma.program.findMany({ select: { closesGap: true } }),
+    ]);
+    const programsByGap = new Map<string, number>();
+    for (const p of programs) {
+      const k = p.closesGap.trim().toLowerCase();
+      programsByGap.set(k, (programsByGap.get(k) ?? 0) + 1);
+    }
+    return aggregateGapDemand(
+      matches.map((m) => ({ candidateId: m.candidateId, openingId: m.openingId, gaps: m.gaps, industry: m.opening.industry })),
+      programsByGap,
+    );
   }
 
   async getProviderStats(providerId: string): Promise<ProviderStats> {
@@ -135,8 +157,9 @@ class DbMarketplaceService implements MarketplaceService {
       learnersEnrolled: programs.reduce((n, p) => n + p.enrollments, 0),
       gapsClosed: programs.reduce((n, p) => n + p.completions, 0),
       reMatchesGenerated: programs.reduce((n, p) => n + p.reMatches, 0),
-      revenue: PROVIDER_STATS.revenue,
-      currency: PROVIDER_STATS.currency,
+      // No payout ledger exists yet: report 0 rather than a fixture figure.
+      revenue: 0,
+      currency: PROVIDER_CURRENCY,
     };
   }
 }

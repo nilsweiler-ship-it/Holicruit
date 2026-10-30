@@ -72,7 +72,7 @@ export default async function HiringManagerBillingPage({
       {/* Banners */}
       {activatedName && (
         <Banner tone="success" icon={CheckCircle2}>
-          {activatedName} is active — an invoice will be sent to your billing contact.
+          {activatedName} is active.
         </Banner>
       )}
       {limit && (
@@ -82,7 +82,7 @@ export default async function HiringManagerBillingPage({
       )}
       {contacted && (
         <Banner tone="info" icon={MessageSquare}>
-          Thanks — our team will be in touch about Scale.
+          Thanks — our team will be in touch about {planByKey(contacted)?.name ?? "your plan"}.
         </Banner>
       )}
 

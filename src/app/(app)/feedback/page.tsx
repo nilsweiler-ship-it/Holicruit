@@ -5,8 +5,14 @@ import { requireUser } from "@/lib/persona";
 
 export const metadata: Metadata = { title: "Feedback · Holicruit" };
 
-/** Accounts allowed to see everyone's feedback. Comma-separated env override. */
-const ADMIN_EMAILS = (process.env.ADMIN_EMAILS ?? "nils.weiler@gmail.com")
+/**
+ * Accounts allowed to see everyone's feedback, leads and signups: the
+ * comma-separated ADMIN_EMAILS env allowlist, with NO default (unset = nobody).
+ * There is no email verification, so whoever registers an address owns it —
+ * only ever list an address whose account ALREADY exists and is yours, or a
+ * stranger can register it and become admin.
+ */
+const ADMIN_EMAILS = (process.env.ADMIN_EMAILS ?? "")
   .split(",")
   .map((e) => e.trim().toLowerCase())
   .filter(Boolean);

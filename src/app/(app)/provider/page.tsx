@@ -69,7 +69,12 @@ export default async function ProviderDeskPage() {
           value={stats.reMatchesGenerated.toLocaleString()}
           emphasized
         />
-        <StatTile icon={HandCoins} label="Earned" value={money(stats.revenue)} emphasized />
+        <StatTile
+          icon={HandCoins}
+          label={stats.revenue > 0 ? "Earned" : "Earned · no payouts yet"}
+          value={stats.revenue > 0 ? money(stats.revenue) : "—"}
+          emphasized={stats.revenue > 0}
+        />
       </div>
 
       {/* Gaps in demand — the targeting workflow */}
@@ -80,6 +85,12 @@ export default async function ProviderDeskPage() {
           </h2>
           <span className="text-xs text-muted-foreground">aggregate · anonymized</span>
         </div>
+        {demand.length === 0 && (
+          <div className="rounded-2xl border border-dashed border-border bg-card/40 px-6 py-8 text-center text-sm text-muted-foreground">
+            No gap demand to show yet. Once enough matched candidates share the same measured gap, it
+            appears here (we only show gaps shared by at least 3 people, to keep them anonymous).
+          </div>
+        )}
         <ul className="flex flex-col gap-2">
           {demand.map((d) => {
             const uncovered = d.programsOffered === 0;

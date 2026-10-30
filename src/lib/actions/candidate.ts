@@ -2,25 +2,54 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { z } from "zod";
 import { prisma } from "@/lib/db";
-import { getActiveCandidateId } from "@/lib/persona";
+import { getActiveCandidateId, getCurrentUser } from "@/lib/persona";
 import { scenarioService } from "@/lib/services/scenario";
 import { jobAdParser } from "@/lib/services/ingest";
 import { runMatchingForCandidate } from "@/lib/matching/engine";
 import { itemsForSkill, scoreSkillCheck, SKILL_CHECK_PASS, type SkillCheckItem } from "@/lib/fixtures/skill-checks";
 import type { ScenarioResult } from "@/lib/scenario/types";
+import { AccessDenied, assertHat } from "@/lib/access";
+import { personIdentity } from "@/lib/identity";
+import {
+  appBaseUrl,
+  ENDORSEMENT_RELATIONSHIPS,
+  ENDORSEMENTS_TO_VERIFY,
+  endorsementId,
+  endorsementPath,
+  endorsementSecret,
+  issueEndorsementToken,
+  verifyEndorsementToken,
+} from "@/lib/integrity/endorsement";
+import {
+  nextAttemptAt,
+  roleQuizFor,
+  SCENARIO_COOLDOWN_MS,
+  SKILL_CHECK_ATTEMPT_PREFIX,
+  SKILL_CHECK_COOLDOWN_MS,
+  skillCheckAttemptNeedle,
+  skillCheckAttemptScores,
+  validateSkillCheckAnswers,
+} from "@/lib/integrity/assessment-attempts";
+import { scoreScenario, validateScenarioAnswers } from "@/lib/integrity/scenario-scoring";
 
-/** A role's custom assessment items, if the HM has configured one. */
-async function roleQuizItems(openingId?: string): Promise<SkillCheckItem[] | null> {
-  if (!openingId) return null;
-  const o = await prisma.opening.findUnique({ where: { id: openingId }, select: { quiz: true } });
-  if (!o?.quiz) return null;
-  try {
-    const items = JSON.parse(o.quiz) as SkillCheckItem[];
-    return Array.isArray(items) && items.length > 0 ? items : null;
-  } catch {
-    return null;
-  }
+/**
+ * A role's custom assessment items — only for a role the candidate is matched
+ * to, and only for a skill that role requires. Throws AccessDenied when the
+ * candidate isn't matched to `openingId`.
+ */
+async function roleQuizItems(candidateId: string, openingId: string, skill: string): Promise<SkillCheckItem[] | null> {
+  const m = await prisma.match.findUnique({
+    where: { candidateId_openingId: { candidateId, openingId } },
+    select: { opening: { select: { quiz: true, requiredHard: true } } },
+  });
+  if (!m) throw new AccessDenied();
+  return roleQuizFor(m.opening, skill);
+}
+
+function isUniqueViolation(e: unknown): boolean {
+  return typeof e === "object" && e !== null && (e as { code?: unknown }).code === "P2002";
 }
 
 function initialsOf(name: string): string {
@@ -49,10 +78,37 @@ function revalidateCandidate() {
   revalidatePath("/candidate/growth-paths");
 }
 
-/** Persist scenario answers → soft-skill scores, mark complete, re-run matching. */
-export async function submitScenario(answers: Record<string, string>): Promise<ScenarioResult> {
+export type ScenarioSubmitResult =
+  | { ok: true; result: ScenarioResult }
+  | { ok: false; error: string; retryAt?: string };
+
+/**
+ * Persist scenario answers → soft-skill scores, mark complete, re-run matching.
+ * Rejects (nothing written) unless every question has a valid option id; one
+ * run per SCENARIO_COOLDOWN_MS, tracked as a ScenarioResult row. Option
+ * loadings live only on the server — the client sends option ids.
+ */
+export async function submitScenario(answers: unknown): Promise<ScenarioSubmitResult> {
+  await assertHat("candidate");
   const candidateId = await getActiveCandidateId();
-  const result = await scenarioService.score(answers);
+  const questions = await scenarioService.getQuestions();
+  const valid = validateScenarioAnswers(questions, answers);
+  if (!valid.ok) return { ok: false, error: valid.error };
+
+  const last = await prisma.scenarioResult.findFirst({
+    where: { profileId: candidateId, NOT: { scores: { contains: SKILL_CHECK_ATTEMPT_PREFIX } } },
+    orderBy: { createdAt: "desc" },
+    select: { createdAt: true },
+  });
+  const retry = nextAttemptAt(last?.createdAt, SCENARIO_COOLDOWN_MS);
+  if (retry) {
+    return { ok: false, error: "You've taken the scenario recently. You can retake it after the cooldown.", retryAt: retry.toISOString() };
+  }
+
+  const result = scoreScenario(questions, valid.answers);
+  await prisma.scenarioResult.create({
+    data: { profileId: candidateId, scores: JSON.stringify(result.scores) },
+  });
   for (const s of result.scores) {
     await prisma.softSkillScore.upsert({
       where: { profileId_name: { profileId: candidateId, name: s.name } },
@@ -70,7 +126,7 @@ export async function submitScenario(answers: Record<string, string>): Promise<S
   await recalcCompleteness(candidateId);
   await runMatchingForCandidate(candidateId);
   revalidateCandidate();
-  return result;
+  return { ok: true, result };
 }
 
 /**
@@ -80,7 +136,8 @@ export async function submitScenario(answers: Record<string, string>): Promise<S
  */
 export async function parseProfileText(text: string): Promise<{ skills: string[]; industry: string }> {
   await getActiveCandidateId();
-  const parsed = await jobAdParser.parseCv(text);
+  const clean = z.string().max(200_000).parse(text);
+  const parsed = await jobAdParser.parseCv(clean);
   return { skills: parsed.hardSkills, industry: parsed.industry };
 }
 
@@ -111,8 +168,10 @@ export async function parseProfilePdf(
 }
 
 /** Confirm step of import: add the reviewed skills and re-run matching. */
-export async function addImportedSkills(names: string[], industry?: string): Promise<void> {
+export async function addImportedSkills(rawNames: string[], rawIndustry?: string): Promise<void> {
   const candidateId = await getActiveCandidateId();
+  const names = z.array(z.string().max(80)).max(200).parse(rawNames);
+  const industry = z.string().max(80).optional().parse(rawIndustry);
   for (const name of names) {
     const clean = name.trim();
     if (!clean) continue;
@@ -134,8 +193,9 @@ export async function addImportedSkills(names: string[], industry?: string): Pro
 /** Save an uploaded profile photo (data URL, resized client-side). */
 export async function updateAvatar(dataUrl: string): Promise<void> {
   const candidateId = await getActiveCandidateId();
-  // Accept only reasonably-sized image data URLs.
-  if (!dataUrl.startsWith("data:image/") || dataUrl.length > 600_000) return;
+  // Accept only reasonably-sized raster image data URLs (no SVG).
+  if (typeof dataUrl !== "string" || dataUrl.length > 600_000) return;
+  if (!/^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/=]+$/.test(dataUrl)) return;
   await prisma.candidateProfile.update({
     where: { id: candidateId },
     data: { avatarUrl: dataUrl },
@@ -143,40 +203,97 @@ export async function updateAvatar(dataUrl: string): Promise<void> {
   revalidateCandidate();
 }
 
+export type SkillCheckSubmitResult =
+  | { ok: true; score: number; passed: boolean }
+  | { ok: false; error: string; retryAt?: string };
+
+const skillCheckInput = z.object({
+  skill: z.string().trim().min(1).max(80),
+  openingId: z.string().min(1).max(64).optional(),
+});
+
 /**
- * Take an applied skill check. Scores the answers (judgment, not recall),
- * records the score, verifies the skill if passed, and re-runs matching.
+ * Take an applied skill check. Scores the answers server-side by option id
+ * (the browser never receives option scores), records the attempt, verifies
+ * the skill if passed, and re-runs matching.
+ *  • One attempt per skill per SKILL_CHECK_COOLDOWN_MS (24 h), tracked as a
+ *    timestamped ScenarioResult row; a concurrent double-submit keeps only the
+ *    first row.
+ *  • `openingId` is honoured only for a role the candidate is matched to, and
+ *    only for a skill that role requires (else the universal bank is used).
+ *  • Every served item must be answered with one of its own option ids.
+ *  • A failed attempt never removes verification the skill already has.
  */
 export async function submitSkillCheck(
-  skill: string,
-  answers: Record<string, string>,
-  openingId?: string,
-): Promise<{ score: number; passed: boolean }> {
+  skill: unknown,
+  answers: unknown,
+  openingId?: unknown,
+): Promise<SkillCheckSubmitResult> {
+  await assertHat("candidate");
   const candidateId = await getActiveCandidateId();
-  const clean = skill.trim();
-  if (!clean) return { score: 0, passed: false };
+  const input = skillCheckInput.safeParse({ skill, openingId: openingId || undefined });
+  if (!input.success) return { ok: false, error: "That skill check isn't valid." };
+  const clean = input.data.skill;
 
-  // Score against the same items the candidate saw: a role's custom assessment
-  // if one exists, otherwise the universal applied bank.
-  const items = (await roleQuizItems(openingId)) ?? itemsForSkill(clean);
-  const score = scoreSkillCheck(items, answers);
+  // Score against the same items the candidate saw.
+  const items =
+    (input.data.openingId ? await roleQuizItems(candidateId, input.data.openingId, clean) : null) ??
+    itemsForSkill(clean);
+  const valid = validateSkillCheckAnswers(items, answers);
+  if (!valid.ok) return { ok: false, error: valid.error };
+
+  const windowStart = new Date(Date.now() - SKILL_CHECK_COOLDOWN_MS);
+  const attemptsInWindow = {
+    profileId: candidateId,
+    createdAt: { gte: windowStart },
+    scores: { contains: skillCheckAttemptNeedle(clean) },
+  };
+  const cooldownError = (at: Date): SkillCheckSubmitResult => ({
+    ok: false,
+    error: `You've already taken the ${clean} check in the last 24 hours.`,
+    retryAt: new Date(at.getTime() + SKILL_CHECK_COOLDOWN_MS).toISOString(),
+  });
+  const recent = await prisma.scenarioResult.findFirst({
+    where: attemptsInWindow,
+    orderBy: { createdAt: "desc" },
+    select: { createdAt: true },
+  });
+  if (recent) return cooldownError(recent.createdAt);
+
+  const score = scoreSkillCheck(items, valid.answers);
   const passed = score >= SKILL_CHECK_PASS;
+
+  // Record the attempt, then make sure it's the only one in the window (two
+  // parallel submits both pass the check above; the earliest row wins).
+  const attempt = await prisma.scenarioResult.create({
+    data: { profileId: candidateId, scores: skillCheckAttemptScores(clean, score) },
+    select: { id: true, createdAt: true },
+  });
+  const first = await prisma.scenarioResult.findFirst({
+    where: attemptsInWindow,
+    orderBy: [{ createdAt: "asc" }, { id: "asc" }],
+    select: { id: true, createdAt: true },
+  });
+  if (first && first.id !== attempt.id) {
+    await prisma.scenarioResult.delete({ where: { id: attempt.id } });
+    return cooldownError(first.createdAt);
+  }
 
   await prisma.hardSkill.upsert({
     where: { profileId_name: { profileId: candidateId, name: clean } },
-    update: { assessedScore: score, verified: passed },
+    update: passed ? { assessedScore: score, verified: true } : { assessedScore: score },
     create: { profileId: candidateId, name: clean, assessedScore: score, verified: passed },
   });
   await recalcCompleteness(candidateId);
   await runMatchingForCandidate(candidateId);
   revalidateCandidate();
-  return { score, passed };
+  return { ok: true, score, passed };
 }
 
 /** Add a self-declared (unverified) hard skill. */
 export async function addSkill(name: string): Promise<void> {
   const candidateId = await getActiveCandidateId();
-  const clean = name.trim();
+  const clean = z.string().max(80).parse(name).trim();
   if (!clean) return;
   await prisma.hardSkill.upsert({
     where: { profileId_name: { profileId: candidateId, name: clean } },
@@ -188,72 +305,143 @@ export async function addSkill(name: string): Promise<void> {
   revalidateCandidate();
 }
 
-/** Record a peer endorsement → the skill becomes verified. Re-runs matching. */
-export async function giveEndorsement(input: {
-  candidateId: string;
-  skill: string;
-  relationship: string;
-  endorserName?: string;
-}): Promise<void> {
-  const { candidateId, skill, relationship } = input;
-  const endorserName = input.endorserName?.trim() || "A verified peer";
-  await prisma.endorsement.create({
-    data: {
-      profileId: candidateId,
-      skill,
-      endorserName,
-      endorserInitials: initialsOf(endorserName),
-      endorserHeadline: "Worked with you",
-      relationship,
-    },
+export type EndorsementLinkResult =
+  | { ok: true; url: string; expiresAt: string }
+  | { ok: false; error: string };
+
+/**
+ * Mint a signed endorsement link for one of the candidate's own skills. The
+ * token binds candidate + skill + 30-day expiry (HMAC under AUTH_SECRET), so a
+ * peer's endorsement lands on the right profile and nobody can forge one for
+ * another candidate. The domain comes from NEXT_PUBLIC_APP_URL; when unset the
+ * path is returned and the client prefixes its own origin.
+ */
+export async function requestEndorsementLink(skill: unknown): Promise<EndorsementLinkResult> {
+  await assertHat("candidate");
+  const candidateId = await getActiveCandidateId();
+  const name = z.string().trim().min(1).max(80).safeParse(skill);
+  if (!name.success) return { ok: false, error: "Unknown skill." };
+  const hs = await prisma.hardSkill.findUnique({
+    where: { profileId_name: { profileId: candidateId, name: name.data } },
+    select: { name: true },
   });
-  await prisma.hardSkill.upsert({
-    where: { profileId_name: { profileId: candidateId, name: skill } },
-    update: { verified: true },
-    create: { profileId: candidateId, name: skill, verified: true },
-  });
-  await recalcCompleteness(candidateId);
-  await runMatchingForCandidate(candidateId);
-  revalidateCandidate();
+  if (!hs) return { ok: false, error: "Add this skill to your profile first." };
+  const { token, exp } = issueEndorsementToken(candidateId, hs.name, endorsementSecret());
+  const path = endorsementPath(hs.name, token);
+  const base = appBaseUrl();
+  return { ok: true, url: base ? `${base}${path}` : path, expiresAt: new Date(exp).toISOString() };
 }
 
-/** Enroll in a program. For the demo flywheel this also closes a hard gap and
- *  re-runs matching (a real flow would do this on completion). */
-export async function enroll(programId: string): Promise<void> {
-  const candidateId = await getActiveCandidateId();
-  const program = await prisma.program.findUnique({ where: { id: programId } });
-  if (!program) return;
+export type EndorseResult =
+  | { ok: true; verified: boolean }
+  | { ok: false; code: "login" | "invalid" | "self" | "duplicate" | "gone"; error: string };
 
-  await prisma.enrollment.upsert({
-    where: { programId_candidateId: { programId, candidateId } },
-    update: { status: "completed" },
-    create: { programId, candidateId, status: "completed" },
-  });
-  await prisma.program.update({
-    where: { id: programId },
-    data: { enrollments: { increment: 1 }, completions: { increment: 1 }, reMatches: { increment: 1 } },
-  });
+const endorseInput = z.object({
+  token: z.string().min(1).max(2048),
+  relationship: z.enum(ENDORSEMENT_RELATIONSHIPS),
+});
 
-  // Close the gap on the profile, then re-run matching — the flywheel.
-  if (program.gapType === "hard") {
-    await prisma.hardSkill.upsert({
-      where: { profileId_name: { profileId: candidateId, name: program.closesGap } },
-      update: { verified: true },
-      create: { profileId: candidateId, name: program.closesGap, verified: true },
+/**
+ * Record a peer endorsement from a signed link. Requirements, in order:
+ * a valid, unexpired token; a logged-in endorser (any account); the endorser
+ * is not the candidate; one endorsement per endorser per skill (enforced by a
+ * deterministic primary key). The skill turns verified once it has
+ * ENDORSEMENTS_TO_VERIFY endorsements. Re-runs the candidate's matching.
+ */
+export async function giveEndorsement(input: unknown): Promise<EndorseResult> {
+  const parsed = endorseInput.safeParse(input);
+  if (!parsed.success) return { ok: false, code: "invalid", error: "Please choose how you know them." };
+  const user = await getCurrentUser();
+  if (!user) return { ok: false, code: "login", error: "Sign in to endorse." };
+
+  const claim = verifyEndorsementToken(parsed.data.token, endorsementSecret());
+  if (!claim) return { ok: false, code: "invalid", error: "This endorsement link is invalid or has expired." };
+
+  const profile = await prisma.candidateProfile.findUnique({
+    where: { id: claim.candidateId },
+    select: {
+      id: true,
+      userId: true,
+      hardSkills: { where: { name: claim.skill }, select: { name: true } },
+    },
+  });
+  const skillRow = profile?.hardSkills[0];
+  if (!profile || !skillRow) {
+    return { ok: false, code: "gone", error: "This skill is no longer on their profile." };
+  }
+  if (profile.userId === user.id) {
+    return { ok: false, code: "self", error: "You can't endorse your own skills — share the link with a peer." };
+  }
+
+  const id = endorsementId(user.id, profile.id, skillRow.name);
+  if (await prisma.endorsement.findUnique({ where: { id }, select: { id: true } })) {
+    return { ok: false, code: "duplicate", error: "You've already endorsed this skill." };
+  }
+  const endorser = await prisma.user.findUnique({
+    where: { id: user.id },
+    select: { name: true, initials: true, alias: true, anonymous: true, candidate: { select: { headline: true } } },
+  });
+  const ident = personIdentity(endorser ?? { name: user.name, initials: user.initials }, false);
+  try {
+    await prisma.endorsement.create({
+      data: {
+        id,
+        profileId: profile.id,
+        skill: skillRow.name,
+        endorserName: ident.name,
+        endorserInitials: ident.initials || initialsOf(ident.name),
+        endorserHeadline: (!ident.masked && endorser?.candidate?.headline?.trim()) || "Holicruit member",
+        relationship: parsed.data.relationship,
+      },
     });
-  } else {
-    // Soft gap: raise the assessed level to clear the role bar (min 80).
-    const existing = await prisma.softSkillScore.findUnique({
-      where: { profileId_name: { profileId: candidateId, name: program.closesGap } },
-    });
-    const level = Math.max(existing?.level ?? 0, 80);
-    await prisma.softSkillScore.upsert({
-      where: { profileId_name: { profileId: candidateId, name: program.closesGap } },
-      update: { level },
-      create: { profileId: candidateId, name: program.closesGap, level },
+  } catch (e) {
+    if (isUniqueViolation(e)) return { ok: false, code: "duplicate", error: "You've already endorsed this skill." };
+    throw e;
+  }
+
+  const count = await prisma.endorsement.count({ where: { profileId: profile.id, skill: skillRow.name } });
+  const verified = count >= ENDORSEMENTS_TO_VERIFY;
+  if (verified) {
+    await prisma.hardSkill.update({
+      where: { profileId_name: { profileId: profile.id, name: skillRow.name } },
+      data: { verified: true },
     });
   }
-  await recalcCompleteness(candidateId);
-  await runMatchingForCandidate(candidateId);
+  await recalcCompleteness(profile.id);
+  await runMatchingForCandidate(profile.id);
   revalidateCandidate();
+  return { ok: true, verified };
+}
+
+export type EnrollResult = { ok: true; alreadyEnrolled: boolean } | { ok: false; error: string };
+
+/**
+ * Enroll in a program: records status "enrolled", once per candidate per
+ * program (the unique constraint makes repeat clicks no-ops, so the program's
+ * enrollment counter increments exactly once). Enrolling never verifies a
+ * skill, raises a soft score, or counts as a completion — that requires
+ * provider-confirmed completion or other evidence.
+ */
+export async function enroll(programId: unknown): Promise<EnrollResult> {
+  await assertHat("candidate");
+  const candidateId = await getActiveCandidateId();
+  const id = z.string().min(1).max(64).safeParse(programId);
+  if (!id.success) return { ok: false, error: "Unknown program." };
+  const program = await prisma.program.findUnique({ where: { id: id.data }, select: { id: true } });
+  if (!program) return { ok: false, error: "Unknown program." };
+
+  try {
+    await prisma.enrollment.create({
+      data: { programId: program.id, candidateId, status: "enrolled" },
+    });
+  } catch (e) {
+    if (isUniqueViolation(e)) return { ok: true, alreadyEnrolled: true };
+    throw e;
+  }
+  await prisma.program.update({
+    where: { id: program.id },
+    data: { enrollments: { increment: 1 } },
+  });
+  revalidateCandidate();
+  return { ok: true, alreadyEnrolled: false };
 }

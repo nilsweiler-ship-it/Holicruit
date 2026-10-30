@@ -4,7 +4,8 @@ import { useMemo, useState, useTransition } from "react";
 import { CalendarCheck, CalendarClock, CalendarPlus, Check, Send } from "lucide-react";
 import { toast } from "sonner";
 import type { ChatMessage, Person, ScheduledInterview } from "@/lib/types";
-import { sendMessage, scheduleInterview } from "@/lib/actions/match";
+import type { PendingProposal } from "@/lib/services/thread";
+import { acceptInterview, proposeInterview, sendMessage } from "@/lib/actions/match";
 import { PersonAvatar } from "@/components/people/person-avatar";
 import { ScoreSheetButton } from "@/components/pipeline/score-sheet-button";
 import { Button } from "@/components/ui/button";
@@ -66,8 +67,12 @@ function downloadIcs(filename: string, content: string) {
 
 /**
  * Interactive direct chat between two experts, persisted to the DB — including
- * on-platform scheduling (propose a real slot + medium, accept, add to
- * calendar). Keeping this here is the anti-bypass: the whole loop stays in-app.
+ * on-platform scheduling (propose a real slot + medium, the other side accepts,
+ * add to calendar). Keeping this here is the anti-bypass: the whole loop stays
+ * in-app.
+ *
+ * Identity: the server decides who sent what. Messages arrive as
+ * `fromId: "me" | "them"`, and the actions never take a sender name.
  */
 export function ChatThread({
   matchId,
@@ -75,23 +80,29 @@ export function ChatThread({
   them,
   initialMessages,
   initialInterview,
+  initialProposal,
+  initialDraft = "",
 }: {
   matchId: string;
   me: Person;
   them: Person;
   initialMessages: ChatMessage[];
   initialInterview?: ScheduledInterview;
+  /** Latest unanswered proposal (from the server), if any. */
+  initialProposal?: PendingProposal;
+  /** Prefilled, unsent text for the composer (e.g. a suggested opener). */
+  initialDraft?: string;
 }) {
   const slots = useMemo(() => genSlots(), []);
   const [messages, setMessages] = useState<ChatMessage[]>(initialMessages);
-  const [draft, setDraft] = useState("");
+  const [draft, setDraft] = useState(initialDraft);
   const [counter, setCounter] = useState(1);
   const [interview, setInterview] = useState<ScheduledInterview | undefined>(initialInterview);
   const [medium, setMedium] = useState<string>("video");
   const [customWhen, setCustomWhen] = useState("");
-  /** A slot the viewer proposed that the other side can still accept. */
-  const [pending, setPending] = useState<{ slot: Slot; medium: string } | null>(null);
-  const [, startTransition] = useTransition();
+  /** The open proposal and who made it. Only the non-proposer can accept. */
+  const [pending, setPending] = useState<PendingProposal | null>(initialProposal ?? null);
+  const [busy, startTransition] = useTransition();
 
   const nextId = () => {
     const id = `local-${counter}`;
@@ -99,25 +110,38 @@ export function ChatThread({
     return id;
   };
 
-  function persistMessage(fromName: string, text: string) {
-    startTransition(() => {
-      void sendMessage(matchId, fromName, text);
-    });
-  }
-
   function send() {
     const text = draft.trim();
     if (!text) return;
-    setMessages((prev) => [...prev, { id: nextId(), fromId: me.id, text, ts: "now" }]);
+    const localId = nextId();
+    setMessages((prev) => [...prev, { id: localId, fromId: "me", text, ts: "now" }]);
     setDraft("");
-    persistMessage(me.name, text);
+    startTransition(async () => {
+      try {
+        await sendMessage(matchId, text);
+      } catch {
+        setMessages((prev) => prev.filter((m) => m.id !== localId));
+        setDraft(text);
+        toast.error("Message not sent — please try again.");
+      }
+    });
   }
 
   function propose(slot: Slot, med: string) {
     const text = `Proposed: ${slot.label} · ${med}`;
-    setMessages((prev) => [...prev, { id: nextId(), fromId: me.id, text, ts: "now" }]);
-    setPending({ slot, medium: med });
-    persistMessage(me.name, text);
+    const localId = nextId();
+    const prevPending = pending;
+    setMessages((prev) => [...prev, { id: localId, fromId: "me", text, ts: "now" }]);
+    setPending({ label: slot.label, iso: slot.iso, medium: med, mine: true });
+    startTransition(async () => {
+      try {
+        await proposeInterview(matchId, slot, med);
+      } catch {
+        setMessages((prev) => prev.filter((m) => m.id !== localId));
+        setPending(prevPending);
+        toast.error("Couldn't send the proposal — please try again.");
+      }
+    });
   }
 
   function proposeCustom() {
@@ -132,16 +156,22 @@ export function ChatThread({
     setCustomWhen("");
   }
 
-  function accept(p: { slot: Slot; medium: string }) {
-    setInterview({ when: p.slot.label, whenAt: p.slot.iso, medium: p.medium, scoreSheetAttached: false });
-    setPending(null);
-    const text = `Accepted: ${p.slot.label} · ${p.medium}`;
-    setMessages((prev) => [...prev, { id: nextId(), fromId: them.id, text, ts: "now" }]);
-    persistMessage(them.name, text);
-    startTransition(() => {
-      void scheduleInterview(matchId, p.slot.label, p.medium, p.slot.iso);
+  function accept() {
+    if (!pending || pending.mine) return;
+    startTransition(async () => {
+      try {
+        const booked = await acceptInterview(matchId);
+        setInterview({ when: booked.when, whenAt: booked.whenAt, medium: booked.medium, scoreSheetAttached: false });
+        setPending(null);
+        setMessages((prev) => [
+          ...prev,
+          { id: nextId(), fromId: "me", text: `Accepted: ${booked.when} · ${booked.medium}`, ts: "now" },
+        ]);
+        toast(`Interview scheduled — ${booked.when} · ${booked.medium}.`);
+      } catch {
+        toast.error("Couldn't accept — the proposal may have changed. Reload and try again.");
+      }
     });
-    toast(`Interview scheduled — ${p.slot.label} · ${p.medium}.`);
   }
 
   return (
@@ -158,8 +188,13 @@ export function ChatThread({
       </header>
 
       <div className="flex max-h-[28rem] flex-col gap-3 overflow-y-auto pr-1">
+        {messages.length === 0 && (
+          <p className="rounded-2xl border border-dashed border-border px-4 py-6 text-center text-sm text-muted-foreground">
+            No messages yet — say hello to {them.name}.
+          </p>
+        )}
         {messages.map((msg) => {
-          const outgoing = msg.fromId === me.id;
+          const outgoing = msg.fromId === "me";
           return (
             <div
               key={msg.id}
@@ -179,7 +214,7 @@ export function ChatThread({
         })}
       </div>
 
-      {interview ? (
+      {interview && !pending ? (
         <div className="flex flex-col gap-3 rounded-2xl border border-primary/30 bg-primary/8 p-5">
           <div className="flex items-center gap-2">
             <CalendarCheck className="size-5 text-primary" />
@@ -202,7 +237,8 @@ export function ChatThread({
               <CalendarPlus className="size-4" />
               Add to calendar
             </Button>
-            <ScoreSheetButton matchId={matchId} />
+            {/* Score sheets are the hiring manager's tool (manager-only action). */}
+            {me.id === "manager" && <ScoreSheetButton matchId={matchId} />}
             <button
               type="button"
               onClick={() => setInterview(undefined)}
@@ -255,14 +291,16 @@ export function ChatThread({
           {pending && (
             <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-accent px-3 py-2">
               <span className="text-sm text-muted-foreground">
-                You proposed{" "}
-                <span className="font-medium text-foreground">{pending.slot.label}</span> ·{" "}
-                {pending.medium}
+                {pending.mine ? "You proposed" : `${them.name} proposed`}{" "}
+                <span className="font-medium text-foreground">{pending.label}</span> · {pending.medium}
+                {pending.mine ? " — waiting for them to accept." : ""}
               </span>
-              <Button size="sm" onClick={() => accept(pending)}>
-                <Check className="size-4" />
-                Accept ({them.name.split(" ")[0]})
-              </Button>
+              {!pending.mine && (
+                <Button size="sm" onClick={accept} disabled={busy}>
+                  <Check className="size-4" />
+                  Accept
+                </Button>
+              )}
             </div>
           )}
         </div>
@@ -279,7 +317,7 @@ export function ChatThread({
           type="text"
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
-          placeholder={`Message ${them.name.split(" ")[0]}…`}
+          placeholder={`Message ${them.name}…`}
           className="h-10 flex-1 rounded-2xl border border-border bg-card px-4 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none"
         />
         <Button type="submit" disabled={!draft.trim()}>

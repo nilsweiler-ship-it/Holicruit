@@ -1,11 +1,10 @@
 "use client";
 
 import { useMemo, useState, useTransition } from "react";
-import { BadgeCheck, Clock, ExternalLink, Plus, ShieldCheck, UserCheck } from "lucide-react";
-import Link from "next/link";
+import { BadgeCheck, Clock, Copy, Link2, Loader2, Plus, ShieldCheck, UserCheck } from "lucide-react";
 import { toast } from "sonner";
 import type { Endorsement, HardSkill } from "@/lib/types";
-import { addSkill, giveEndorsement } from "@/lib/actions/candidate";
+import { addSkill, requestEndorsementLink } from "@/lib/actions/candidate";
 import {
   Dialog,
   DialogContent,
@@ -24,19 +23,20 @@ interface ChipState {
 }
 
 /**
- * Hard-skill chips with the peer-endorsement flow. Verification is *earned* — a
- * plain chip can request a peer endorsement (→ pending), and when a peer
- * endorses (the give side lives at /candidate/endorse/[skill]) it becomes
- * verified. Verified chips show who vouched.
+ * Hard-skill chips with the peer-endorsement flow. Verification is *earned* —
+ * a plain chip gets a signed endorsement link (server-minted, names this
+ * candidate + skill, valid 30 days) to share with a peer; when a signed-in peer
+ * endorses at /endorse/<skill>?t=… the skill becomes verified. The candidate
+ * can't endorse themselves. Verified chips show who vouched.
  */
 export function SkillChips({
   initial,
   endorsements,
-  candidateId,
 }: {
   initial: HardSkill[];
   endorsements: Endorsement[];
-  candidateId: string;
+  /** Kept for call-site compatibility; links are minted server-side for the session's own profile. */
+  candidateId?: string;
 }) {
   const [skills, setSkills] = useState<ChipState[]>(
     initial.map((s) => ({ name: s.name, status: s.verified ? "verified" : "plain" })),
@@ -45,6 +45,8 @@ export function SkillChips({
   const [adding, setAdding] = useState(false);
   const [draft, setDraft] = useState("");
   const [, startTransition] = useTransition();
+  const [links, setLinks] = useState<Record<string, string>>({});
+  const [linkPending, startLink] = useTransition();
 
   const activeChip = skills.find((s) => s.name === active) ?? null;
   const activeEndorsers = useMemo(
@@ -54,6 +56,33 @@ export function SkillChips({
 
   function setStatus(name: string, status: Status) {
     setSkills((prev) => prev.map((s) => (s.name === name ? { ...s, status } : s)));
+  }
+
+  function getLink(name: string) {
+    startLink(async () => {
+      try {
+        const res = await requestEndorsementLink(name);
+        if (!res.ok) {
+          toast.error(res.error);
+          return;
+        }
+        // NEXT_PUBLIC_APP_URL gives an absolute link; otherwise use this origin.
+        const url = /^https?:\/\//.test(res.url) ? res.url : `${window.location.origin}${res.url}`;
+        setLinks((prev) => ({ ...prev, [name]: url }));
+        setStatus(name, "pending");
+      } catch {
+        toast.error("Couldn't create a link right now. Please try again.");
+      }
+    });
+  }
+
+  async function copyLink(url: string) {
+    try {
+      await navigator.clipboard.writeText(url);
+      toast.success("Link copied", { description: "Send it to a peer who's seen this skill." });
+    } catch {
+      toast("Copy the link above and send it to a peer.");
+    }
   }
 
   function commitAdd() {
@@ -125,10 +154,14 @@ export function SkillChips({
                   <ShieldCheck className="size-5 text-success" />
                   {activeChip.name} · verified
                 </DialogTitle>
-                <DialogDescription>Earned through peer endorsements — not self-rated.</DialogDescription>
+                <DialogDescription>
+                  {activeEndorsers.length
+                    ? "Earned through peer endorsements — not self-rated."
+                    : "Verified through an applied skill check — not self-rated."}
+                </DialogDescription>
               </DialogHeader>
               <ul className="flex flex-col gap-3 py-1">
-                {(activeEndorsers.length ? activeEndorsers : GENERIC_ENDORSERS).map((e) => (
+                {activeEndorsers.map((e) => (
                   <li key={e.id} className="flex items-center gap-3">
                     <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-secondary text-sm font-semibold text-secondary-foreground">
                       {e.endorserInitials}
@@ -155,49 +188,32 @@ export function SkillChips({
                 </DialogDescription>
               </DialogHeader>
 
-              <div className="flex flex-col gap-2 rounded-lg border border-border bg-muted/40 p-3 text-sm">
-                <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                  Endorsement link
-                </span>
-                <Link
-                  href={`/endorse/${encodeURIComponent(activeChip?.name ?? "")}`}
-                  className="inline-flex items-center gap-1 truncate text-primary hover:underline"
-                >
-                  holicruit.app/endorse/{activeChip?.name}
-                  <ExternalLink className="size-3.5 shrink-0" />
-                </Link>
-              </div>
+              {activeChip && links[activeChip.name] ? (
+                <div className="flex flex-col gap-2 rounded-lg border border-border bg-muted/40 p-3 text-sm">
+                  <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                    Your endorsement link · valid 30 days
+                  </span>
+                  <code className="break-all text-xs text-foreground">{links[activeChip.name]}</code>
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  We&apos;ll create a private link that names you and this skill. Only a peer with their own
+                  Holicruit account can endorse through it — you can&apos;t endorse yourself.
+                </p>
+              )}
 
               <DialogFooter className="gap-2 sm:gap-2">
-                {activeChip?.status !== "pending" && (
-                  <Button
-                    variant="outline"
-                    onClick={() => {
-                      if (activeChip) setStatus(activeChip.name, "pending");
-                      toast("Endorsement requested", { description: "We'll notify you when a peer vouches." });
-                    }}
-                  >
-                    Request endorsement
+                {activeChip && links[activeChip.name] ? (
+                  <Button onClick={() => copyLink(links[activeChip.name]!)}>
+                    <Copy className="size-4" />
+                    Copy link
+                  </Button>
+                ) : (
+                  <Button disabled={linkPending || !activeChip} onClick={() => activeChip && getLink(activeChip.name)}>
+                    {linkPending ? <Loader2 className="size-4 animate-spin" /> : <Link2 className="size-4" />}
+                    Get endorsement link
                   </Button>
                 )}
-                <Button
-                  onClick={() => {
-                    if (activeChip) {
-                      setStatus(activeChip.name, "verified");
-                      const skill = activeChip.name;
-                      startTransition(() =>
-                        giveEndorsement({ candidateId, skill, relationship: "Peer" }),
-                      );
-                    }
-                    toast.success(`${activeChip?.name} verified`, {
-                      description: "A peer endorsed you — this skill now carries verification.",
-                    });
-                    setActive(null);
-                  }}
-                >
-                  <UserCheck className="size-4" />
-                  Simulate a peer endorsement
-                </Button>
               </DialogFooter>
             </>
           )}
@@ -206,14 +222,3 @@ export function SkillChips({
     </>
   );
 }
-
-const GENERIC_ENDORSERS: Endorsement[] = [
-  {
-    id: "generic-1",
-    skill: "",
-    endorserName: "A verified peer",
-    endorserInitials: "✓",
-    endorserHeadline: "Worked with you",
-    relationship: "Peer",
-  },
-];

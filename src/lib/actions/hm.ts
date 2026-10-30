@@ -2,13 +2,16 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { z } from "zod";
 import { prisma } from "@/lib/db";
-import { requireUser } from "@/lib/persona";
+import { assertHat, assertMatchAccess, assertOpeningOwner } from "@/lib/access";
+import { checkPublicUrl, safeFetch } from "@/lib/net/safe-url";
+import { getOrCreateThread, senderDisplayName } from "@/lib/services/thread";
 import { runMatchingForOpening } from "@/lib/matching/engine";
 import { jobAdParser } from "@/lib/services/ingest";
 import { getActivePlan, countOpenRoles } from "@/lib/services/billing";
 import { SCORE_CRITERIA } from "@/lib/scoresheet";
-import { employerIdentity } from "@/lib/identity";
+import { employerIdentity, personIdentity } from "@/lib/identity";
 import type { SkillGap } from "@/lib/fit/types";
 
 /** Block posting beyond the plan's open-role limit → send to billing. */
@@ -19,6 +22,10 @@ async function enforceRoleLimit(userId: string): Promise<void> {
     if (count >= plan.openRoleLimit) redirect("/hiring-manager/billing?limit=1");
   }
 }
+
+const idSchema = z.string().min(1).max(64);
+const STAGES = ["new", "talking", "offer", "closed"] as const;
+const RECOMMENDATIONS = ["strong_yes", "yes", "no", "strong_no"] as const;
 
 const HARD_BAR = 85;
 const SOFT_BAR = 75;
@@ -31,7 +38,7 @@ const parseList = (v: FormDataEntryValue | null) =>
 
 /** Post a role: create the opening and run matching to populate its pipeline. */
 export async function createOpening(formData: FormData): Promise<void> {
-  const user = await requireUser();
+  const user = await assertHat("hiring_manager");
   await enforceRoleLimit(user.id);
   const { plan } = await getActivePlan(user.id, "hiring_manager");
   const title = String(formData.get("title") ?? "").trim();
@@ -102,7 +109,7 @@ export async function createOpening(formData: FormData): Promise<void> {
  * industry), then matching runs against the candidate pool.
  */
 export async function importOpening(formData: FormData): Promise<void> {
-  await requireUser();
+  await assertHat("hiring_manager");
   const text = String(formData.get("text") ?? "").trim();
   if (!text) redirect("/hiring-manager/roles/import");
 
@@ -127,29 +134,36 @@ export async function importOpening(formData: FormData): Promise<void> {
  * talent-pool "invite to re-match" action.
  */
 export async function reopenForReMatch(matchId: string): Promise<void> {
-  const user = await requireUser();
+  const id = idSchema.parse(matchId);
+  await assertHat("hiring_manager");
+  const { user } = await assertMatchAccess(id, "manager");
   const match = await prisma.match.findUnique({
-    where: { id: matchId },
+    where: { id },
     include: {
-      candidate: { include: { user: { select: { name: true } } } },
+      candidate: { include: { user: { select: { name: true, initials: true, alias: true, anonymous: true } } } },
       opening: { select: { title: true } },
       thread: { select: { id: true } },
     },
   });
   if (!match) redirect("/hiring-manager/talent-pool");
 
+  // Back into the pipeline. The candidate's own opt-in is theirs to give, so it
+  // is left as it was rather than forced on.
   await prisma.match.update({
-    where: { id: matchId },
-    data: { stage: "talking", stageChangedAt: new Date(), candidateOptIn: true, managerOptIn: true },
+    where: { id },
+    data: { stage: "talking", stageChangedAt: new Date(), managerOptIn: true },
   });
 
   if (!match.thread) {
-    const firstName = match.candidate.user.name.split(" ")[0] ?? "there";
-    const thread = await prisma.thread.create({ data: { matchId } });
+    // Address the candidate as the HM sees them (alias while anonymous).
+    const shown = personIdentity(match.candidate.user, match.candidateRevealed);
+    const firstName = shown.masked ? shown.name : shown.name.split(" ")[0] || "there";
+    const threadId = await getOrCreateThread(id);
     await prisma.message.create({
       data: {
-        threadId: thread.id,
-        fromName: user.name,
+        threadId,
+        fromUserId: user.id,
+        fromName: await senderDisplayName(id, "manager"),
         text: `Hi ${firstName} — you were a strong candidate for ${match.opening.title}, and it looks like you've since closed the gap that held things up. We'd love to reopen the conversation. Are you open to talking?`,
       },
     });
@@ -157,7 +171,7 @@ export async function reopenForReMatch(matchId: string): Promise<void> {
 
   revalidatePath("/hiring-manager/talent-pool");
   revalidatePath("/hiring-manager/pipeline");
-  redirect(`/hiring-manager/chat/${matchId}`);
+  redirect(`/hiring-manager/chat/${id}`);
 }
 
 /**
@@ -165,15 +179,11 @@ export async function reopenForReMatch(matchId: string): Promise<void> {
  * hard/soft weighting and pass bar immediately re-rank the pipeline.
  */
 export async function updateCalibration(openingId: string, formData: FormData): Promise<void> {
-  const user = await requireUser();
+  idSchema.parse(openingId);
+  await assertHat("hiring_manager");
+  const user = await assertOpeningOwner(openingId);
   const { plan } = await getActivePlan(user.id, "hiring_manager");
   if (!plan.calibration) redirect("/hiring-manager/billing?feature=calibration");
-
-  const opening = await prisma.opening.findFirst({
-    where: { id: openingId, company: { ownerId: user.id } },
-    select: { id: true },
-  });
-  if (!opening) redirect("/hiring-manager/roles");
 
   const hw = Number(formData.get("hardWeight"));
   const pb = Number(formData.get("passBar"));
@@ -211,15 +221,11 @@ export async function updateCalibration(openingId: string, formData: FormData): 
  * quiz on the opening; the candidate skill-check uses it when present.
  */
 export async function saveRoleQuiz(openingId: string, formData: FormData): Promise<void> {
-  const user = await requireUser();
+  idSchema.parse(openingId);
+  await assertHat("hiring_manager");
+  const user = await assertOpeningOwner(openingId);
   const { plan } = await getActivePlan(user.id, "hiring_manager");
   if (!plan.customAssessments) redirect("/hiring-manager/billing?feature=assessments");
-
-  const opening = await prisma.opening.findFirst({
-    where: { id: openingId, company: { ownerId: user.id } },
-    select: { id: true },
-  });
-  if (!opening) redirect("/hiring-manager/roles");
 
   let quiz: string | null = null;
   const raw = String(formData.get("quiz") ?? "");
@@ -261,7 +267,9 @@ export async function saveRoleQuiz(openingId: string, formData: FormData): Promi
 
 /** Save / unsave (shortlist) a candidate match. */
 export async function toggleSaved(matchId: string): Promise<void> {
-  await requireUser();
+  idSchema.parse(matchId);
+  await assertHat("hiring_manager");
+  await assertMatchAccess(matchId, "manager");
   const m = await prisma.match.findUnique({ where: { id: matchId }, select: { saved: true } });
   if (!m) return;
   await prisma.match.update({ where: { id: matchId }, data: { saved: !m.saved } });
@@ -310,32 +318,21 @@ function htmlToImportable(html: string): { text: string; title?: string; company
   return { text, title, company };
 }
 
-/** Reject non-http and obviously-internal hosts (basic SSRF guard). */
-function isFetchableUrl(u: string): URL | null {
-  let url: URL;
-  try {
-    url = new URL(u);
-  } catch {
-    return null;
-  }
-  if (url.protocol !== "http:" && url.protocol !== "https:") return null;
-  const host = url.hostname.toLowerCase();
-  if (
-    host === "localhost" ||
-    host.endsWith(".local") ||
-    /^(127\.|10\.|0\.|169\.254\.|192\.168\.)/.test(host) ||
-    /^172\.(1[6-9]|2\d|3[01])\./.test(host)
-  ) {
-    return null;
-  }
-  return url;
-}
-
 // A real browser UA — many job sites serve a bot challenge (or nothing) to
 // obviously-automated agents, so we present as a normal browser.
 const IMPORT_UA =
   "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36";
 
+/**
+ * Fetch a user-supplied URL through the SSRF guard: public addresses only
+ * (re-checked at connect time), ports 80/443, manual redirects re-validated per
+ * hop (max 3), timeout and a 2 MB body cap. Throws on anything refused.
+ */
+async function guardedFetch(u: string | URL, ms: number, headers: Record<string, string>) {
+  return safeFetch(u, { timeoutMs: ms, headers, maxRedirects: 3, maxBytes: 2 * 1024 * 1024 });
+}
+
+/** Fetch a fixed, trusted third-party endpoint (reader service) with a timeout. */
 async function fetchWithTimeout(u: string, ms: number, headers: Record<string, string>) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), ms);
@@ -414,9 +411,9 @@ async function fetchReadable(url: URL): Promise<{ text: string; title?: string; 
 
   // 1) Direct fetch (server-rendered pages).
   try {
-    const res = await fetchWithTimeout(norm.toString(), 9000, htmlHeaders);
+    const res = await guardedFetch(norm, 9000, htmlHeaders);
     if (res.ok) {
-      const html = await res.text();
+      const html = res.text;
       let ex = htmlToImportable(html);
       // If thin, follow the page's canonical/og:url and try that once.
       if (bodyLen(ex.text) < 400) {
@@ -425,11 +422,12 @@ async function fetchReadable(url: URL): Promise<{ text: string; title?: string; 
           html.match(/<meta[^>]+property=["']og:url["'][^>]+content=["']([^"']+)["']/i)?.[1];
         if (canon) {
           try {
-            const cu = new URL(canon, norm);
-            if (cu.toString() !== norm.toString()) {
-              const r2 = await fetchWithTimeout(cu.toString(), 9000, htmlHeaders);
+            const cu = new URL(canon, res.url);
+            if (cu.toString() !== res.url.toString()) {
+              // Re-validated like any other hop (guardedFetch checks it).
+              const r2 = await guardedFetch(cu, 9000, htmlHeaders);
               if (r2.ok) {
-                const ex2 = htmlToImportable(await r2.text());
+                const ex2 = htmlToImportable(r2.text);
                 if (bodyLen(ex2.text) > bodyLen(ex.text)) ex = ex2;
               }
             }
@@ -472,10 +470,13 @@ async function fetchReadable(url: URL): Promise<{ text: string; title?: string; 
  * hand off to the review form prefilled. Falls back to paste when unreadable.
  */
 export async function importOpeningFromUrl(formData: FormData): Promise<void> {
-  await requireUser();
-  const raw = String(formData.get("url") ?? "").trim();
-  const url = isFetchableUrl(raw);
-  if (!url) redirect("/hiring-manager/roles/import?error=url");
+  await assertHat("hiring_manager");
+  const raw = String(formData.get("url") ?? "").trim().slice(0, 2048);
+  // Scheme/port/hostname + DNS checks up front for a clear error; guardedFetch
+  // re-checks every hop and the address actually connected to.
+  const checked = await checkPublicUrl(raw);
+  if (!checked.ok) redirect("/hiring-manager/roles/import?error=url");
+  const url = checked.url;
 
   let extracted: { text: string; title?: string; company?: string } | null = null;
   try {
@@ -509,7 +510,11 @@ export async function setStage(
   matchId: string,
   stage: "new" | "talking" | "offer" | "closed",
 ): Promise<void> {
-  await prisma.match.update({ where: { id: matchId }, data: { stage, stageChangedAt: new Date() } });
+  const id = idSchema.parse(matchId);
+  const next = z.enum(STAGES).parse(stage);
+  await assertHat("hiring_manager");
+  await assertMatchAccess(id, "manager");
+  await prisma.match.update({ where: { id }, data: { stage: next, stageChangedAt: new Date() } });
   revalidatePath("/hiring-manager/pipeline");
 }
 
@@ -525,7 +530,9 @@ async function requireHmFeature(
 
 /** Save a structured interview scorecard (Team plan). */
 export async function saveScoreSheet(matchId: string, formData: FormData): Promise<void> {
-  const user = await requireUser();
+  idSchema.parse(matchId);
+  await assertHat("hiring_manager");
+  const { user } = await assertMatchAccess(matchId, "manager");
   await requireHmFeature(user.id, "scoreSheets", "/hiring-manager/billing?feature=score-sheets");
 
   const ratings = SCORE_CRITERIA.map((criterion, i) => ({
@@ -540,8 +547,8 @@ export async function saveScoreSheet(matchId: string, formData: FormData): Promi
       author: user.name,
       ratings: JSON.stringify(ratings),
       overall,
-      recommendation: String(formData.get("recommendation") ?? "yes"),
-      notes: String(formData.get("notes") ?? "").trim(),
+      recommendation: z.enum(RECOMMENDATIONS).catch("yes").parse(formData.get("recommendation")),
+      notes: String(formData.get("notes") ?? "").trim().slice(0, 4000),
     },
   });
   revalidatePath(`/hiring-manager/candidate/${matchId}`);
@@ -549,9 +556,11 @@ export async function saveScoreSheet(matchId: string, formData: FormData): Promi
 
 /** Add a private note on a candidate (Team plan — full pipeline management). */
 export async function addNote(matchId: string, formData: FormData): Promise<void> {
-  const user = await requireUser();
+  idSchema.parse(matchId);
+  await assertHat("hiring_manager");
+  const { user } = await assertMatchAccess(matchId, "manager");
   await requireHmFeature(user.id, "pipelineTools", "/hiring-manager/billing?feature=pipeline");
-  const body = String(formData.get("body") ?? "").trim();
+  const body = String(formData.get("body") ?? "").trim().slice(0, 4000);
   if (!body) return;
   await prisma.pipelineNote.create({ data: { matchId, author: user.name, body } });
   revalidatePath(`/hiring-manager/candidate/${matchId}`);
@@ -561,7 +570,11 @@ export async function addNote(matchId: string, formData: FormData): Promise<void
  * Pass a candidate with feedback: close the match, mark the feedback sent, and
  * generate the candidate's Growth Report (rejection is never silent).
  */
-export async function passWithFeedback(matchId: string, body: string): Promise<void> {
+export async function passWithFeedback(matchId: string, rawBody: string): Promise<void> {
+  idSchema.parse(matchId);
+  const body = z.string().max(8000).parse(rawBody).trim();
+  await assertHat("hiring_manager");
+  await assertMatchAccess(matchId, "manager");
   const match = await prisma.match.findUnique({
     where: { id: matchId },
     include: { opening: { include: { company: { select: { name: true } } } } },

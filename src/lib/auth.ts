@@ -2,6 +2,7 @@ import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/db";
+import { limiters } from "@/lib/ratelimit";
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   // Required on non-Vercel hosts (Railway/Render) and custom domains, so
@@ -25,10 +26,22 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           const email = String(creds?.email ?? "").trim().toLowerCase();
           const password = String(creds?.password ?? "");
           if (!email || !password) return null;
+          // Per-account throttle lives here (not only in loginAction) so a
+          // direct POST to /api/auth/callback/credentials is limited too.
+          const key = `login:${email}`;
+          const limiter = limiters.loginFailuresByEmail;
+          if (!limiter.check(key).allowed) return null;
           const user = await prisma.user.findUnique({ where: { email } });
-          if (!user) return null;
+          if (!user) {
+            limiter.hit(key);
+            return null;
+          }
           const ok = await bcrypt.compare(password, user.passwordHash);
-          if (!ok) return null;
+          if (!ok) {
+            limiter.hit(key);
+            return null;
+          }
+          limiter.reset(key);
           return { id: user.id, email: user.email, name: user.name };
         } catch (e) {
           // Surface the real underlying error (DB/table/engine) plainly instead

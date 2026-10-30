@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
-import type { ChatMessage } from "@/lib/types";
+import { requireMatchAccess } from "@/lib/access";
 import { matchingService } from "@/lib/services/matching";
 import { getThreadView } from "@/lib/services/thread";
 import { ChatThread } from "@/components/chat/chat-thread";
@@ -10,28 +10,19 @@ import { IdentityBanner } from "@/components/identity/identity-banner";
 
 export const metadata: Metadata = { title: "Direct line · Holicruit" };
 
-/** Candidate-side direct line to the named hiring manager (DB-backed). */
+/** Candidate-side direct line to the hiring manager (DB-backed). */
 export default async function CandidateChatPage({
   params,
 }: {
   params: Promise<{ matchId: string }>;
 }) {
   const { matchId } = await params;
+  // Only the candidate on this match may open it (404 otherwise).
+  const { user } = await requireMatchAccess(matchId, "candidate");
   const match = await matchingService.getMatch(matchId, "candidate");
   if (!match) notFound();
-  const view = await getThreadView(matchId, "candidate");
+  const view = await getThreadView(matchId, "candidate", user.id);
   if (!view) notFound();
-
-  const seed: ChatMessage[] = view.messages.length
-    ? view.messages
-    : [
-        {
-          id: "seed-1",
-          fromId: view.them.name,
-          text: `Hi ${view.me.name.split(" ")[0]} — really liked your fit for ${match.opening.title}. Want to grab a quick call this week?`,
-          ts: "Today",
-        },
-      ];
 
   return (
     <div className="flex flex-col gap-6">
@@ -53,8 +44,9 @@ export default async function CandidateChatPage({
         matchId={matchId}
         me={view.me}
         them={view.them}
-        initialMessages={seed}
+        initialMessages={view.messages}
         initialInterview={view.interview}
+        initialProposal={view.pendingProposal}
       />
     </div>
   );

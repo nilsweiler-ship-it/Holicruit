@@ -6,7 +6,7 @@ import { matchingService } from "@/lib/services/matching";
 import { scenarioService } from "@/lib/services/scenario";
 import { getActivePlan } from "@/lib/services/billing";
 import { generateInterviewGuide } from "@/lib/services/interviewkit";
-import { requireUser } from "@/lib/persona";
+import { requireManagerMatch } from "@/lib/access";
 import { LockedFeature } from "@/components/billing/locked-feature";
 
 export const metadata: Metadata = { title: "Interview guide · Holicruit" };
@@ -21,10 +21,11 @@ export default async function InterviewGuidePage({
   params: Promise<{ matchId: string }>;
 }) {
   const { matchId } = await params;
-  const match = await matchingService.getMatch(matchId);
+  // Owner check BEFORE any read: only the HM who owns this match's opening.
+  const user = await requireManagerMatch(matchId);
+  const match = await matchingService.getMatch(matchId, "employer");
   if (!match) notFound();
 
-  const user = await requireUser();
   const { plan } = await getActivePlan(user.id, "hiring_manager");
 
   const header = (
