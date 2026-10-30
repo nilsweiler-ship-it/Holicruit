@@ -149,7 +149,7 @@ export async function generateMetadata({
   params: Promise<{ feature: string }>;
 }): Promise<Metadata> {
   const { feature } = await params;
-  const f = FEATURES[feature];
+  const f = Object.hasOwn(FEATURES, feature) ? FEATURES[feature] : undefined;
   return { title: f ? `${f.title} · Holicruit` : "Feature · Holicruit" };
 }
 
@@ -159,7 +159,7 @@ export default async function FeaturePage({
   params: Promise<{ feature: string }>;
 }) {
   const { feature } = await params;
-  const f = FEATURES[feature];
+  const f = Object.hasOwn(FEATURES, feature) ? FEATURES[feature] : undefined;
   if (!f) notFound();
 
   const Icon = f.icon;

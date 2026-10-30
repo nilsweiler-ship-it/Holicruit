@@ -70,7 +70,7 @@ export default async function ProviderBillingPage({
       {/* Banners */}
       {activatedName && (
         <Banner tone="success" icon={CheckCircle2}>
-          {activatedName} is active — an invoice will be sent to your billing contact.
+          {activatedName} is active.
         </Banner>
       )}
       {promote && (

@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { requireUser, getActiveCandidateId } from "@/lib/persona";
+import { assertHat, assertMatchAccess, safeRedirectPath } from "@/lib/access";
 import { signOut } from "@/lib/auth";
 import { runMatchingForCandidate } from "@/lib/matching/engine";
 
@@ -21,12 +22,7 @@ export async function updatePrivacy(formData: FormData): Promise<void> {
 
 /** Candidate reveals their real identity to the employer — for this match only. */
 export async function revealMyIdentity(matchId: string): Promise<void> {
-  const candidateId = await getActiveCandidateId();
-  const match = await prisma.match.findUnique({
-    where: { id: matchId },
-    select: { candidateId: true },
-  });
-  if (!match || match.candidateId !== candidateId) return;
+  await assertMatchAccess(String(matchId), "candidate");
   await prisma.match.update({ where: { id: matchId }, data: { candidateRevealed: true } });
   revalidatePath(`/candidate/chat/${matchId}`);
   revalidatePath(`/candidate/matches/${matchId}`);
@@ -34,12 +30,8 @@ export async function revealMyIdentity(matchId: string): Promise<void> {
 
 /** Employer reveals company + hiring-manager identity to a candidate — this match only. */
 export async function revealEmployer(matchId: string): Promise<void> {
-  const user = await requireUser();
-  const match = await prisma.match.findUnique({
-    where: { id: matchId },
-    select: { opening: { select: { company: { select: { ownerId: true } } } } },
-  });
-  if (!match || match.opening.company.ownerId !== user.id) return;
+  await assertHat("hiring_manager");
+  await assertMatchAccess(String(matchId), "manager");
   await prisma.match.update({ where: { id: matchId }, data: { employerRevealed: true } });
   revalidatePath(`/hiring-manager/chat/${matchId}`);
   revalidatePath(`/hiring-manager/candidate/${matchId}`);
@@ -82,14 +74,14 @@ export async function updateWorkPrefs(formData: FormData): Promise<void> {
   revalidatePath("/settings/privacy");
   revalidatePath("/candidate/matches");
   revalidatePath("/candidate/today");
-  if (redirectTo.startsWith("/")) redirect(redirectTo);
+  // Same-origin paths only ("//evil" and "/\evil" fall back to no redirect).
+  const target = redirectTo ? safeRedirectPath(redirectTo, "") : "";
+  if (target) redirect(target);
 }
 
 /** Candidate opts to share their exact pay/location figures for one match. */
 export async function shareTermsAsCandidate(matchId: string): Promise<void> {
-  const candidateId = await getActiveCandidateId();
-  const match = await prisma.match.findUnique({ where: { id: matchId }, select: { candidateId: true } });
-  if (!match || match.candidateId !== candidateId) return;
+  await assertMatchAccess(String(matchId), "candidate");
   await prisma.match.update({ where: { id: matchId }, data: { candidateSharesTerms: true } });
   revalidatePath(`/candidate/matches/${matchId}`);
   revalidatePath(`/candidate/chat/${matchId}`);
@@ -97,12 +89,8 @@ export async function shareTermsAsCandidate(matchId: string): Promise<void> {
 
 /** Employer opts to share the role's exact band for one match. */
 export async function shareTermsAsEmployer(matchId: string): Promise<void> {
-  const user = await requireUser();
-  const match = await prisma.match.findUnique({
-    where: { id: matchId },
-    select: { opening: { select: { company: { select: { ownerId: true } } } } },
-  });
-  if (!match || match.opening.company.ownerId !== user.id) return;
+  await assertHat("hiring_manager");
+  await assertMatchAccess(String(matchId), "manager");
   await prisma.match.update({ where: { id: matchId }, data: { employerSharesTerms: true } });
   revalidatePath(`/hiring-manager/candidate/${matchId}`);
   revalidatePath(`/hiring-manager/chat/${matchId}`);
@@ -117,6 +105,28 @@ export async function deleteMyAccount(formData: FormData): Promise<void> {
   if (String(formData.get("confirm") ?? "").trim().toUpperCase() !== "DELETE") {
     redirect("/settings/privacy?delete=confirm");
   }
+  // Pseudonymize what the user wrote into records that outlive the account
+  // (the other party's thread, and an employer's score sheets / notes), so the
+  // real name doesn't survive erasure. Messages are matched by author id, plus
+  // any legacy rows stored under the account's real name in threads it was
+  // party to.
+  const DELETED = "Deleted user";
+  const myThreads = {
+    match: {
+      OR: [{ candidate: { userId: user.id } }, { opening: { company: { ownerId: user.id } } }],
+    },
+  };
+  // Score sheets / notes are written by the hiring manager on their own roles.
+  const managedMatches = { opening: { company: { ownerId: user.id } } };
+  await prisma.$transaction([
+    prisma.message.updateMany({ where: { fromUserId: user.id }, data: { fromName: DELETED, fromUserId: null } }),
+    prisma.message.updateMany({
+      where: { fromUserId: null, fromName: user.name, thread: myThreads },
+      data: { fromName: DELETED },
+    }),
+    prisma.scoreSheet.updateMany({ where: { author: user.name, match: managedMatches }, data: { author: DELETED } }),
+    prisma.pipelineNote.updateMany({ where: { author: user.name, match: managedMatches }, data: { author: DELETED } }),
+  ]);
   await prisma.user.delete({ where: { id: user.id } });
   // Outside try/catch — signOut throws a redirect by design.
   await signOut({ redirectTo: "/login?deleted=1" });

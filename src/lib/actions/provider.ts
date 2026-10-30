@@ -3,18 +3,22 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
-import { requireUser } from "@/lib/persona";
+import { z } from "zod";
+import { assertHat, assertProgramOwner } from "@/lib/access";
 import { getActivePlan } from "@/lib/services/billing";
 
 /** Promote (sponsor) or un-sponsor a program → featured placement.
  *  Promoting requires the Partner plan. */
 export async function setSponsored(programId: string, sponsored: boolean): Promise<void> {
-  const user = await requireUser();
-  if (sponsored) {
+  const id = z.string().min(1).max(64).parse(programId);
+  const value = z.boolean().parse(sponsored);
+  // Only the provider that owns the program can (un)sponsor it.
+  const user = await assertProgramOwner(id);
+  if (value) {
     const { plan } = await getActivePlan(user.id, "provider");
     if (!plan.canPromote) redirect("/provider/billing?promote=1");
   }
-  await prisma.program.update({ where: { id: programId }, data: { sponsored } });
+  await prisma.program.update({ where: { id }, data: { sponsored: value } });
   revalidatePath("/provider");
   revalidatePath("/candidate/growth-paths");
 }
@@ -22,11 +26,11 @@ export async function setSponsored(programId: string, sponsored: boolean): Promi
 /** Offer a new program (provider-side). It immediately appears in the
  *  marketplace for candidates whose gap it closes. */
 export async function createProgram(formData: FormData): Promise<void> {
-  const user = await requireUser();
+  const user = await assertHat("provider");
   const provider = await prisma.provider.findUnique({ where: { userId: user.id }, select: { id: true } });
   if (!provider) redirect("/select-role");
 
-  const title = String(formData.get("title") ?? "").trim();
+  const title = String(formData.get("title") ?? "").trim().slice(0, 160);
   if (!title) redirect("/provider");
 
   await prisma.program.create({

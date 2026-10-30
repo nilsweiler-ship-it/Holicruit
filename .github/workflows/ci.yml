@@ -3,7 +3,8 @@ name: CI
 # Quality gate for every push and pull request:
 #   lint → types → unit tests → production build → seeded Postgres → browser journeys.
 # Railway is configured to "Wait for CI", so main only deploys when this is green.
-# After a green main run, verify-deploy.yml waits for Railway and smokes production.
+# @playwright/test is a pinned devDependency, so `npm ci` installs the runner.
+# Once Railway reports the deploy, verify-deploy.yml smokes production.
 
 on:
   push:
@@ -22,6 +23,8 @@ env:
   NEXTAUTH_URL: http://localhost:3000
   AUTH_TRUST_HOST: "true"
   ADMIN_EMAILS: jordan@holicruit.test
+  # Opt-in one-click demo logins for the throwaway CI app (build-time inlined).
+  # Production leaves this unset unless a public demo is wanted (DEPLOY.md).
   NEXT_PUBLIC_DEMO_LOGINS: "1"
 
 jobs:
@@ -57,11 +60,6 @@ jobs:
         run: |
           set -o pipefail
           npm ci 2>&1 | tee /tmp/npm-ci.log || { echo "::error title=npm ci failed::$(tail -c 1800 /tmp/npm-ci.log | tr '\n' ' ')"; exit 1; }
-
-      - name: Install Playwright test runner
-        run: |
-          set -o pipefail
-          npm install --no-save --no-audit --no-fund @playwright/test@1.64.1 2>&1 | tee /tmp/npm-pw.log || { echo "::error title=playwright install failed::$(tail -c 1800 /tmp/npm-pw.log | tr '\n' ' ')"; exit 1; }
 
       - name: Lint
         run: npm run lint 2>&1 | tee /tmp/lint.log || { echo "::error title=lint failed::$(tail -c 1800 /tmp/lint.log | tr '\n' ' ')"; exit 1; }

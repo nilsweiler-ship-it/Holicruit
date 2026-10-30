@@ -4,6 +4,8 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/db";
 import { getCurrentUser, getRole } from "@/lib/persona";
 
+const SENTIMENTS = ["great", "ok", "bad"];
+
 export type FeedbackResult = { ok: true } | { ok: false; error: string };
 
 /**
@@ -16,8 +18,12 @@ export async function submitProductFeedback(input: {
   sentiment?: string;
   path?: string;
 }): Promise<FeedbackResult> {
-  const message = (input.message ?? "").trim().slice(0, 4000);
-  const sentiment = input.sentiment?.trim() || null;
+  // Public endpoint: don't trust the shape of the input.
+  const str = (v: unknown) => (typeof v === "string" ? v : "");
+  const message = str(input?.message).trim().slice(0, 4000);
+  const rawSentiment = str(input?.sentiment).trim();
+  const sentiment = SENTIMENTS.includes(rawSentiment) ? rawSentiment : null;
+  const path = str(input?.path).slice(0, 300) || null;
 
   if (!message && !sentiment) {
     return { ok: false, error: "Add a quick reaction or a note before sending." };
@@ -30,7 +36,7 @@ export async function submitProductFeedback(input: {
     data: {
       message,
       sentiment,
-      path: input.path?.slice(0, 300) ?? null,
+      path,
       role,
       userId: user?.id ?? null,
     },

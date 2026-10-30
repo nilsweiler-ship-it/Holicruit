@@ -58,10 +58,11 @@ spin one up locally with Docker.
    git push
    ```
 
-> ⚠️ **Deploy only after the init migration is committed.** Production's start
-> command runs `prisma migrate deploy`, which applies committed migrations. If
-> none are committed yet, it applies nothing, the database has no tables, and the
-> app will error with "relation … does not exist".
+> ℹ️ **Current production path:** the start command syncs the schema with
+> `prisma db push --skip-generate` (no `--accept-data-loss`), so production
+> follows `schema.prisma` directly and refuses any change that would lose data.
+> Keep new columns optional or defaulted. Committed migrations remain the record
+> for local/dev databases; see DEPLOY.md → Boot safety.
 
 ---
 
@@ -93,9 +94,9 @@ new one.
    ```
 
    (Use whatever name Railway gave the Postgres service.)
-3. Deploy. The start command (`prisma migrate deploy && seed && next start`)
-   creates the tables from your committed migrations and seeds demo data on an
-   empty database.
+3. Deploy. The start command (`prisma db push --skip-generate && seed && next start`)
+   creates/updates the tables from `schema.prisma` (refusing data-losing changes)
+   and seeds demo data only when the database has no users.
 
 No persistent volume is needed anymore — the managed Postgres holds the data,
 and Railway backs it up.
@@ -109,5 +110,5 @@ and Railway backs it up.
 | `docker compose up -d` | Start local Postgres |
 | `npm run db:migrate -- --name x` | Create + apply a migration locally |
 | `npm run db:deploy` | Apply committed migrations (what prod runs) |
-| `npm run db:seed` | Load demo data |
+| `npm run db:seed` | Load demo data (resets a local DB; refuses a non-local DB with users unless `SEED_FORCE=1` + `SEED_FORCE_CONFIRM=wipe-production`) |
 | `npm run db:studio` | Open Prisma Studio to browse the data |

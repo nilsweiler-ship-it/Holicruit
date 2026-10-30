@@ -1,11 +1,13 @@
 "use server";
+import { sameWorld } from "@/lib/demo";
 
 import { randomUUID } from "crypto";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/db";
-import { requireUser } from "@/lib/persona";
+import { z } from "zod";
+import { assertHat, assertOpeningOwner } from "@/lib/access";
 import { computeFit, runMatchingForCandidate } from "@/lib/matching/engine";
 import { initialsFrom } from "@/lib/identity";
 
@@ -39,7 +41,9 @@ function parseRows(text: string): Row[] {
  * own visibility. Demand brings its own supply.
  */
 export async function importCandidates(openingId: string, formData: FormData): Promise<void> {
-  const user = await requireUser();
+  z.string().min(1).max(64).parse(openingId);
+  await assertHat("hiring_manager");
+  const user = await assertOpeningOwner(openingId);
   const opening = await prisma.opening.findUnique({
     where: { id: openingId },
     select: {
@@ -62,12 +66,15 @@ export async function importCandidates(openingId: string, formData: FormData): P
     skillWeights = {};
   }
 
-  const rows = parseRows(String(formData.get("candidates") ?? ""));
+  // Cap the batch: each row creates an account.
+  const rows = parseRows(String(formData.get("candidates") ?? "").slice(0, 100_000)).slice(0, 200);
   let added = 0;
   let skipped = 0;
 
   for (const row of rows) {
-    if (!row.name || !row.email || !row.email.includes("@")) {
+    // Demo isolation: demo roles never import real people, and real roles
+    // never import addresses on the reserved demo domain.
+    if (!row.name || !row.email || !row.email.includes("@") || !sameWorld(row.email, user.email)) {
       skipped++;
       continue;
     }
@@ -138,9 +145,13 @@ export async function importCandidates(openingId: string, formData: FormData): P
  * and enter the marketplace (full matching runs). The person now controls their
  * own visibility, alias, and skill verification like any candidate.
  */
-export async function claimProfile(token: string, formData: FormData): Promise<void> {
+export async function claimProfile(rawToken: string, formData: FormData): Promise<void> {
+  // Public (token-authenticated). The token is a UUID; anything else is invalid.
+  const parsedToken = z.string().uuid().safeParse(rawToken);
+  if (!parsedToken.success) redirect("/login");
+  const token = parsedToken.data;
   const password = String(formData.get("password") ?? "");
-  if (password.length < 8) redirect(`/claim/${token}?error=short`);
+  if (password.length < 8 || password.length > 200) redirect(`/claim/${token}?error=short`);
 
   const profile = await prisma.candidateProfile.findUnique({
     where: { inviteToken: token },

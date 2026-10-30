@@ -237,16 +237,16 @@ const aisha: CandidateProfile = {
   ],
 };
 
-const hmElena: Person = { id: "hm-elena", name: "Elena Ruiz", headline: "Nurse Manager, St. Mary's", initials: "ER" };
-const hmJohn: Person = { id: "hm-john", name: "John Park", headline: "Director of Nursing, HealthFirst", initials: "JP" };
-const hmMaria: Person = { id: "hm-maria", name: "Maria Costa", headline: "Chief Flight Nurse, MedEvac Air", initials: "MC" };
-const hmRiver: Person = { id: "hm-river", name: "Sara Lindqvist", headline: "PICU Manager, Riverside Children's", initials: "SL" };
+const hmElena: Person = { id: "hm-elena", name: "Elena Ruiz", headline: "Nurse Manager, Example General", initials: "ER" };
+const hmJohn: Person = { id: "hm-john", name: "John Park", headline: "Director of Nursing, Example Health", initials: "JP" };
+const hmMaria: Person = { id: "hm-maria", name: "Maria Costa", headline: "Chief Flight Nurse, Example Air Ambulance", initials: "MC" };
+const hmRiver: Person = { id: "hm-river", name: "Sara Lindqvist", headline: "PICU Manager, Example Children's", initials: "SL" };
 
 const openCharge: Opening = {
   id: "open-stmarys-charge",
   title: "ICU Charge Nurse",
   industry: "Healthcare",
-  company: { id: "co-stmarys", name: "St. Mary's Medical Center", location: "Boston, US" },
+  company: { id: "co-stmarys", name: "Example General Hospital", location: "Boston, US" },
   location: "Boston · On-site",
   salaryMin: 95000,
   salaryMax: 120000,
@@ -259,7 +259,7 @@ const openEducator: Opening = {
   id: "open-healthfirst-educator",
   title: "Nurse Educator",
   industry: "Healthcare",
-  company: { id: "co-healthfirst", name: "HealthFirst Network", location: "Chicago, US" },
+  company: { id: "co-healthfirst", name: "Example Health Network", location: "Chicago, US" },
   location: "Hybrid · Chicago",
   salaryMin: 88000,
   salaryMax: 108000,
@@ -272,7 +272,7 @@ const openFlight: Opening = {
   id: "open-medevac-flight",
   title: "Flight Nurse",
   industry: "Healthcare",
-  company: { id: "co-medevac", name: "MedEvac Air", location: "Denver, US" },
+  company: { id: "co-medevac", name: "Example Air Ambulance", location: "Denver, US" },
   location: "Denver · On-site",
   salaryMin: 98000,
   salaryMax: 125000,
@@ -285,7 +285,7 @@ const openPICU: Opening = {
   id: "open-riverside-picu",
   title: "Pediatric ICU Nurse",
   industry: "Healthcare",
-  company: { id: "co-riverside", name: "Riverside Children's", location: "Seattle, US" },
+  company: { id: "co-riverside", name: "Example Children's Hospital", location: "Seattle, US" },
   location: "Seattle · On-site",
   salaryMin: 92000,
   salaryMax: 116000,
@@ -331,7 +331,7 @@ const aishaGrowth: GrowthReport = {
 };
 
 const aishaEndorsements: Endorsement[] = [
-  { id: "en-ai-1", skill: "Triage", endorserName: "Elena Ruiz", endorserInitials: "ER", endorserHeadline: "Nurse Manager, St. Mary's", relationship: "Former charge nurse" },
+  { id: "en-ai-1", skill: "Triage", endorserName: "Elena Ruiz", endorserInitials: "ER", endorserHeadline: "Nurse Manager, Example General", relationship: "Former charge nurse" },
   { id: "en-ai-2", skill: "ACLS certification", endorserName: "David Osei", endorserInitials: "DO", endorserHeadline: "ICU Physician", relationship: "Worked together" },
   { id: "en-ai-3", skill: "Epic EHR", endorserName: "Lena Fox", endorserInitials: "LF", endorserHeadline: "Clinical Informatics", relationship: "Trained alongside" },
 ];
@@ -577,7 +577,7 @@ export const FEEDBACK_DRAFTS: FeedbackDraft[] = [
    ═══════════════════════════════════════════════════════════════════════ */
 
 export const RECRUITER_INTROS: RecruiterIntro[] = [
-  { id: "ri-1", candidateName: "Aisha Bello", roleTitle: "ICU Charge Nurse", company: "St. Mary's", valueNote: "Spotted the soft-skill fit the keyword filter missed.", stage: "interview" },
+  { id: "ri-1", candidateName: "Aisha Bello", roleTitle: "ICU Charge Nurse", company: "Example General", valueNote: "Spotted the soft-skill fit the keyword filter missed.", stage: "interview" },
   { id: "ri-2", candidateName: "Diego Marín", roleTitle: "Strategic AE", company: "Cloudza", valueNote: "Coached the forecasting story, closed the gap.", stage: "offer" },
   { id: "ri-3", candidateName: "Sam Rivera", roleTitle: "Senior Frontend Engineer", company: "Northwind", valueNote: "Surfaced him for a role he'd have scrolled past.", stage: "interview" },
   { id: "ri-4", candidateName: "Grace Okafor", roleTitle: "Secondary Maths Teacher", company: "Oakwood School", valueNote: "Reframed her portfolio around outcomes.", stage: "talking" },
@@ -590,11 +590,11 @@ export const RECRUITER_INTROS: RecruiterIntro[] = [
    TRAINING PROVIDERS + upskilling marketplace — cross-industry
    ═══════════════════════════════════════════════════════════════════════ */
 
-const providerFM: Provider = { id: "prov-fm", name: "Frontend Masters", headline: "Course platform · partner", initials: "FM", kind: "Course platform" };
-const providerTUD: Provider = { id: "prov-tud", name: "TU Delft (online)", headline: "University · accredited", initials: "TU", kind: "University" };
+const providerFM: Provider = { id: "prov-fm", name: "Example Code Academy", headline: "Course platform · online", initials: "EC", kind: "Course platform" };
+const providerTUD: Provider = { id: "prov-tud", name: "Example Tech University (online)", headline: "University · online", initials: "ET", kind: "University" };
 const providerLaunch: Provider = { id: "prov-launch", name: "Launchpad", headline: "Bootcamp · cohort-based", initials: "LP", kind: "Bootcamp" };
-const providerHopkins: Provider = { id: "prov-jh", name: "Johns Hopkins (online)", headline: "University · accredited", initials: "JH", kind: "University" };
-const providerSalesAcad: Provider = { id: "prov-sa", name: "Sales Academy", headline: "Course platform · partner", initials: "SA", kind: "Course platform" };
+const providerHopkins: Provider = { id: "prov-jh", name: "Example Nursing College (online)", headline: "Nursing college · online", initials: "EN", kind: "University" };
+const providerSalesAcad: Provider = { id: "prov-sa", name: "Example Sales Academy", headline: "Course platform · online", initials: "SA", kind: "Course platform" };
 
 export const PROVIDERS: Provider[] = [providerFM, providerTUD, providerLaunch, providerHopkins, providerSalesAcad];
 
@@ -603,15 +603,15 @@ export const CURRENT_PROVIDER = providerFM;
 
 export const PROGRAMS: Program[] = [
   // Software
-  { id: "prog-ts-scale", providerId: providerFM.id, provider: providerFM.name, providerKind: providerFM.kind, title: "TypeScript at Scale", format: "Online course · 4 weeks · cert", credential: "Certificate", tags: ["partner", "hands-on"], closesGap: "TypeScript at scale", gapType: "hard", sponsored: true, enrollments: 1240, completions: 870, reMatches: 610 },
-  { id: "prog-ts-uni", providerId: providerTUD.id, provider: providerTUD.name, providerKind: providerTUD.kind, title: "Type-Safe Systems Engineering", format: "Micro-credential · Part-time · 1 semester", credential: "Accredited micro-credential", tags: ["accredited", "deeper"], closesGap: "TypeScript at scale", gapType: "hard", sponsored: false, enrollments: 320, completions: 210, reMatches: 150 },
-  { id: "prog-sysdesign", providerId: providerFM.id, provider: providerFM.name, providerKind: providerFM.kind, title: "Designing Large-Scale Systems", format: "Online course · 6 weeks · cert", credential: "Certificate", tags: ["partner"], closesGap: "System design at scale", gapType: "hard", sponsored: true, enrollments: 980, completions: 640, reMatches: 430 },
-  { id: "prog-k8s", providerId: providerFM.id, provider: providerFM.name, providerKind: providerFM.kind, title: "Kubernetes in Production", format: "Online course · 5 weeks · cert", credential: "Certificate", tags: ["partner", "hands-on"], closesGap: "Kubernetes", gapType: "hard", sponsored: false, enrollments: 760, completions: 480, reMatches: 300 },
+  { id: "prog-ts-scale", providerId: providerFM.id, provider: providerFM.name, providerKind: providerFM.kind, title: "TypeScript at Scale", format: "Online course · 4 weeks · cert", credential: "Certificate", tags: ["hands-on"], closesGap: "TypeScript at scale", gapType: "hard", sponsored: true, enrollments: 1240, completions: 870, reMatches: 610 },
+  { id: "prog-ts-uni", providerId: providerTUD.id, provider: providerTUD.name, providerKind: providerTUD.kind, title: "Type-Safe Systems Engineering", format: "Micro-credential · Part-time · 1 semester", credential: "Micro-credential", tags: ["university", "deeper"], closesGap: "TypeScript at scale", gapType: "hard", sponsored: false, enrollments: 320, completions: 210, reMatches: 150 },
+  { id: "prog-sysdesign", providerId: providerFM.id, provider: providerFM.name, providerKind: providerFM.kind, title: "Designing Large-Scale Systems", format: "Online course · 6 weeks · cert", credential: "Certificate", tags: ["self-paced"], closesGap: "System design at scale", gapType: "hard", sponsored: true, enrollments: 980, completions: 640, reMatches: 430 },
+  { id: "prog-k8s", providerId: providerFM.id, provider: providerFM.name, providerKind: providerFM.kind, title: "Kubernetes in Production", format: "Online course · 5 weeks · cert", credential: "Certificate", tags: ["hands-on"], closesGap: "Kubernetes", gapType: "hard", sponsored: false, enrollments: 760, completions: 480, reMatches: 300 },
   // Healthcare
-  { id: "prog-picu", providerId: providerHopkins.id, provider: providerHopkins.name, providerKind: providerHopkins.kind, title: "Pediatric Critical Care", format: "Micro-credential · Part-time · 1 semester", credential: "Accredited micro-credential", tags: ["accredited", "clinical placement"], closesGap: "Pediatric critical care", gapType: "hard", sponsored: true, enrollments: 540, completions: 360, reMatches: 240 },
-  { id: "prog-transport", providerId: providerHopkins.id, provider: providerHopkins.name, providerKind: providerHopkins.kind, title: "Critical Care Transport", format: "Online + sim · 6 weeks · cert", credential: "Certificate", tags: ["accredited"], closesGap: "Critical care transport", gapType: "hard", sponsored: false, enrollments: 210, completions: 150, reMatches: 95 },
+  { id: "prog-picu", providerId: providerHopkins.id, provider: providerHopkins.name, providerKind: providerHopkins.kind, title: "Pediatric Critical Care", format: "Micro-credential · Part-time · 1 semester", credential: "Micro-credential", tags: ["clinical placement"], closesGap: "Pediatric critical care", gapType: "hard", sponsored: true, enrollments: 540, completions: 360, reMatches: 240 },
+  { id: "prog-transport", providerId: providerHopkins.id, provider: providerHopkins.name, providerKind: providerHopkins.kind, title: "Critical Care Transport", format: "Online + sim · 6 weeks · cert", credential: "Certificate", tags: ["simulation"], closesGap: "Critical care transport", gapType: "hard", sponsored: false, enrollments: 210, completions: 150, reMatches: 95 },
   // Sales
-  { id: "prog-forecast", providerId: providerSalesAcad.id, provider: providerSalesAcad.name, providerKind: providerSalesAcad.kind, title: "Enterprise Forecasting", format: "Online course · 4 weeks · cert", credential: "Certificate", tags: ["partner", "hands-on"], closesGap: "Forecasting at scale", gapType: "hard", sponsored: true, enrollments: 880, completions: 590, reMatches: 410 },
+  { id: "prog-forecast", providerId: providerSalesAcad.id, provider: providerSalesAcad.name, providerKind: providerSalesAcad.kind, title: "Enterprise Forecasting", format: "Online course · 4 weeks · cert", credential: "Certificate", tags: ["hands-on"], closesGap: "Forecasting at scale", gapType: "hard", sponsored: true, enrollments: 880, completions: 590, reMatches: 410 },
   { id: "prog-quota", providerId: providerLaunch.id, provider: providerLaunch.name, providerKind: providerLaunch.kind, title: "From Quota-Carrier to Manager", format: "Cohort bootcamp · 6 weeks · live", tags: ["cohort", "coaching"], closesGap: "Team quota leadership", gapType: "soft", sponsored: false, enrollments: 360, completions: 240, reMatches: 160 },
   // Cross-domain leadership
   { id: "prog-lead", providerId: providerLaunch.id, provider: providerLaunch.name, providerKind: providerLaunch.kind, title: "From Senior to Lead", format: "Cohort bootcamp · 6 weeks · live", tags: ["cohort", "coaching"], closesGap: "Team leadership", gapType: "soft", sponsored: false, enrollments: 410, completions: 290, reMatches: 180 },

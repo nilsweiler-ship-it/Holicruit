@@ -3,10 +3,13 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Sparkles, X } from "lucide-react";
+import { demoLoginsEnabled } from "@/lib/demo";
 
 /**
  * First-visit welcome for trial users. Explains this is a live demo and points
  * to the one-click accounts. Dismissible; stays hidden after that.
+ * Renders only when one-click demo logins are on (NEXT_PUBLIC_DEMO_LOGINS=1),
+ * so production never claims to be a demo the visitor can't actually open.
  */
 export function WelcomeBanner() {
   const [show, setShow] = useState(false);
@@ -19,7 +22,7 @@ export function WelcomeBanner() {
       /* ignore */
     }
     // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time hydration read
-    setShow(!dismissed);
+    setShow(demoLoginsEnabled() && !dismissed);
   }, []);
 
   function dismiss() {
@@ -38,7 +41,7 @@ export function WelcomeBanner() {
       <div className="mx-auto flex w-full max-w-6xl items-center gap-3 px-4 py-2.5 sm:px-6">
         <Sparkles className="hidden size-4 shrink-0 text-primary sm:block" />
         <p className="flex-1 text-sm text-foreground">
-          <span className="font-semibold">Welcome — this is a live demo.</span>{" "}
+          <span className="font-semibold">Welcome — this is a demo with fictional people and companies.</span>{" "}
           <span className="text-muted-foreground">
             Jump straight in with a ready-made account (no signup):
           </span>{" "}

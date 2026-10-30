@@ -3,7 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { prisma } from "@/lib/db";
-import { requireUser } from "@/lib/persona";
+import { requireHmOpening } from "@/lib/access";
 import { getActivePlan } from "@/lib/services/billing";
 import { saveRoleQuiz } from "@/lib/actions/hm";
 import { itemsForSkill, type SkillCheckItem } from "@/lib/fixtures/skill-checks";
@@ -24,7 +24,8 @@ export default async function RoleAssessmentPage({
   params: Promise<{ openingId: string }>;
 }) {
   const { openingId } = await params;
-  const user = await requireUser();
+  // HM hat + owns this opening, before any read (404 otherwise).
+  const user = await requireHmOpening(openingId);
   const { plan } = await getActivePlan(user.id, "hiring_manager");
 
   const opening = await prisma.opening.findFirst({

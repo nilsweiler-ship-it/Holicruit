@@ -8,6 +8,7 @@ import type { ScenarioQuestion, ScenarioResult, PersonalityDimension } from "../
 import { SOFT_DIMENSIONS, PERSONALITY_DIMENSIONS } from "../scenario/types";
 import { prisma } from "../db";
 import { SCENARIO_QUESTIONS } from "../fixtures/scenarios";
+import { scoreScenario } from "../integrity/scenario-scoring";
 
 export type PersonalityProfile = { name: PersonalityDimension; level: number }[];
 
@@ -16,6 +17,7 @@ export interface ScenarioAssessmentService {
   getPersonalityProfile(candidateId: string): Promise<PersonalityProfile | null>;
   isComplete(candidateId: string): Promise<boolean>;
   estimatedMinutes(): number;
+  /** The full bank WITH loadings — server-only; send `toPublicQuestions(...)` to the browser. */
   getQuestions(): Promise<ScenarioQuestion[]>;
   score(answers: Record<string, string>): Promise<ScenarioResult>;
 }
@@ -60,46 +62,13 @@ class DbScenarioAssessmentService implements ScenarioAssessmentService {
     return SCENARIO_QUESTIONS;
   }
 
+  /**
+   * Score a submission. Throws InvalidScenarioAnswers unless every question has
+   * exactly one valid option id — a partial or bogus submission is rejected,
+   * never stored as an all-zero profile. See integrity/scenario-scoring.ts.
+   */
   async score(answers: Record<string, string>): Promise<ScenarioResult> {
-    // Competencies (used for role matching).
-    const earned: Record<string, number> = {};
-    const max: Record<string, number> = {};
-    for (const dim of SOFT_DIMENSIONS) {
-      earned[dim] = 0;
-      max[dim] = 0;
-    }
-    // Personality traits (Big Five + Integrity).
-    const tEarned: Record<string, number> = {};
-    const tMax: Record<string, number> = {};
-    for (const dim of PERSONALITY_DIMENSIONS) {
-      tEarned[dim] = 0;
-      tMax[dim] = 0;
-    }
-
-    for (const q of SCENARIO_QUESTIONS) {
-      for (const dim of SOFT_DIMENSIONS) {
-        max[dim] += Math.max(0, ...q.options.map((o) => o.weights[dim] ?? 0));
-      }
-      for (const dim of PERSONALITY_DIMENSIONS) {
-        tMax[dim] += Math.max(0, ...q.options.map((o) => o.traits[dim] ?? 0));
-      }
-      const chosen = q.options.find((o) => o.id === answers[q.id]);
-      if (chosen) {
-        for (const dim of SOFT_DIMENSIONS) earned[dim] += chosen.weights[dim] ?? 0;
-        for (const dim of PERSONALITY_DIMENSIONS) tEarned[dim] += chosen.traits[dim] ?? 0;
-      }
-    }
-
-    return {
-      scores: SOFT_DIMENSIONS.map((name) => ({
-        name,
-        level: max[name] > 0 ? Math.round((earned[name] / max[name]) * 100) : 0,
-      })),
-      traits: PERSONALITY_DIMENSIONS.map((name) => ({
-        name,
-        level: tMax[name] > 0 ? Math.round((tEarned[name] / tMax[name]) * 100) : 0,
-      })),
-    };
+    return scoreScenario(SCENARIO_QUESTIONS, answers);
   }
 }
 

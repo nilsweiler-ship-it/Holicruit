@@ -9,7 +9,7 @@
  * matching, identities only ever surface through a real, mutual, opted-in match.
  */
 import { prisma } from "../db";
-import { computeFit, MATCH_THRESHOLD, PRIORITY_THRESHOLD } from "../matching/engine";
+import { computeFit, meetsMustHaves, MATCH_THRESHOLD, PRIORITY_THRESHOLD } from "../matching/engine";
 import type { SkillGap } from "../fit/types";
 
 export type NearMiss = {
@@ -96,6 +96,10 @@ export async function getRoleMarketSnapshot(openingId: string): Promise<RoleMark
 
   for (const p of profiles) {
     const stored = byCandidate.get(p.id);
+    // Same must-have gate as matching: a candidate whose pay floor / work mode
+    // this role can't meet will never enter the pipeline, so don't count them
+    // as "clears your bar" or "one skill away" (M19).
+    if (!stored && !meetsMustHaves(p, opening)) continue;
     const recomputed = stored ? null : fitOf(p.hardSkills, p.softSkills);
     const mutualFit = stored ? stored.mutualFit : recomputed!.mutualFit;
     const gaps = (stored ? JSON.parse(stored.gaps) : recomputed!.gaps) as SkillGap[];
@@ -152,7 +156,7 @@ export async function getRoleMarketSnapshot(openingId: string): Promise<RoleMark
     roleTitle: opening.title,
     companyName: opening.company.name,
     passBar: threshold,
-    considered: profiles.length,
+    considered: aboveBar + within + developing + early,
     aboveBar,
     nearCount: nearMisses.length,
     bands: [

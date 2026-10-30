@@ -1,4 +1,5 @@
 import { SubNav } from "@/components/layout/sub-nav";
+import { requireHat } from "@/lib/access";
 
 const ITEMS = [
   { label: "Pipeline", href: "/hiring-manager/pipeline" },
@@ -8,7 +9,11 @@ const ITEMS = [
   { label: "Billing", href: "/hiring-manager/billing" },
 ];
 
-export default function HiringManagerLayout({ children }: { children: React.ReactNode }) {
+export default async function HiringManagerLayout({ children }: { children: React.ReactNode }) {
+  // Guard: hiring-manager-only area. Pages still check ownership themselves —
+  // a layout is not re-run on every client navigation.
+  await requireHat("hiring_manager");
+
   return (
     <div className="flex flex-col gap-6">
       <SubNav items={ITEMS} />

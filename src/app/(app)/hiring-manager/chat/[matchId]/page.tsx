@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
-import type { ChatMessage } from "@/lib/types";
+import { requireHat, requireMatchAccess } from "@/lib/access";
 import { matchingService } from "@/lib/services/matching";
 import { getThreadView } from "@/lib/services/thread";
 import { ChatThread } from "@/components/chat/chat-thread";
@@ -13,21 +13,19 @@ export const metadata: Metadata = { title: "Direct line · Holicruit" };
 /** Hiring-manager-side direct line with a candidate (DB-backed). */
 export default async function HmChatPage({ params }: { params: Promise<{ matchId: string }> }) {
   const { matchId } = await params;
+  await requireHat("hiring_manager");
+  // Only the HM who owns this match's opening may open it (404 otherwise).
+  const { user } = await requireMatchAccess(matchId, "manager");
   const match = await matchingService.getMatch(matchId);
   if (!match) notFound();
-  const view = await getThreadView(matchId, "manager");
+  const view = await getThreadView(matchId, "manager", user.id);
   if (!view) notFound();
 
-  const seed: ChatMessage[] = view.messages.length
-    ? view.messages
-    : [
-        {
-          id: "seed-1",
-          fromId: view.me.name,
-          text: `Hi ${view.them.name.split(" ")[0]} — thanks for the conversation. Shall we find a time to talk properly?`,
-          ts: "Today",
-        },
-      ];
+  // A suggested opener goes into the composer as an unsent draft — never shown
+  // as if it had been sent.
+  const opener = view.messages.length
+    ? ""
+    : `Hi ${view.them.name.split(" ")[0]} — thanks for the conversation. Shall we find a time to talk properly?`;
 
   return (
     <div className="flex flex-col gap-6">
@@ -49,8 +47,10 @@ export default async function HmChatPage({ params }: { params: Promise<{ matchId
         matchId={matchId}
         me={view.me}
         them={view.them}
-        initialMessages={seed}
+        initialMessages={view.messages}
         initialInterview={view.interview}
+        initialProposal={view.pendingProposal}
+        initialDraft={opener}
       />
     </div>
   );

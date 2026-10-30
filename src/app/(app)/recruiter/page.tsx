@@ -58,6 +58,8 @@ export default async function RecruiterPage() {
   const intros = await prisma.recruiterIntro.findMany({ where: { recruiterId }, orderBy: { id: "asc" } });
   const activeIntros = intros.length;
   const inInterview = intros.filter((i) => i.stage === "interview").length;
+  // No fee ledger exists yet, so show real hires — never a fixture amount.
+  const hired = intros.filter((i) => i.stage === "hired").length;
 
   return (
     <div className="flex flex-col gap-6">
@@ -86,9 +88,12 @@ export default async function RecruiterPage() {
         <div className="rounded-2xl border border-primary/30 bg-primary/8 p-5">
           <div className="flex items-center gap-2 text-primary">
             <BadgeEuro className="size-5" aria-hidden />
-            <span className="text-xs font-semibold uppercase tracking-wide">Earned on hires</span>
+            <span className="text-xs font-semibold uppercase tracking-wide">Hires from your intros</span>
           </div>
-          <p className="mt-1 text-4xl font-extrabold tracking-tight text-primary">€8.4k</p>
+          <p className="mt-1 text-4xl font-extrabold tracking-tight text-primary">{hired}</p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            {hired === 0 ? "No hires yet — success fees show here once invoiced." : "Success fees show here once invoiced."}
+          </p>
         </div>
       </section>
 

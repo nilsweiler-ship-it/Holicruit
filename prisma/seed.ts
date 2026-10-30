@@ -2,6 +2,16 @@
  * Seeds the database from the existing demo fixtures so the app has the same
  * data it had in mocked mode — now persisted. Creates one login account per
  * hat (all use password `password123`).
+ *
+ * Safety (fails closed):
+ *  - Boot (`SEED_ONLY_IF_EMPTY=1`, from `npm run start`): seeds only an EMPTY
+ *    database; a database with users is left untouched.
+ *  - Manual (`npm run db:seed`): resets only a local/CI database (localhost,
+ *    docker-compose) that isn't marked production.
+ *  - Anything else is wiped only with BOTH `SEED_FORCE=1` and
+ *    `SEED_FORCE_CONFIRM=wipe-production`.
+ *  - If the user count can't be read, the script exits non-zero instead of
+ *    assuming the database is empty.
  */
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
@@ -31,23 +41,91 @@ const TRAIT_PROFILES: Record<string, Record<string, number>> = {
 const traitFor = (id: string) =>
   TRAIT_PROFILES[id] ?? { Conscientiousness: 65, "Emotional stability": 62, Agreeableness: 64, Extraversion: 60, Openness: 63, Integrity: 66 };
 
+/** Confirmation value that must accompany SEED_FORCE=1 before anything is wiped. */
+const FORCE_CONFIRM = "wipe-production";
+
+/** Hosts we treat as a developer/CI machine (docker-compose, CI service container). */
+const LOCAL_DB_HOSTS = new Set(["localhost", "127.0.0.1", "::1", "[::1]", "postgres", "db", "host.docker.internal"]);
+
+function dbHost(): string | null {
+  try {
+    return new URL(process.env.DATABASE_URL ?? "").hostname.toLowerCase();
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * "Explicitly not production": a local/CI database AND no production marker in
+ * the environment. Anything else (Railway, a remote URL, NODE_ENV=production)
+ * counts as production and is never wiped without the two-key override.
+ */
+function isExplicitlyNonProduction(): boolean {
+  const host = dbHost();
+  const railwayEnv = (process.env.RAILWAY_ENVIRONMENT_NAME ?? process.env.RAILWAY_ENVIRONMENT ?? "").toLowerCase();
+  return (
+    host != null &&
+    LOCAL_DB_HOSTS.has(host) &&
+    process.env.NODE_ENV !== "production" &&
+    railwayEnv !== "production"
+  );
+}
+
+/** The two-key override: SEED_FORCE=1 plus SEED_FORCE_CONFIRM=wipe-production. */
+function forceWipeConfirmed(): boolean {
+  return process.env.SEED_FORCE === "1" && process.env.SEED_FORCE_CONFIRM === FORCE_CONFIRM;
+}
+
 async function main() {
-  // On the server (SEED_ONLY_IF_EMPTY=1) don't wipe a database that already has
-  // data — only seed a fresh/empty one. Locally, `npm run db:seed` still resets.
-  // Escape hatch: set SEED_FORCE=1 to force a clean wipe+reseed on the next
-  // deploy (then remove it again), e.g. to refresh the demo after seed changes.
-  if (process.env.SEED_ONLY_IF_EMPTY === "1" && process.env.SEED_FORCE !== "1") {
-    const existing = await prisma.user.count().catch(() => 0);
-    if (existing > 0) {
+  // Fail closed: if we can't count users we don't know whether the database is
+  // empty, so never guess. Exit non-zero (the start script then stops before
+  // `next start`, and Railway keeps the previous deployment serving).
+  let existing: number;
+  try {
+    existing = await prisma.user.count();
+  } catch (e) {
+    console.error("Seed aborted — could not read the users table, refusing to guess that the database is empty.");
+    console.error(e);
+    process.exit(1);
+  }
+
+  if (existing > 0) {
+    const onBoot = process.env.SEED_ONLY_IF_EMPTY === "1";
+    const forced = forceWipeConfirmed();
+    if (process.env.SEED_FORCE === "1" && !forced) {
+      console.warn(
+        `SEED_FORCE=1 is set but SEED_FORCE_CONFIRM is not "${FORCE_CONFIRM}" — NOT wiping. ` +
+          "Remove SEED_FORCE, or set both variables deliberately (see DEPLOY.md).",
+      );
+    }
+    if (onBoot && !forced) {
+      // Boot path (npm run start): never touch a database that already has data.
       console.log(`Seed skipped — ${existing} users already present.`);
       return;
     }
-  }
-  if (process.env.SEED_FORCE === "1") {
-    console.log("SEED_FORCE=1 — wiping and reseeding the database.");
+    if (!onBoot && !forced && !isExplicitlyNonProduction()) {
+      // Manual `npm run db:seed` against something that isn't clearly local.
+      console.error(
+        `Seed refused — ${existing} users present and DATABASE_URL host "${dbHost() ?? "?"}" is not a local/CI database. ` +
+          `To wipe a non-local database set SEED_FORCE=1 and SEED_FORCE_CONFIRM=${FORCE_CONFIRM}.`,
+      );
+      process.exit(1);
+    }
+    console.log(
+      forced
+        ? `SEED_FORCE=1 + SEED_FORCE_CONFIRM — wiping ${existing} users and reseeding.`
+        : `Local database — resetting ${existing} users and reseeding.`,
+    );
+    await wipeAll();
+  } else {
+    console.log("Empty database — seeding demo data.");
   }
 
-  // Idempotent: clear everything (order respects FKs via cascade on User/parent).
+  await seed();
+}
+
+/** Delete everything the seed owns (order respects FKs via cascade on User/parent). */
+async function wipeAll() {
   await prisma.message.deleteMany();
   await prisma.interview.deleteMany();
   await prisma.thread.deleteMany();
@@ -67,7 +145,10 @@ async function main() {
   await prisma.candidateProfile.deleteMany();
   await prisma.subscription.deleteMany();
   await prisma.user.deleteMany();
+}
 
+/** Create the demo world. Every account uses an @holicruit.test address (see src/lib/demo.ts). */
+async function seed() {
   const passwordHash = await bcrypt.hash(PASSWORD, 10);
 
   // ── A hiring-manager account that owns the seeded companies/openings ──

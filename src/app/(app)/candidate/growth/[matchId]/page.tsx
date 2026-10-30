@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowRight, Target } from "lucide-react";
 import { matchingService } from "@/lib/services/matching";
+import { requireCandidateMatch } from "@/lib/access";
 import { GrowthPanel } from "@/components/match/growth-panel";
 import { RequestReview } from "@/components/match/request-review";
 import { AiNotice } from "@/components/compliance/ai-notice";
@@ -21,8 +22,16 @@ export default async function GrowthReportPage({
   params: Promise<{ matchId: string }>;
 }) {
   const { matchId } = await params;
-  const report = await matchingService.getGrowthReport(matchId);
-  if (!report) notFound();
+  // Owner check BEFORE any read: a growth report is private to its candidate.
+  await requireCandidateMatch(matchId);
+  const [report, match] = await Promise.all([
+    matchingService.getGrowthReport(matchId),
+    matchingService.getMatch(matchId, "candidate"),
+  ]);
+  if (!report || !match) notFound();
+  // Company as the candidate may see it now (alias for a confidential role
+  // unless the employer revealed) — not whatever was stored with the report.
+  const companyName = match.opening.company.name;
 
   const gapHref = `/candidate/growth-paths?gap=${encodeURIComponent(report.primaryGap.skill)}`;
 
@@ -31,7 +40,7 @@ export default async function GrowthReportPage({
       <header className="flex flex-col gap-1">
         <h1 className="font-serif text-3xl tracking-tight">Not this time — here&apos;s exactly why</h1>
         <p className="text-sm text-muted-foreground">
-          {report.roleTitle} · {report.company} ·{" "}
+          {report.roleTitle} · {companyName} ·{" "}
           <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-medium uppercase tracking-wide">
             closed
           </span>
@@ -55,13 +64,13 @@ export default async function GrowthReportPage({
             </h2>
             <p className="text-sm text-muted-foreground">
               {report.matchingProgramCount} short program
-              {report.matchingProgramCount > 1 ? "s" : ""} match{" "}
+              {report.matchingProgramCount === 1 ? " matches" : "s match"}{" "}
               <span className="font-medium text-foreground">
                 &ldquo;{report.primaryGap.skill}&rdquo;
               </span>
               . Finish one and you&apos;d clear the bar for{" "}
               <span className="font-semibold text-foreground">
-                {report.rolesClearedIfClosed} open roles
+                {report.rolesClearedIfClosed} open role{report.rolesClearedIfClosed === 1 ? "" : "s"}
               </span>{" "}
               you&apos;ve matched with.
             </p>

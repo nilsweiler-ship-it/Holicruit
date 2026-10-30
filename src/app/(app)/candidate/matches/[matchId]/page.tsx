@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { ArrowUpRight, Check, TriangleAlert } from "lucide-react";
 import { matchingService } from "@/lib/services/matching";
 import { getCandidateProfile } from "@/lib/services/profile";
+import { requireCandidateMatch } from "@/lib/access";
 import { MutualFit } from "@/components/fit/mutual-fit";
 import { FitRadar, type RadarAxis } from "@/components/fit/fit-radar";
 import { DirectLinePanel } from "@/components/match/direct-line-panel";
@@ -28,6 +29,10 @@ export default async function MatchDetailPage({
   params: Promise<{ matchId: string }>;
 }) {
   const { matchId } = await params;
+  // Owner check BEFORE any read: only the candidate on this match. (The
+  // candidate view unmasks the candidate, so it must never be served to the
+  // employer side or anyone else.)
+  await requireCandidateMatch(matchId);
   const match = await matchingService.getMatch(matchId, "candidate");
   if (!match) notFound();
 

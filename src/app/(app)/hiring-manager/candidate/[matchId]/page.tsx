@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, ChevronRight, FileText, Handshake, Scale, SlidersHorizontal, Sparkles, Users, Wrench } from "lucide-react";
+import { ArrowLeft, FileText, Handshake, Scale, SlidersHorizontal, Sparkles, Users, Wrench } from "lucide-react";
 import { matchingService } from "@/lib/services/matching";
 import { ScoreTiles } from "@/components/fit/score-tiles";
 import { MutualFit } from "@/components/fit/mutual-fit";
@@ -14,15 +14,80 @@ import { PersonalityBars } from "@/components/candidate/personality-bars";
 import { TermsFit } from "@/components/terms/terms-fit";
 import { scenarioService } from "@/lib/services/scenario";
 import { prisma } from "@/lib/db";
-import { requireUser } from "@/lib/persona";
+import { requireManagerMatch } from "@/lib/access";
 import { getActivePlan } from "@/lib/services/billing";
 import { recommendationLabel, type CriterionScore } from "@/lib/scoresheet";
+import { SKILL_CHECK_PASS } from "@/lib/fixtures/skill-checks";
 
-const EVIDENCE = [
-  { icon: Wrench, label: "Skill scenario score + recording" },
-  { icon: Handshake, label: "2 peer endorsements (verified)" },
-  { icon: FileText, label: "Portfolio & work samples" },
-];
+/**
+ * "Evidence, not claims" — built from what is actually on record for this
+ * candidate: peer endorsements, passed applied skill checks, and whether the
+ * soft-skill scenario was taken. Nothing is shown that doesn't exist.
+ */
+async function EvidenceList({ candidateId }: { candidateId: string }) {
+  const [profile, endorsements] = await Promise.all([
+    prisma.candidateProfile.findUnique({
+      where: { id: candidateId },
+      select: {
+        scenarioCompleted: true,
+        hardSkills: { where: { assessedScore: { gte: SKILL_CHECK_PASS } }, select: { name: true, assessedScore: true } },
+      },
+    }),
+    prisma.endorsement.findMany({ where: { profileId: candidateId }, select: { skill: true } }),
+  ]);
+  const n = endorsements.length;
+  const endorsedSkills = [...new Set(endorsements.map((e) => e.skill))];
+  const checks = profile?.hardSkills ?? [];
+  const plural = (k: number, one: string, many: string) => `${k} ${k === 1 ? one : many}`;
+  const items = [
+    {
+      icon: Handshake,
+      present: n > 0,
+      label:
+        n > 0
+          ? `${plural(n, "peer endorsement", "peer endorsements")} · ${endorsedSkills.slice(0, 4).join(", ")}${endorsedSkills.length > 4 ? "…" : ""}`
+          : "No peer endorsements yet",
+    },
+    {
+      icon: Wrench,
+      present: checks.length > 0,
+      label:
+        checks.length > 0
+          ? `Applied skill check passed: ${checks
+              .slice(0, 4)
+              .map((c) => `${c.name} (${c.assessedScore})`)
+              .join(", ")}${checks.length > 4 ? "…" : ""}`
+          : "No applied skill checks passed yet",
+    },
+    {
+      icon: FileText,
+      present: !!profile?.scenarioCompleted,
+      label: profile?.scenarioCompleted
+        ? "Soft-skill scenario completed (situational judgment)"
+        : "Soft-skill scenario not taken — soft fit is a neutral placeholder, not a measurement",
+    },
+  ];
+  return (
+    <ul className="flex flex-col gap-2">
+      {items.map(({ icon: Icon, label, present }) => (
+        <li key={label} className="flex items-center gap-3 rounded-2xl border border-border bg-card p-4">
+          <span
+            className={
+              present
+                ? "flex size-9 shrink-0 items-center justify-center rounded-xl bg-success/12 text-success"
+                : "flex size-9 shrink-0 items-center justify-center rounded-xl bg-muted text-muted-foreground"
+            }
+          >
+            <Icon className="size-4" />
+          </span>
+          <span className={present ? "flex-1 text-sm font-medium text-foreground" : "flex-1 text-sm text-muted-foreground"}>
+            {label}
+          </span>
+        </li>
+      ))}
+    </ul>
+  );
+}
 
 /**
  * 3.2 Candidate deep-dive — evidence-first profile for one match, with the
@@ -34,10 +99,13 @@ export default async function CandidatePage({
   params: Promise<{ matchId: string }>;
 }) {
   const { matchId } = await params;
-  const match = await matchingService.getMatch(matchId);
+  // Owner check BEFORE any read: only the HM who owns this match's opening.
+  const userId = (await requireManagerMatch(matchId)).id;
+  // Employer view: the candidate stays masked (name, initials, photo) until
+  // they reveal for this match — see personIdentity in toMatch.
+  const match = await matchingService.getMatch(matchId, "employer");
   if (!match) notFound();
 
-  const userId = (await requireUser()).id;
   const { plan } = await getActivePlan(userId, "hiring_manager");
   const personality = await scenarioService.getPersonalityProfile(match.candidate.id);
 
@@ -133,21 +201,7 @@ export default async function CandidatePage({
         <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
           Evidence, not claims
         </h2>
-        <div className="flex flex-col gap-2">
-          {EVIDENCE.map(({ icon: Icon, label }) => (
-            <button
-              key={label}
-              type="button"
-              className="flex cursor-pointer items-center gap-3 rounded-2xl border border-border bg-card p-4 text-left transition-colors hover:bg-accent"
-            >
-              <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-muted text-muted-foreground">
-                <Icon className="size-4" />
-              </span>
-              <span className="flex-1 text-sm font-medium text-foreground">{label}</span>
-              <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
-            </button>
-          ))}
-        </div>
+        <EvidenceList candidateId={match.candidate.id} />
       </section>
 
       {personality && (
@@ -159,8 +213,9 @@ export default async function CandidatePage({
             <span className="text-xs text-muted-foreground">Big Five + Integrity · measured</span>
           </div>
           <p className="text-sm text-muted-foreground">
-            Measured from an objective scenario assessment and mapped to the Big Five (with
-            HEXACO Integrity) — not a self-rated questionnaire.
+            Indicative bands from a short situational-judgement scenario, mapped to the Big Five
+            (with HEXACO Integrity). Not a validated psychometric test — use it to prompt interview
+            questions, never as a sole basis for a decision.
           </p>
           <PersonalityBars traits={personality} />
         </section>
