@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useActionState } from "react";
 import { registerAction, type AuthState } from "@/lib/actions/auth";
 import { Button } from "@/components/ui/button";
+import { PasswordFields } from "@/components/auth/password-fields";
 
 const inputCls =
   "rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/30";
@@ -22,14 +23,7 @@ export function RegisterForm({ defaultHat = "candidate" }: { defaultHat?: string
     <form action={action} className="flex flex-col gap-3">
       <input name="name" type="text" placeholder="Your name" required className={inputCls} />
       <input name="email" type="email" placeholder="you@example.com" required className={inputCls} />
-      <input
-        name="password"
-        type="password"
-        placeholder="Password (min 8 characters)"
-        required
-        minLength={8}
-        className={inputCls}
-      />
+      <PasswordFields />
       <label className="flex flex-col gap-1 text-sm">
         <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
           I&apos;m joining as

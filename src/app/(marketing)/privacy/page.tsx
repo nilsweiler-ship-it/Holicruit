@@ -175,11 +175,32 @@ export default function PrivacyPage() {
         <section className="space-y-3">
           <h2 className="text-xl font-semibold text-foreground">10. Cookies</h2>
           <p>
-            We use cookies and similar technologies to keep you signed in, to
-            remember preferences, and to understand how the Platform is used.
-            Strictly necessary cookies are required for the Platform to function;
-            other cookies are used in line with your choices where consent is
-            required. You can manage cookies through your browser settings.
+            We only use cookies and browser storage that are strictly necessary
+            to provide the Platform you ask for. We do not use advertising,
+            analytics or tracking cookies, and no third-party cookies are set.
+          </p>
+          <ul className="list-disc space-y-1 pl-6">
+            <li>
+              <strong>Sign-in session cookie</strong> — keeps you logged in;
+              deleted when you sign out or when the session expires.
+            </li>
+            <li>
+              <strong>Security cookies</strong> — protect sign-in forms against
+              cross-site request forgery and remember where to return after
+              sign-in; session-length.
+            </li>
+            <li>
+              <strong>Interface choices (browser local storage)</strong> — for
+              example that you dismissed a welcome banner or chose a light or
+              dark theme; stored only on your device.
+            </li>
+          </ul>
+          <p>
+            Because these are essential for the service, no consent banner is
+            shown. If we ever add optional cookies (for example analytics), we
+            will ask for your consent first and update this section. You can
+            delete cookies at any time in your browser settings; you will then
+            be signed out.
           </p>
         </section>
 
