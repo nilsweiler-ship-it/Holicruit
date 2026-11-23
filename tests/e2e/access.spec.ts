@@ -129,7 +129,7 @@ test.describe("hiring-manager pages are owner-only", () => {
     await register(other, {
       name: "Other Manager",
       email: `${uniq("hm-other")}@example.com`,
-      password: "testpass123",
+      password: "Test-Pass-2026!",
       hat: "hiring_manager",
     });
     await expect(other).toHaveURL(/\/hiring-manager\/pipeline/);

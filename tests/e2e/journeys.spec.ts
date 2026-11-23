@@ -12,10 +12,42 @@ test.beforeAll(() => {
   }
 });
 
+test.describe("registration password rules", () => {
+  test("weak or mismatched passwords are refused; a strong one works", async ({ page }) => {
+    const email = `${uniq("pw")}@example.com`;
+    const fill = async (pw: string, confirm: string) => {
+      await page.goto("/register");
+      await page.locator('input[name="name"]').fill("Password Tester");
+      await page.locator('input[name="email"]').fill(email);
+      await page.locator('input[name="password"]').fill(pw);
+      await page.locator('input[name="passwordConfirm"]').fill(confirm);
+      await page.locator('input[name="consent"]').check();
+    };
+    const submit = () =>
+      page.locator("form").filter({ has: page.locator('input[name="consent"]') }).getByRole("button").last().click();
+
+    // The live checklist reacts before submitting.
+    await fill("testpass123", "testpass123");
+    await expect(page.getByText("An uppercase letter")).toBeVisible();
+    await submit();
+    await expect(page.getByText(/Password needs:/)).toBeVisible();
+    await expect(page).toHaveURL(/\/register/);
+
+    await fill("Test-Pass-2026!", "Test-Pass-2025!");
+    await expect(page.getByText("The passwords don't match.")).toBeVisible();
+    await submit();
+    await expect(page).toHaveURL(/\/register/);
+
+    await fill("Test-Pass-2026!", "Test-Pass-2026!");
+    await submit();
+    await page.waitForURL((u) => !/\/register/.test(u.pathname), { timeout: 20_000 });
+  });
+});
+
 test.describe("hiring manager journey", () => {
   test("register with consent → post a confidential role with must-haves → import candidates → claim link is correct", async ({ page, context }) => {
     const email = `${uniq("hm")}@example.com`;
-    await register(page, { name: "Test Manager", email, password: "testpass123", hat: "hiring_manager" });
+    await register(page, { name: "Test Manager", email, password: "Test-Pass-2026!", hat: "hiring_manager" });
     await expect(page).toHaveURL(/\/hiring-manager\/pipeline/);
     await expectHealthy(page);
 
@@ -59,10 +91,11 @@ test.describe("hiring manager journey", () => {
     await claimPage.context().clearCookies();
     await claimPage.goto(claimLink!);
     await expectHealthy(claimPage);
-    await claimPage.locator('input[name="password"]').fill("claimpass123");
+    await claimPage.locator('input[name="password"]').fill("Claim-Pass-2026!");
+    await claimPage.locator('input[name="passwordConfirm"]').fill("Claim-Pass-2026!");
     await claimPage.getByRole("button", { name: "Claim my profile" }).click();
     await expect(claimPage).toHaveURL(/\/login\?claimed=1/);
-    await login(claimPage, importedEmail, "claimpass123");
+    await login(claimPage, importedEmail, "Claim-Pass-2026!");
     await expect(claimPage).toHaveURL(/\/candidate/);
   });
 });
@@ -70,7 +103,7 @@ test.describe("hiring manager journey", () => {
 test.describe("candidate journey", () => {
   test("register → set must-haves → import CV text → skills added → matches honour the gate", async ({ page }) => {
     const email = `${uniq("cand")}@example.com`;
-    await register(page, { name: "Test Candidate", email, password: "testpass123", hat: "candidate" });
+    await register(page, { name: "Test Candidate", email, password: "Test-Pass-2026!", hat: "candidate" });
     await expect(page).toHaveURL(/\/candidate/);
     await expectHealthy(page);
 
@@ -137,7 +170,7 @@ Senior QA engineer, 6 years. Built end-to-end test suites and release pipelines.
 
   test("identity reveal is one-way and explicit; GDPR delete removes the account", async ({ page }) => {
     const email = `${uniq("anon")}@example.com`;
-    await register(page, { name: "Real Name Here", email, password: "testpass123", hat: "candidate" });
+    await register(page, { name: "Real Name Here", email, password: "Test-Pass-2026!", hat: "candidate" });
 
     await page.goto("/settings/privacy");
     await page.locator('input[name="alias"]').fill("Kestrel");
@@ -156,7 +189,7 @@ Senior QA engineer, 6 years. Built end-to-end test suites and release pipelines.
     await page.getByRole("button", { name: /delete/i }).last().click();
     await expect(page).toHaveURL(/\/login\?deleted=1/);
     await page.getByPlaceholder("you@example.com").fill(email);
-    await page.getByPlaceholder("Password").fill("testpass123");
+    await page.getByPlaceholder("Password").fill("Test-Pass-2026!");
     await page.getByRole("button", { name: "Sign in" }).click();
     await expect(page).toHaveURL(/\/login/);
   });

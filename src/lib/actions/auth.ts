@@ -8,6 +8,7 @@ import { signIn, signOut } from "@/lib/auth";
 import { headers } from "next/headers";
 import { clientIp, limiters, TOO_MANY_ATTEMPTS } from "@/lib/ratelimit";
 import { demoLoginsEnabled, isDemoEmail } from "@/lib/demo";
+import { checkPassword, passwordsMatch, PASSWORD_MAX } from "@/lib/password";
 
 export type AuthState = { error?: string } | null;
 
@@ -60,7 +61,7 @@ export async function loginAction(_prev: AuthState, formData: FormData): Promise
 const registerSchema = z.object({
   name: z.string().min(2, "Enter your name."),
   email: z.string().email("Enter a valid email."),
-  password: z.string().min(8, "Password must be at least 8 characters."),
+  password: z.string().max(PASSWORD_MAX, `Password must be at most ${PASSWORD_MAX} characters.`),
   hat: z.enum(HATS),
 });
 
@@ -76,6 +77,11 @@ export async function registerAction(_prev: AuthState, formData: FormData): Prom
   const { name, email, password, hat } = parsed.data;
   // The @holicruit.test domain is reserved for seeded demo personas.
   if (isDemoEmail(email)) return { error: "Please use your own email address." };
+  const pwCheck = checkPassword(password, { email });
+  if (!pwCheck.ok) return { error: pwCheck.message ?? "Please choose a stronger password." };
+  if (!passwordsMatch(password, formData.get("passwordConfirm"))) {
+    return { error: "Please make sure both passwords are identical." };
+  }
   if (formData.get("consent") !== "on") {
     return { error: "Please accept the Terms and Privacy Policy to continue." };
   }

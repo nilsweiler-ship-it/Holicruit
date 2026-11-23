@@ -50,6 +50,7 @@ export async function register(
   await page.locator('input[name="name"]').fill(input.name);
   await page.locator('input[name="email"]').fill(input.email);
   await page.locator('input[name="password"]').fill(input.password);
+  await page.locator('input[name="passwordConfirm"]').fill(input.password);
   await page.locator('select[name="hat"]').selectOption(input.hat);
   await page.locator('input[name="consent"]').check();
   await page.locator("form").filter({ has: page.locator('input[name="consent"]') }).getByRole("button").last().click();

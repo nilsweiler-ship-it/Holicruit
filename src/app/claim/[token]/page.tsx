@@ -5,12 +5,13 @@ import { prisma } from "@/lib/db";
 import { claimProfile } from "@/lib/actions/invites";
 import { Wordmark } from "@/components/brand/wordmark";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { PasswordFields } from "@/components/auth/password-fields";
 
 export const metadata: Metadata = { title: "Claim your profile · Holicruit" };
 
 const ERRORS: Record<string, string> = {
-  short: "Password must be at least 8 characters.",
+  weak: "Please choose a stronger password — it needs at least 10 characters with upper- and lowercase letters, a number and a symbol.",
+  mismatch: "The passwords don't match — please try again.",
   invalid: "This invite link is no longer valid — it may already have been claimed.",
 };
 
@@ -66,12 +67,7 @@ export default async function ClaimPage({
           )}
 
           <form action={claimProfile.bind(null, token)} className="flex flex-col gap-3">
-            <div className="flex flex-col gap-1.5">
-              <label htmlFor="password" className="text-sm font-medium text-foreground">
-                Choose a password
-              </label>
-              <Input id="password" name="password" type="password" required minLength={8} placeholder="At least 8 characters" />
-            </div>
+            <PasswordFields label="Choose a password" />
             <Button type="submit">
               <ShieldCheck className="size-4" />
               Claim my profile

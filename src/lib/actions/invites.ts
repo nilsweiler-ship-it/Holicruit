@@ -1,5 +1,6 @@
 "use server";
 import { sameWorld } from "@/lib/demo";
+import { checkPassword, passwordsMatch } from "@/lib/password";
 
 import { randomUUID } from "crypto";
 import { revalidatePath } from "next/cache";
@@ -151,7 +152,8 @@ export async function claimProfile(rawToken: string, formData: FormData): Promis
   if (!parsedToken.success) redirect("/login");
   const token = parsedToken.data;
   const password = String(formData.get("password") ?? "");
-  if (password.length < 8 || password.length > 200) redirect(`/claim/${token}?error=short`);
+  if (!checkPassword(password).ok) redirect(`/claim/${token}?error=weak`);
+  if (!passwordsMatch(password, formData.get("passwordConfirm"))) redirect(`/claim/${token}?error=mismatch`);
 
   const profile = await prisma.candidateProfile.findUnique({
     where: { inviteToken: token },
