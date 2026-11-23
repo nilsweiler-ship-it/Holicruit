@@ -13,6 +13,9 @@ export default async function RolesPage() {
   const user = await requireUser();
   const openings = await prisma.opening.findMany({
     where: { company: { ownerId: user.id } },
+    // Stable order: busiest roles first, then alphabetical. Without an orderBy
+    // Postgres returns rows in heap order, which shifts after any update.
+    orderBy: [{ matches: { _count: "desc" } }, { title: "asc" }],
     // Count what the pipeline board shows (open matches), not closed ones (M19).
     include: {
       company: true,
